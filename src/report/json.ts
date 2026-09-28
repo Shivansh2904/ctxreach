@@ -66,6 +66,7 @@ export const ClaudeJson = z.object({
       importedBy: z.string().optional(),
       depth: z.number().int().optional(),
       needsApproval: z.boolean().optional(),
+      notModelled: z.boolean().optional(),
     }),
   ),
   unresolvedImports: z.array(z.object({ in: z.string(), token: z.string() })),
@@ -77,6 +78,7 @@ const CellJson = z.object({
   rule: z.string(),
   cut: CutJson.optional(),
   needsApproval: z.boolean().optional(),
+  notModelled: z.boolean().optional(),
 });
 
 export const MapJson = z.object({

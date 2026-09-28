@@ -11,6 +11,7 @@ export interface MatrixCell {
   rule: string;
   cut?: Cut;
   needsApproval?: boolean;
+  notModelled?: boolean;
 }
 
 export interface MatrixRow {
@@ -56,6 +57,7 @@ export function buildMatrix(result: MapResult): MatrixRow[] {
         why: f.why,
         rule: f.rule,
         ...(f.needsApproval ? { needsApproval: true } : {}),
+        ...(f.notModelled ? { notModelled: true } : {}),
       };
     }
   }

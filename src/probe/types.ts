@@ -72,8 +72,10 @@ export type UsableObservation = Exclude<Observation, "contaminated">;
  * - `not-preloaded`: not loaded by the agent; the model may open it.
  * - `never`: not loaded at all (switched off, out of budget, past the cut,
  *   not a file this agent reads, or the decoy).
+ * - `not-modelled`: `map` says it does not model this file (for example, an
+ *   ancestor directory's rules), so it predicts nothing either way.
  */
-export type Expectation = "launch" | "on-read" | "on-match" | "not-preloaded" | "never";
+export type Expectation = "launch" | "on-read" | "on-match" | "not-preloaded" | "never" | "not-modelled";
 
 /**
  * - `confirmed`: the observation agrees with the prediction.
@@ -86,9 +88,11 @@ export type Expectation = "launch" | "on-read" | "on-match" | "not-preloaded" | 
  *   the agent loads, not what the model reads.
  * - `untested`: predicted on read, but no trial read a file in its directory
  *   (or, for `on-match`, it did not arrive, which a non-matching read explains).
+ * - `not-modelled`: `map` does not model the file, so there is nothing to
+ *   agree or disagree with; the observation is still reported.
  * - `no-data`: no usable trial.
  */
-export type Verdict = "confirmed" | "missed" | "extra" | "discovered" | "untested" | "no-data";
+export type Verdict = "confirmed" | "missed" | "extra" | "discovered" | "untested" | "not-modelled" | "no-data";
 
 /** A step in an agent's transcript, in stream order, in a form every adapter can produce. */
 export type TranscriptItem =
@@ -200,4 +204,6 @@ export interface PredictedFile {
   cutAt?: number;
   /** An import from outside the launch directory, which loads only once external imports are approved. */
   needsApproval?: boolean;
+  /** map does not model this file: its `delivery` is a placeholder, not a prediction. */
+  notModelled?: boolean;
 }

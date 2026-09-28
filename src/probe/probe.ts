@@ -151,6 +151,7 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
           rule: cell.rule,
           ...(cell.cut ? { cutAt: cell.cut.at } : {}),
           ...(cell.needsApproval ? { needsApproval: true } : {}),
+          ...(cell.notModelled ? { notModelled: true } : {}),
         });
       } else if (cell.delivery !== "not-loaded") {
         let shown = row.path;

@@ -6,9 +6,18 @@ import type { Canary, Expectation, PredictedFile, ProbeMode, UsableObservation, 
 
 export const TOKEN_LENGTH = "CTXR-00000000".length;
 
+/**
+ * `map` marks a file it does not model (an ancestor directory's rules).
+ * Recordings made before `notModelled` was recorded carry it only in the reason.
+ */
+export function isNotModelled(predicted: PredictedFile): boolean {
+  return predicted.notModelled === true || /\bnot modelled\b/.test(predicted.why);
+}
+
 /** What `map`'s prediction for a file means for one canary in it. */
 export function expectationFor(canary: Canary, predicted: PredictedFile): Expectation {
   if (canary.decoy || predicted.delivery === "decoy") return "never";
+  if (isNotModelled(predicted)) return "not-modelled";
   switch (predicted.delivery) {
     case "launch":
     case "import":
@@ -59,10 +68,15 @@ export function countSeen(trials: readonly TrialObservation[]): SeenCounts {
  *   ctxreach cannot tell whether any file read matched;
  * - predicted not to arrive: never preloaded and never delivered on read;
  *   seen only if the model opened the file itself (`discovered`).
+ *
+ * A file `map` does not model gets no verdict (`not-modelled`) in either
+ * mode, whatever was observed: `map` did not predict that it stays out, so
+ * what was seen is neither agreement nor disagreement.
  */
 export function verdictFor(mode: ProbeMode, expectation: Expectation, trials: readonly TrialObservation[]): Verdict {
   const n = trials.length;
   if (n === 0) return "no-data";
+  if (expectation === "not-modelled") return "not-modelled";
   const seen = countSeen(trials);
   const pre = seen.preloaded;
   const onRead = seen["on-read"];
@@ -90,5 +104,5 @@ export function verdictFor(mode: ProbeMode, expectation: Expectation, trials: re
 
 /** Verdicts that agree with the prediction. */
 export const AGREEING: readonly Verdict[] = ["confirmed", "discovered"];
-/** Verdicts that are evidence either way (not `untested` or `no-data`). */
+/** Verdicts that are evidence either way (not `untested`, `not-modelled` or `no-data`). */
 export const DECIDED: readonly Verdict[] = ["confirmed", "discovered", "missed", "extra"];

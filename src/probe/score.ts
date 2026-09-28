@@ -25,7 +25,8 @@ import {
  * - `usable`: counts towards every cell.
  * - `contaminated`: used a tool it was not allowed; excluded, and reported.
  * - `failed`: the agent did not finish (error, timeout, no result event, or
- *   a transcript ctxreach cannot read); excluded, and reported.
+ *   a transcript ctxreach cannot read), or stopped before its session
+ *   started (not logged in, killed at once); excluded, and reported.
  * - `fault`: the session was not the one ctxreach asked for (other tools,
  *   another working directory, another version); excluded, and the whole run
  *   is flagged as an instrument fault.
@@ -84,6 +85,22 @@ function statusOf(
   const launchAbs =
     manifest.launchDir === "." ? manifest.repo : p.join(manifest.repo, ...manifest.launchDir.split("/"));
 
+  const failures: string[] = [];
+  if (outcome.timedOut) failures.push(`timed out after ${manifest.timeoutMs} ms`);
+  if (outcome.exitCode !== 0) failures.push(`exited with status ${outcome.exitCode ?? "none"}`);
+  if (!transcript.finished) failures.push("no final result event");
+  if (transcript.isError) failures.push("the agent reported an error");
+
+  // No system/init event, and the run failed: the agent stopped before its
+  // session started (for example, not logged in, or killed at once), so there
+  // is no session to check. A session that finished without one is a fault.
+  const started = transcript.cwd !== undefined || transcript.toolsOffered !== undefined;
+  if (!started && failures.length)
+    return {
+      status: "failed",
+      reasons: ["the agent stopped before its session started (no system/init event)", ...failures],
+    };
+
   const faults: string[] = [];
   if (transcript.cwd === undefined) faults.push("the transcript does not say which directory the agent ran in");
   else if (!p.same(transcript.cwd, launchAbs))
@@ -101,12 +118,6 @@ function statusOf(
       );
   }
   if (faults.length) return { status: "fault", reasons: faults };
-
-  const failures: string[] = [];
-  if (outcome.timedOut) failures.push(`timed out after ${manifest.timeoutMs} ms`);
-  if (outcome.exitCode !== 0) failures.push(`exited with status ${outcome.exitCode ?? "none"}`);
-  if (!transcript.finished) failures.push("no final result event");
-  if (transcript.isError) failures.push("the agent reported an error");
   if (failures.length) return { status: "failed", reasons: failures };
 
   if (cls.contaminated) return { status: "contaminated", reasons: [`used ${cls.contaminatedBy.join(", ")}`] };
@@ -272,6 +283,7 @@ export function scoreRecording(recording: Recording, adapter: AgentAdapter): Pro
     extra: 0,
     discovered: 0,
     untested: 0,
+    "not-modelled": 0,
     "no-data": 0,
   };
   for (const c of real) byVerdict[c.verdict]++;

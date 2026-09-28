@@ -34,6 +34,8 @@ export interface ClaudeFile {
   depth?: number;
   /** An import from outside the launch directory, which Claude Code loads only after a one-time approval. */
   needsApproval?: boolean;
+  /** ctxreach does not model whether this file loads; it is shown as not loaded. */
+  notModelled?: boolean;
 }
 
 export interface ClaudeResult {
@@ -423,6 +425,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
           why: "ancestor's rule: not modelled",
           rule: "claude.rules",
           bytes: s.bytes,
+          notModelled: true,
         });
       } else {
         add({

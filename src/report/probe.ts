@@ -1,8 +1,10 @@
-import pc from "picocolors";
+import picocolors from "picocolors";
 import { z } from "zod";
 import type { CellScore, ProbeResult } from "../probe/score.js";
 import type { Verdict } from "../probe/types.js";
 import { table } from "./terminal.js";
+
+type Colors = ReturnType<typeof picocolors.createColors>;
 
 const TITLES: Record<string, string> = { claude: "Claude Code", codex: "Codex" };
 
@@ -19,6 +21,7 @@ export function scopeStatements(result: ProbeResult): string[] {
 
 function predictedText(c: CellScore): string {
   const p = c.predicted;
+  if (c.expected === "not-modelled") return `not modelled (${p.why.replace(/:?\s*not modelled$/, "")})`;
   switch (p.delivery) {
     case "decoy":
       return "decoy: no rule loads it";
@@ -62,10 +65,11 @@ const VERDICT_LABELS: Record<Verdict, string> = {
   extra: "EXTRA",
   discovered: "DISCOVERED",
   untested: "UNTESTED",
+  "not-modelled": "NOT MODELLED",
   "no-data": "NO DATA",
 };
 
-function verdictText(c: CellScore, result: ProbeResult): string {
+function verdictText(c: CellScore, result: ProbeResult, pc: Colors): string {
   if (c.decoy) return result.instrument.decoy.echoed > 0 ? pc.red("control: FAULT") : pc.dim("control: ok");
   const label = VERDICT_LABELS[c.verdict];
   if (c.verdict === "confirmed" || c.verdict === "discovered") return pc.green(label);
@@ -73,7 +77,13 @@ function verdictText(c: CellScore, result: ProbeResult): string {
   return pc.yellow(label);
 }
 
-export function renderProbe(result: ProbeResult): string {
+export interface RenderOptions {
+  /** false: no colour codes at all (`--no-color`). Default: picocolors decides (NO_COLOR, the terminal). */
+  color?: boolean;
+}
+
+export function renderProbe(result: ProbeResult, options: RenderOptions = {}): string {
+  const pc = options.color === undefined ? picocolors : picocolors.createColors(options.color);
   const m = result.manifest;
   const title = TITLES[m.agent] ?? m.agent;
   const count = (s: string) => result.trials.filter((t) => t.status === s).length;
@@ -112,7 +122,7 @@ export function renderProbe(result: ProbeResult): string {
     c.position,
     predictedText(c),
     observedText(c, m.mode),
-    verdictText(c, result),
+    verdictText(c, result, pc),
   ]);
   lines.push(table([header, ...rows]));
   lines.push("");
@@ -127,15 +137,18 @@ export function renderProbe(result: ProbeResult): string {
   const unknown = result.trials.reduce((n, t) => n + Object.values(t.unknownEvents).reduce((a, b) => a + b, 0), 0);
   const events = result.trials.reduce((n, t) => n + t.events, 0);
   lines.push(`  stream events not understood: ${unknown} of ${events} (tolerated, counted)`);
-  lines.push("");
 
-  const a = result.agreement;
-  const parts = (Object.keys(a.byVerdict) as Verdict[])
-    .filter((v) => a.byVerdict[v] > 0)
-    .map((v) => `${VERDICT_LABELS[v]} ${a.byVerdict[v]}`);
-  lines.push(
-    `${pc.bold("Agreement with map")}: ${a.agree} of ${a.decided} decided cells agree (${parts.join(", ") || "none"}); ${a.cells} cells in all.`,
-  );
+  // After an instrument fault the verdicts are void, so no agreement figure is given.
+  if (!result.instrument.fault) {
+    const a = result.agreement;
+    const parts = (Object.keys(a.byVerdict) as Verdict[])
+      .filter((v) => a.byVerdict[v] > 0)
+      .map((v) => `${VERDICT_LABELS[v]} ${a.byVerdict[v]}`);
+    lines.push("");
+    lines.push(
+      `${pc.bold("Agreement with map")}: ${a.agree} of ${a.decided} decided cells agree (${parts.join(", ") || "none"}); ${a.cells} cells in all.`,
+    );
+  }
   if (result.warnings.length) {
     lines.push("");
     lines.push(pc.bold("Warnings"));
@@ -158,7 +171,7 @@ const Counts = z.object({
   "self-discovered": z.number().int(),
   "not-seen": z.number().int(),
 });
-const VerdictJson = z.enum(["confirmed", "missed", "extra", "discovered", "untested", "no-data"]);
+const VerdictJson = z.enum(["confirmed", "missed", "extra", "discovered", "untested", "not-modelled", "no-data"]);
 
 export const ProbeJson = z.object({
   schema: z.literal("ctxreach.probe/v1"),
@@ -187,7 +200,7 @@ export const ProbeJson = z.object({
       token: z.string(),
       decoy: z.boolean(),
       predicted: z.object({ delivery: z.string(), why: z.string(), rule: z.string() }),
-      expected: z.enum(["launch", "on-read", "on-match", "not-preloaded", "never"]),
+      expected: z.enum(["launch", "on-read", "on-match", "not-preloaded", "never", "not-modelled"]),
       seen: Counts,
       usable: z.number().int(),
       dirRead: z.number().int(),

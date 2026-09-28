@@ -58,6 +58,7 @@ export const ManifestJson = z.object({
       rule: z.string(),
       cutAt: z.number().int().optional(),
       needsApproval: z.boolean().optional(),
+      notModelled: z.boolean().optional(),
     }),
   ),
   /** Instruction files outside the copy that map says also reach the agent (redacted paths). */

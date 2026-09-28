@@ -74,6 +74,22 @@ describe("classifying one trial", () => {
     expect(r.observations["CTXR-00000003"]).toMatchObject({ seen: "not-seen", dirRead: true });
   });
 
+  it("counts only whole-file reads as a read in a directory: a Glob pattern that names it does not", () => {
+    // A Glob names packages/api in its pattern, which delivers nothing: no file there was read.
+    const glob: TranscriptItem = {
+      kind: "tool-use",
+      id: "g",
+      name: "Glob",
+      input: { pattern: "packages/api/**/*.ts", path: REPO },
+    };
+    const r = classifyTrial(transcript([glob, output("packages/api/src/index.ts", "g"), say("NONE")]), ctx("task"));
+    expect(r.observations["CTXR-00000002"]).toMatchObject({ seen: "not-seen", dirRead: false });
+    expect(r.observations["CTXR-00000003"]).toMatchObject({ seen: "not-seen", dirRead: false });
+    // With a Read of a file there, the directory was read.
+    const withRead = classifyTrial(transcript([glob, read("packages/api/src/index.ts"), say("NONE")]), ctx("task"));
+    expect(withRead.observations["CTXR-00000002"]).toMatchObject({ dirRead: true });
+  });
+
   it("calls a token self-discovered when it appeared in a tool's output first", () => {
     const t = transcript([
       { kind: "tool-use", id: "g", name: "Grep", input: { pattern: "rule", path: "." } },
@@ -183,5 +199,17 @@ describe("verdicts over trials", () => {
     expect(expectationFor(c, { ...base, delivery: "maybe" })).toBe("not-preloaded");
     expect(expectationFor(c, { ...base, delivery: "on-read", rule: "claude.rules" })).toBe("on-match");
     expect(expectationFor({ ...c, decoy: true }, { ...base, delivery: "launch" })).toBe("never");
+    // A row map says it does not model is no prediction either way.
+    const ancestor = { ...base, delivery: "not-loaded" as const, rule: "claude.rules" };
+    expect(expectationFor(c, { ...ancestor, why: "ancestor's rule: not modelled" })).toBe("not-modelled");
+    expect(expectationFor(c, { ...ancestor, why: "switched off", notModelled: true })).toBe("not-modelled");
+  });
+
+  it("gives a row map does not model no verdict, whatever was observed", () => {
+    for (const mode of ["recall", "task"] as const) {
+      expect(verdictFor(mode, "not-modelled", obs(["preloaded"], ["preloaded"]))).toBe("not-modelled");
+      expect(verdictFor(mode, "not-modelled", obs(["not-seen"], ["not-seen"]))).toBe("not-modelled");
+      expect(verdictFor(mode, "not-modelled", [])).toBe("no-data");
+    }
   });
 });

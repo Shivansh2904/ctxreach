@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -8,6 +8,7 @@ import { readRecording } from "../src/probe/recording.js";
 import { scoreRecording, type ProbeResult } from "../src/probe/score.js";
 import { createCli } from "../src/program.js";
 import { observedText } from "../src/report/probe.js";
+import { tempDir } from "./helpers/fixture.js";
 
 // Real runs of Claude Code 2.1.280 on Windows, recorded on 2026-09-28 with
 // `ctxreach probe --save test/recorded/<name>` (commands in
@@ -134,12 +135,12 @@ describe("replaying the recorded real runs", () => {
     expect(task.agreement).toMatchObject({ agree: 4, decided: 4, cells: 6 });
   });
 
-  it("CLAUDE.md family from packages/api, recall: two disagreements with map", () => {
+  it("CLAUDE.md family from packages/api, recall: one disagreement with map, and the rules it does not model", () => {
     const r = replay("nested-api-recall");
     expect(lines(r)).toEqual([
-      ...both(".claude/rules/api-only.md", "not seen 2/2", "CONFIRMED"),
-      // map does not model an ancestor's rules and shows them as not loaded; this one was preloaded.
-      ...both(".claude/rules/style.md", "preloaded 2/2", "EXTRA"),
+      // map does not model an ancestor's rules: what was seen is shown, with no verdict and no count.
+      ...both(".claude/rules/api-only.md", "not seen 2/2", "NOT-MODELLED"),
+      ...both(".claude/rules/style.md", "preloaded 2/2", "NOT-MODELLED"),
       ...both("AGENTS.md", "not seen 2/2", "CONFIRMED"),
       ...both("CLAUDE.md", "preloaded 2/2", "CONFIRMED"),
       // An import from outside the launch directory, which map says needs approval: not loaded under -p.
@@ -149,7 +150,8 @@ describe("replaying the recorded real runs", () => {
       ...both("packages/api/ctxreach-decoy.md", "not seen 2/2", "control"),
     ]);
     expect(r.instrument.fault).toBe(false);
-    expect(r.agreement).toMatchObject({ agree: 10, decided: 14 });
+    expect(r.agreement).toMatchObject({ agree: 8, decided: 10, cells: 14 });
+    expect(r.agreement.byVerdict).toMatchObject({ confirmed: 8, missed: 2, extra: 0, "not-modelled": 4 });
     expect(r.manifest.predicted.find((f) => f.file === "docs/testing.md")?.why).toContain("needs approval");
   });
 
@@ -160,6 +162,25 @@ describe("replaying the recorded real runs", () => {
       ...both("packages/api/inside.md", "preloaded 2/2", "CONFIRMED"),
       ...both("packages/api/ctxreach-decoy.md", "not seen 2/2", "control"),
     ]);
+  });
+
+  it("counts a trial that stopped before its session started as failed, not as an instrument fault", () => {
+    // What a run that is not logged in, or that is killed at once, leaves: an empty transcript.
+    for (const outcome of [{}, { exitCode: 1 }, { exitCode: null, timedOut: true }]) {
+      const dir = path.join(tempDir("replay-copy"), "demo-api-recall");
+      cpSync(path.join(RECORDED, "demo-api-recall"), dir, { recursive: true });
+      writeFileSync(path.join(dir, "trial-2.jsonl"), "");
+      const manifest = JSON.parse(readFileSync(path.join(dir, "manifest.json"), "utf8")) as {
+        trials: Record<string, unknown>[];
+      };
+      Object.assign(manifest.trials[1] ?? {}, outcome);
+      writeFileSync(path.join(dir, "manifest.json"), JSON.stringify(manifest));
+      const r = scoreRecording(readRecording(dir), claudeAdapter());
+      expect(r.trials.map((t) => t.status)).toEqual(["usable", "failed", "usable"]);
+      expect(r.trials[1]?.reasons[0]).toBe("the agent stopped before its session started (no system/init event)");
+      expect(r.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
+      expect(r.cells.every((c) => c.usable === 2)).toBe(true);
+    }
   });
 
   it("prints the README's example from the recording, with no agent", async () => {
@@ -174,11 +195,11 @@ describe("replaying the recorded real runs", () => {
       "--no-color",
     ]);
     expect(cli.status).toBe(0);
-    // eslint-disable-next-line no-control-regex
-    const plain = stdout.replace(/\u001b\[[0-9;]*m/g, "");
-    expect(plain).toContain(
+    // --no-color reaches the report: no colour codes at all.
+    expect(stdout).not.toContain("\u001b[");
+    expect(stdout).toContain(
       "ctxreach probe  Claude Code 2.1.280, recall mode, launch dir packages/api  (demo-monorepo)",
     );
-    expect(plain).toContain("Agreement with map: 8 of 8 decided cells agree (CONFIRMED 8); 8 cells in all.");
+    expect(stdout).toContain("Agreement with map: 8 of 8 decided cells agree (CONFIRMED 8); 8 cells in all.");
   });
 });

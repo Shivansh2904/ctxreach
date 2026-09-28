@@ -141,6 +141,39 @@ describe("probe on the demo monorepo with a fake agent", () => {
     expect(p.result.instrument.reasons.join()).toContain("decoy");
   });
 
+  it("gives an ancestor's rule, which map does not model, no verdict and leaves it out of the agreement", async () => {
+    const fx = materialise("claude-local-shadows-agents");
+    mkdirSync(fx.at(".claude/rules"), { recursive: true });
+    writeFileSync(fx.at(".claude/rules/style.md"), "# Style\n\nUse tabs.\n");
+    mkdirSync(fx.at("packages/api"), { recursive: true });
+    const p = await probe(() => ({ preloads: ["CLAUDE.local.md", ".claude/rules/style.md"] }), {
+      fx,
+      from: "packages/api",
+      trials: 2,
+    });
+    expect(p.result.manifest.predicted.find((f) => f.file === ".claude/rules/style.md")).toMatchObject({
+      delivery: "not-loaded",
+      notModelled: true,
+    });
+    const style = p.result.cells.filter((c) => c.file === ".claude/rules/style.md");
+    expect(style.map((c) => [c.expected, c.verdict, c.seen.preloaded])).toEqual([
+      ["not-modelled", "not-modelled", 2],
+      ["not-modelled", "not-modelled", 2],
+    ]);
+    // CLAUDE.local.md (2 cells) and AGENTS.md (2 cells) are decided; the rule's 2 cells are not.
+    expect(p.result.agreement).toMatchObject({ agree: 4, decided: 4, cells: 6 });
+  });
+
+  it("does not flag the decoy when the agent read it before repeating it", async () => {
+    const p = await probe(() => ({ preloads: ["CLAUDE.local.md"], reads: ["packages/api/ctxreach-decoy.md"] }), {
+      mode: "task",
+      trials: 2,
+    });
+    const decoy = p.result.cells.filter((c) => c.decoy);
+    expect(decoy.map((c) => c.seen["self-discovered"])).toEqual([2, 2]);
+    expect(p.result.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
+  });
+
   it("flags an instrument fault when a recall session had tools, and excludes that trial", async () => {
     let n = 0;
     const p = await probe(() => ({ preloads: ["CLAUDE.local.md"], ...(n++ === 1 ? { toolsOffered: ["Bash"] } : {}) }));
@@ -342,6 +375,8 @@ describe("ctxreach probe (command line)", () => {
     const agent = fakeAgent(() => ({ preloads: ["ctxreach-decoy.md"] }));
     const out = await ctxreach(agent, "probe", "--from", fx.repo, "--trials", "1", "--save", save);
     expect(out.stdout).toContain("INSTRUMENT FAULT");
+    // The results are void, so no agreement figure is printed.
+    expect(out.stdout).not.toContain("Agreement with map");
     expect(out.status).toBe(3);
   });
 

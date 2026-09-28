@@ -54,10 +54,34 @@ export const PLANTS = [
     replace: "false",
   },
   {
+    name: "dir-read-counts-any-path",
+    file: "src/probe/classify.ts",
+    find: "const dirRead = calls.some((call) => call.reads.some(inScope));",
+    replace: "const dirRead = calls.some((call) => call.paths.some(inScope));",
+  },
+  {
     name: "no-decoy-check",
     file: "src/probe/score.ts",
     find: "if (decoyEchoed > 0)",
     replace: "if (false)",
+  },
+  {
+    name: "decoy-check-counts-a-read-decoy",
+    file: "src/probe/score.ts",
+    find: 'decoys.some((d) => cls.observations[d.token]?.seen === "preloaded")',
+    replace: 'decoys.some((d) => (cls.observations[d.token]?.seen ?? "not-seen") !== "not-seen")',
+  },
+  {
+    name: "unstarted-trial-is-a-fault",
+    file: "src/probe/score.ts",
+    find: "if (!started && failures.length)",
+    replace: "if (false)",
+  },
+  {
+    name: "unmodelled-rows-counted",
+    file: "src/probe/compare.ts",
+    find: 'if (expectation === "not-modelled") return "not-modelled";',
+    replace: "",
   },
   {
     name: "no-tools-offered-check",

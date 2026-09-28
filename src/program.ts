@@ -228,7 +228,11 @@ export function createCli(io: Io, options: CliOptions = {}): Cli {
         result.recordingDir = displayPath(dir, process.cwd());
         if (result.manifest.agent !== agent)
           throw new UsageError(`${dir} is a ${result.manifest.agent} recording; pass --agent ${result.manifest.agent}`);
-        io.stdout(opts.json ? JSON.stringify(probeJson(result), null, 2) + "\n" : renderProbe(result));
+        io.stdout(
+          opts.json
+            ? JSON.stringify(probeJson(result), null, 2) + "\n"
+            : renderProbe(result, opts.color === false ? { color: false } : {}),
+        );
         cli.status = result.instrument.fault ? 3 : result.trials.some((t) => t.status === "usable") ? 0 : 1;
       } catch (err) {
         if (
