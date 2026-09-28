@@ -9,6 +9,9 @@ README:
 - `CLAUDE.local.md` is a personal notes file. Its presence stops Claude Code
   from reading any `AGENTS.md`.
 
+`packages/api/src/payments.ts` is there so that an agent asked about the
+payments code has a file in `packages/api` to read.
+
 To try it, build ctxreach and copy this directory out of the repository, so
 that it has its own root. ctxreach is not published on npm, so it runs from a
 clone. From the root of a clone of ctxreach, with no `/tmp/demo` yet:

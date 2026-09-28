@@ -1,0 +1,189 @@
+{
+  "schema": "ctxreach.probe-recording/v1",
+  "ctxreach": "0.0.0",
+  "agent": "claude",
+  "cliVersion": "2.1.280",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-28T19:25:50.258Z",
+  "mode": "recall",
+  "trialsPlanned": 3,
+  "timeoutMs": 300000,
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": "packages/api",
+  "sourceName": "demo-monorepo",
+  "args": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--permission-mode",
+    "dontAsk",
+    "--tools",
+    ""
+  ],
+  "prompt": "Do not use any tools. List every token that starts with CTXR- followed by eight hexadecimal characters and that appears anywhere in your instructions or context (system prompt, project instructions, memory files, rules). Print each token exactly as written, one per line, and nothing else. If there are none, print NONE.",
+  "canaries": [
+    {
+      "token": "CTXR-b5a29104",
+      "file": "AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-3fb3b368",
+      "file": "AGENTS.md",
+      "position": "tail",
+      "offset": 41008
+    },
+    {
+      "token": "CTXR-3203ec1b",
+      "file": "CLAUDE.local.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-af815e10",
+      "file": "CLAUDE.local.md",
+      "position": "tail",
+      "offset": 130
+    },
+    {
+      "token": "CTXR-f052f2dc",
+      "file": "packages/api/AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-263eecfb",
+      "file": "packages/api/AGENTS.md",
+      "position": "tail",
+      "offset": 1200
+    },
+    {
+      "token": "CTXR-3eb09adf",
+      "file": "packages/web/AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-f50085ef",
+      "file": "packages/web/AGENTS.md",
+      "position": "tail",
+      "offset": 188
+    },
+    {
+      "token": "CTXR-5717f4dc",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "head",
+      "offset": 16,
+      "decoy": true
+    },
+    {
+      "token": "CTXR-8e41e1c7",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "tail",
+      "offset": 117,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "switched off by CLAUDE.local.md",
+      "rule": "claude.agents-default"
+    },
+    {
+      "file": "CLAUDE.local.md",
+      "delivery": "launch",
+      "why": "ancestor of launch dir",
+      "rule": "claude.ancestors"
+    },
+    {
+      "file": "packages/api/AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "switched off by CLAUDE.local.md",
+      "rule": "claude.agents-default"
+    },
+    {
+      "file": "packages/web/AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "outside the launch dir's tree",
+      "rule": "claude.subdirs"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": []
+  },
+  "environment": {
+    "bare": false,
+    "removedEnv": [
+      "CLAUDECODE",
+      "CLAUDE_AGENT_SDK_VERSION",
+      "CLAUDE_CODE_CHILD_SESSION",
+      "CLAUDE_CODE_DESKTOP_APP_VERSION",
+      "CLAUDE_CODE_DISABLE_CRON",
+      "CLAUDE_CODE_DISABLE_TERMINAL_TITLE",
+      "CLAUDE_CODE_EAGER_FLUSH",
+      "CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES",
+      "CLAUDE_CODE_ENABLE_ASK_USER_QUESTION_TOOL",
+      "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+      "CLAUDE_CODE_ENTRYPOINT",
+      "CLAUDE_CODE_EXECPATH",
+      "CLAUDE_CODE_HOST_SESSION_ID",
+      "CLAUDE_CODE_MESSAGING_SOCKET",
+      "CLAUDE_CODE_MESSAGING_TOKEN",
+      "CLAUDE_CODE_OAUTH_SCOPES",
+      "CLAUDE_CODE_REPORT_FINDINGS",
+      "CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH",
+      "CLAUDE_CODE_SESSION_ATTENDED",
+      "CLAUDE_CODE_SESSION_ID",
+      "CLAUDE_CODE_TERMINAL_MCP_TOOLS",
+      "CLAUDE_EFFORT",
+      "CLAUDE_PID",
+      "CLAUDE_PREVIEW_CLASSIFIER_FLOOR",
+      "MCP_CONNECTION_NONBLOCKING",
+      "MCP_SERVER_CONNECTION_BATCH_SIZE"
+    ],
+    "notes": []
+  },
+  "claudeMode": "claude-md-or-agents-md",
+  "trials": [
+    {
+      "trial": 1,
+      "transcript": "trial-1.jsonl",
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "",
+      "durationMs": 6528,
+      "leftovers": []
+    },
+    {
+      "trial": 2,
+      "transcript": "trial-2.jsonl",
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "",
+      "durationMs": 5316,
+      "leftovers": []
+    },
+    {
+      "trial": 3,
+      "transcript": "trial-3.jsonl",
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "",
+      "durationMs": 5573,
+      "leftovers": []
+    }
+  ]
+}

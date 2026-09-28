@@ -2,3 +2,6 @@
 # Fixture repositories are byte-exact: the tests assert cut points in bytes,
 # so no line-ending conversion may touch them on checkout.
 test/fixtures/** -text
+
+# Probe recordings are replayed byte for byte.
+test/recorded/** -text

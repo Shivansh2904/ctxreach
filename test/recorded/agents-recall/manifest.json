@@ -1,0 +1,162 @@
+{
+  "schema": "ctxreach.probe-recording/v1",
+  "ctxreach": "0.0.0",
+  "agent": "claude",
+  "cliVersion": "2.1.280",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-28T19:31:48.003Z",
+  "mode": "recall",
+  "trialsPlanned": 2,
+  "timeoutMs": 300000,
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": ".",
+  "sourceName": "agents-only",
+  "args": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--permission-mode",
+    "dontAsk",
+    "--tools",
+    ""
+  ],
+  "prompt": "Do not use any tools. List every token that starts with CTXR- followed by eight hexadecimal characters and that appears anywhere in your instructions or context (system prompt, project instructions, memory files, rules). Print each token exactly as written, one per line, and nothing else. If there are none, print NONE.",
+  "canaries": [
+    {
+      "token": "CTXR-6532e523",
+      "file": "AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-a9b56dbd",
+      "file": "AGENTS.md",
+      "position": "tail",
+      "offset": 107
+    },
+    {
+      "token": "CTXR-9b7df0d0",
+      "file": "packages/api/AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-52f87d7b",
+      "file": "packages/api/AGENTS.md",
+      "position": "tail",
+      "offset": 107
+    },
+    {
+      "token": "CTXR-e433daa5",
+      "file": "packages/web/AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-206b29db",
+      "file": "packages/web/AGENTS.md",
+      "position": "tail",
+      "offset": 113
+    },
+    {
+      "token": "CTXR-43e77ee0",
+      "file": "ctxreach-decoy.md",
+      "position": "head",
+      "offset": 16,
+      "decoy": true
+    },
+    {
+      "token": "CTXR-129d0b10",
+      "file": "ctxreach-decoy.md",
+      "position": "tail",
+      "offset": 117,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "AGENTS.md",
+      "delivery": "launch",
+      "why": "AGENTS.md read at launch",
+      "rule": "claude.agents-default"
+    },
+    {
+      "file": "packages/api/AGENTS.md",
+      "delivery": "on-read",
+      "why": "on read of a file in packages/api/",
+      "rule": "claude.agents-default"
+    },
+    {
+      "file": "packages/web/AGENTS.md",
+      "delivery": "on-read",
+      "why": "on read of a file in packages/web/",
+      "rule": "claude.agents-default"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": []
+  },
+  "environment": {
+    "bare": false,
+    "removedEnv": [
+      "CLAUDECODE",
+      "CLAUDE_AGENT_SDK_VERSION",
+      "CLAUDE_CODE_CHILD_SESSION",
+      "CLAUDE_CODE_DESKTOP_APP_VERSION",
+      "CLAUDE_CODE_DISABLE_CRON",
+      "CLAUDE_CODE_DISABLE_TERMINAL_TITLE",
+      "CLAUDE_CODE_EAGER_FLUSH",
+      "CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES",
+      "CLAUDE_CODE_ENABLE_ASK_USER_QUESTION_TOOL",
+      "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+      "CLAUDE_CODE_ENTRYPOINT",
+      "CLAUDE_CODE_EXECPATH",
+      "CLAUDE_CODE_HOST_SESSION_ID",
+      "CLAUDE_CODE_MESSAGING_SOCKET",
+      "CLAUDE_CODE_MESSAGING_TOKEN",
+      "CLAUDE_CODE_OAUTH_SCOPES",
+      "CLAUDE_CODE_REPORT_FINDINGS",
+      "CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH",
+      "CLAUDE_CODE_SESSION_ATTENDED",
+      "CLAUDE_CODE_SESSION_ID",
+      "CLAUDE_CODE_TERMINAL_MCP_TOOLS",
+      "CLAUDE_EFFORT",
+      "CLAUDE_PID",
+      "CLAUDE_PREVIEW_CLASSIFIER_FLOOR",
+      "MCP_CONNECTION_NONBLOCKING",
+      "MCP_SERVER_CONNECTION_BATCH_SIZE"
+    ],
+    "notes": []
+  },
+  "claudeMode": "claude-md-or-agents-md",
+  "trials": [
+    {
+      "trial": 1,
+      "transcript": "trial-1.jsonl",
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "",
+      "durationMs": 4336,
+      "leftovers": []
+    },
+    {
+      "trial": 2,
+      "transcript": "trial-2.jsonl",
+      "exitCode": 0,
+      "timedOut": false,
+      "stderr": "",
+      "durationMs": 4824,
+      "leftovers": []
+    }
+  ]
+}
