@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 const EXAMPLES = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "examples");
 
-/** Directories `materialise` made in this test file, removed by test/setup.ts after it. */
+/** Directories `materialise` and `tempDir` made in this test file, removed by test/setup.ts after it. */
 const made: string[] = [];
 
 export interface Materialised {
@@ -49,7 +49,14 @@ export function materialise(name: string, options: { git?: boolean; example?: bo
   };
 }
 
-/** Delete every directory `materialise` has made so far. */
+/** A new empty temporary directory, deleted by test/setup.ts after the test file. */
+export function tempDir(label: string): string {
+  const dir = realpathSync(mkdtempSync(path.join(os.tmpdir(), `ctxreach-${label}-`)));
+  made.push(dir);
+  return dir;
+}
+
+/** Delete every directory `materialise` or `tempDir` has made so far. */
 export function removeMaterialised(): void {
   for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
 }
