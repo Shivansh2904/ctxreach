@@ -86,16 +86,21 @@ export function samePath(a: string, b: string): boolean {
   return process.platform === "win32" ? na.toLowerCase() === nb.toLowerCase() : na === nb;
 }
 
+/** True when a relative path climbs out of its base (".." or "../x"), not for names like "..cache". */
+function isParentStep(rel: string): boolean {
+  return rel === ".." || rel.startsWith(".." + path.sep);
+}
+
 /** True when `child` is `parent` or inside it. */
 export function isInside(child: string, parent: string): boolean {
   const rel = path.relative(parent, child);
-  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+  return rel === "" || (!isParentStep(rel) && !path.isAbsolute(rel));
 }
 
 /** A path relative to `base`, with forward slashes, for display and JSON. */
 export function displayPath(p: string, base: string): string {
   const rel = path.relative(base, p);
   if (rel === "") return ".";
-  if (rel.startsWith("..") || path.isAbsolute(rel)) return p.split(path.sep).join("/");
+  if (isParentStep(rel) || path.isAbsolute(rel)) return p.split(path.sep).join("/");
   return rel.split(path.sep).join("/");
 }
