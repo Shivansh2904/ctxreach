@@ -1,0 +1,12 @@
+export { map, findRepoRoot, type MapOptions, type MapResult } from "./map/map.js";
+export { buildMatrix, type MatrixCell, type MatrixRow } from "./map/matrix.js";
+export { resolveCodex, codexReach, type CodexResult, type CodexChainEntry } from "./agents/codex/resolve.js";
+export { resolveCodexSettings, type CodexSettings, type TrustLevel } from "./agents/codex/config.js";
+export { resolveClaude, type ClaudeResult, type ClaudeFile } from "./agents/claude/resolve.js";
+export { CLAUDE_MODES, type ClaudeMode } from "./agents/claude/settings.js";
+export { discoverSurfaces, type Surface, type SurfaceKind } from "./discover/surfaces.js";
+export { toJson, MapJson } from "./report/json.js";
+export { renderTerminal } from "./report/terminal.js";
+export { ConfigError } from "./util/errors.js";
+export type { AgentId, Cut, Delivery, Finding, Reach, Severity } from "./agents/types.js";
+export type * from "./probe/types.js";
