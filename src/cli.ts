@@ -5,5 +5,5 @@ const cli = createCli({
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
 });
-cli.program.parse();
+await cli.program.parseAsync();
 process.exitCode = cli.status;
