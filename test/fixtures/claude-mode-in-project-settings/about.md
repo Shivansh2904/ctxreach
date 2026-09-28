@@ -1,0 +1,1 @@
+Trap: the project's .claude/settings.json asks Claude Code to read CLAUDE.md and AGENTS.md together, but that setting is ignored in project settings, so the CLAUDE.md still switches AGENTS.md off (rule claude.modes).

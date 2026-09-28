@@ -1,0 +1,1 @@
+Trap: a CLAUDE.md at the repository root switches AGENTS.md off for every directory below it, so launched in packages/api, Claude Code does not read packages/api/AGENTS.md (rule claude.agents-default).

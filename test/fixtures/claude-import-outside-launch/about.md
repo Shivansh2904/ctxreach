@@ -1,0 +1,1 @@
+Trap: the root CLAUDE.md imports docs/testing.md. Launched in packages/api, that import resolves outside the launch directory, so it is an external import that Claude Code loads only after a one-time approval (rule claude.imports).

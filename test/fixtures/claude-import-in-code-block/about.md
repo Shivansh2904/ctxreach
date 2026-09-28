@@ -1,0 +1,1 @@
+Trap: the @AGENTS.md line is inside a fenced code block, which Claude Code does not parse for imports, so AGENTS.md is not imported and the CLAUDE.md switches it off (rules claude.imports, claude.words).

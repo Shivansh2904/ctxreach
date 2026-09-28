@@ -1,0 +1,1 @@
+Trap: the repository relies on AGENTS.md, and a developer adds a personal CLAUDE.local.md. Because CLAUDE.local.md counts as a CLAUDE.md, Claude Code stops reading AGENTS.md for that developer (rule claude.agents-default).
