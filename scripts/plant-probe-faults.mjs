@@ -18,7 +18,7 @@
 // instrument itself fails.
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -270,22 +270,26 @@ async function child({ name, files }) {
   process.exit(0);
 }
 
-/** Entries in the system temp directory that tests make (materialise, tempDir, sandboxes). */
-function tempEntries() {
-  return new Set(readdirSync(os.tmpdir()).filter((n) => n.startsWith("ctxreach-")));
-}
-
-function run(name, files) {
-  // A plant that breaks cleanup leaves temporary directories behind; remove
-  // whatever this run adds, so planted runs do not fill the temp directory.
-  const before = tempEntries();
-  const res = spawnSync(process.execPath, [SELF, "--child", JSON.stringify({ name, files })], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  for (const n of tempEntries())
-    if (!before.has(n)) rmSync(path.join(os.tmpdir(), n), { recursive: true, force: true });
+/**
+ * Run the suite once in a child process (`spawn` is replaceable for tests).
+ * The child gets a temporary directory of its own (TMPDIR, TMP and TEMP),
+ * which is deleted afterwards: a plant that breaks cleanup leaves its
+ * directories there, and nothing another process made in the system temp
+ * directory is touched.
+ */
+export function run(name, files, spawn = spawnSync) {
+  const own = mkdtempSync(path.join(os.tmpdir(), "ctxreach-plant-run-"));
+  let res;
+  try {
+    res = spawn(process.execPath, [SELF, "--child", JSON.stringify({ name, files })], {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      env: { ...process.env, TMPDIR: own, TMP: own, TEMP: own },
+    });
+  } finally {
+    rmSync(own, { recursive: true, force: true });
+  }
   const line = (res.stdout ?? "").split("\n").find((l) => l.startsWith(MARK));
   if (!line) {
     process.stderr.write(res.stdout ?? "");
