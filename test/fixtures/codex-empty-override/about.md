@@ -1,0 +1,1 @@
+Trap: packages/api/AGENTS.override.md holds only whitespace. It still takes the directory's slot, and Codex then skips it as empty, so packages/api gives Codex nothing and its AGENTS.md is never read (rule codex.empty-skip).

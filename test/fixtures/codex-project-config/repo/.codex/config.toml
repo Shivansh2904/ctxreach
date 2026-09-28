@@ -1,0 +1,2 @@
+# Our root AGENTS.md is larger than the default budget.
+project_doc_max_bytes = 65536

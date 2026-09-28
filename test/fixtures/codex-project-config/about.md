@@ -1,0 +1,1 @@
+Trap: .codex/config.toml raises project_doc_max_bytes to 64 KiB, but Codex applies a project's config only when the project is trusted (rule codex.config). Untrusted, the 40 KiB root file is still cut at 32768.

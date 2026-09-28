@@ -1,0 +1,50 @@
+{
+  "name": "ctxreach",
+  "version": "0.0.0",
+  "description": "Shows which instruction files (AGENTS.md, CLAUDE.md and friends) reach which coding agent, from which directory, up to which byte.",
+  "license": "MIT",
+  "author": "Shivansh Mishra",
+  "type": "module",
+  "bin": {
+    "ctxreach": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "docs/rules.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write src test scripts",
+    "format:check": "prettier --check src test scripts"
+  },
+  "keywords": [
+    "agents.md",
+    "claude.md",
+    "codex",
+    "claude-code",
+    "coding-agents",
+    "instructions"
+  ],
+  "dependencies": {
+    "commander": "^14.0.3",
+    "picocolors": "^1.1.1",
+    "smol-toml": "^1.9.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "prettier": "^3.9.9",
+    "tsup": "^8.5.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

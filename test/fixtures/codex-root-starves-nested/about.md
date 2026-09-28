@@ -1,0 +1,1 @@
+Trap: the root AGENTS.md is 32168 bytes, so when Codex is launched in packages/api only 600 bytes of the shared budget are left for packages/api/AGENTS.md (rule codex.budget). Its Testing and Payments sections never arrive.
