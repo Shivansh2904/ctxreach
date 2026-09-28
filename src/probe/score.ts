@@ -256,6 +256,11 @@ export function scoreRecording(recording: Recording, adapter: AgentAdapter): Pro
     );
   if (manifest.sandbox.stripped.length)
     notes.push(`Removed from the copy before any run: ${manifest.sandbox.stripped.join(", ")}.`);
+  const links = manifest.sandbox.links ?? [];
+  if (links.length)
+    notes.push(
+      `The copy holds no links, so each link in the repository was copied as what it points to, or left out: ${links.join("; ")}.`,
+    );
   if (manifest.environment.removedEnv.length)
     notes.push(
       `Removed from the agent's environment (set by the Claude Code session that ran ctxreach): ${manifest.environment.removedEnv.length} variables.`,

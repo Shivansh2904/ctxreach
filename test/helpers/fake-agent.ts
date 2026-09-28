@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { CLAUDE_READ_TOOLS, claudeArgs } from "../../src/agents/claude/adapter.js";
 import { parseClaudeTranscript, redactClaudeTranscript } from "../../src/agents/claude/events.js";
@@ -13,6 +13,8 @@ export interface FakeRun {
   unstripped: string[];
   /** The repository has its own .git. */
   hasGit: boolean;
+  /** Links (symlinks or junctions) in the copy when the agent ran, relative to it. */
+  links: string[];
 }
 
 export interface FakeBehaviour {
@@ -33,6 +35,20 @@ export interface FakeBehaviour {
 }
 
 const TOKEN = /CTXR-[0-9a-f]{8}/g;
+
+function linksUnder(root: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = path.join(dir, name);
+      const st = lstatSync(p);
+      if (st.isSymbolicLink()) out.push(path.relative(root, p));
+      else if (st.isDirectory()) walk(p);
+    }
+  };
+  walk(root);
+  return out;
+}
 
 function tokensIn(file: string): string[] {
   return existsSync(file) ? [...readFileSync(file, "utf8").matchAll(TOKEN)].map((m) => m[0]) : [];
@@ -71,6 +87,7 @@ export function fakeAgent(behaviour: (run: FakeRun) => FakeBehaviour): AgentAdap
         mode: request.mode,
         unstripped,
         hasGit: existsSync(path.join(box.repo, ".git")),
+        links: linksUnder(box.repo),
       };
       runs.push(run);
       const b = behaviour(run);

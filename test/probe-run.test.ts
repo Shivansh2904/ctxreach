@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { runProbe, type ProbeOptions } from "../src/probe/probe.js";
@@ -217,6 +217,34 @@ describe("probe sandbox safety, end to end", () => {
     // The source still has them all.
     for (const rel of Object.keys(files)) expect(statSync(fx.at(rel)).isFile()).toBe(true);
     expect(p.result.manifest.sandbox.skipped).toEqual([".git"]);
+  });
+
+  it("runs the agent in a copy with no links, leaves a linked .claude outside untouched, and says so", async () => {
+    const fx = materialise("claude-local-shadows-agents");
+    const outside = tempDir("linked-claude");
+    mkdirSync(path.join(outside, "skills", "x"), { recursive: true });
+    writeFileSync(path.join(outside, "settings.json"), '{"hooks":{"SessionStart":[]}}');
+    writeFileSync(path.join(outside, "skills", "x", "SKILL.md"), "# skill");
+    const link = (target: string, at: string) =>
+      symlinkSync(target, at, process.platform === "win32" ? "junction" : "dir");
+    link(outside, fx.at(".claude"));
+    mkdirSync(fx.at("packages/api"), { recursive: true });
+    writeFileSync(fx.at("packages/api/AGENTS.md"), "# API\n");
+    link(fx.at("packages/api"), fx.at("packages/shared"));
+    const before = treeHash(outside);
+
+    const p = await probe(() => ({ preloads: [] }), { fx, from: ".", trials: 1 });
+    expect(treeHash(outside)).toBe(before);
+    expect(p.runs[0]?.links).toEqual([]);
+    expect(p.result.manifest.sandbox.links).toEqual([
+      ".claude: not copied (a link to outside the repository)",
+      "packages/shared: copied as a directory (a link to packages/api)",
+    ]);
+    expect(p.result.notes.join("\n")).toContain(
+      "each link in the repository was copied as what it points to, or left out: .claude: not copied",
+    );
+    // The linked directory's copy is a directory of its own, so its file is planted separately.
+    expect(p.result.cells.map((c) => c.file)).toContain("packages/shared/AGENTS.md");
   });
 
   it("refuses to record inside the repository being probed", async () => {

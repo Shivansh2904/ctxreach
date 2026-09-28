@@ -2,12 +2,12 @@
 //
 // Each plant below breaks one thing the probe relies on: the classifier
 // ignoring tool calls, the decoy check switched off, recall mode left with
-// tools, the sandbox keeping hooks, and so on. For each plant, the test suite
-// runs once with that plant applied: a Vite transform replaces one exact
-// piece of source text while the tests run. The files on disk are not
-// changed. A plant counts as caught when at least one test fails, and fails
-// again when its file is re-run with the same plant (so a timeout on a busy
-// machine is not mistaken for a catch).
+// tools, the sandbox keeping hooks or copying links as links, and so on. For
+// each plant, the test suite runs once with that plant applied: a Vite
+// transform replaces one exact piece of source text while the tests run. The
+// files on disk are not changed. A plant counts as caught when at least one
+// test fails, and fails again when its file is re-run with the same plant (so
+// a timeout on a busy machine is not mistaken for a catch).
 //
 // The script checks its own instrument: the unplanted suite must pass, and
 // each plant's text must occur exactly once in its file and be replaced in
@@ -128,14 +128,46 @@ export const PLANTS = [
   {
     name: "sandbox-copies-git",
     file: "src/probe/sandbox.ts",
-    find: "if (from !== src && SKIP_NAMES.has(name)) {",
+    find: "if (SKIP_NAMES.has(entry.name)) {",
     replace: "if (false) {",
+  },
+  {
+    // What the sandbox did before links were handled: cpSync with verbatimSymlinks.
+    name: "sandbox-copies-links-verbatim",
+    file: "src/probe/sandbox.ts",
+    find: "if (st.isSymbolicLink()) copyLink(state, fromEntry, toEntry, chain);",
+    replace:
+      'if (st.isSymbolicLink()) process.getBuiltinModule("node:fs").symlinkSync(process.getBuiltinModule("node:fs").readlinkSync(fromEntry), toEntry, process.platform === "win32" ? "junction" : undefined);',
+  },
+  {
+    name: "sandbox-follows-links-outside",
+    file: "src/probe/sandbox.ts",
+    find: "if (!isInside(target, state.src)) {",
+    replace: "if (false) {",
+  },
+  {
+    name: "strip-removes-through-links",
+    file: "src/probe/sandbox.ts",
+    find: "if (!isInside(realpathSync(path.dirname(target)), repoReal))",
+    replace: "if (false)",
+  },
+  {
+    name: "sandbox-copies-home",
+    file: "src/probe/sandbox.ts",
+    find: "if (isInside(home, source))",
+    replace: "if (false)",
   },
   {
     name: "sandbox-check-accepts-any-directory",
     file: "src/probe/sandbox.ts",
     find: "if (!isInside(real, repo)) throw new SafetyError",
     replace: "if (false) throw new SafetyError",
+  },
+  {
+    name: "sandbox-check-accepts-any-place",
+    file: "src/probe/sandbox.ts",
+    find: "assertSandboxPlace(cursor);",
+    replace: "",
   },
   {
     name: "verdict-lenient-on-launch",

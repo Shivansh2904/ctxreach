@@ -64,7 +64,12 @@ export const ManifestJson = z.object({
   outside: z.array(z.object({ file: z.string(), delivery: DeliveryJson, why: z.string() })),
   /** Files in the copy that map lists but that were not planted, and why. */
   unplanted: z.array(z.object({ file: z.string(), why: z.string() })),
-  sandbox: z.object({ stripped: z.array(z.string()), skipped: z.array(z.string()) }),
+  sandbox: z.object({
+    stripped: z.array(z.string()),
+    skipped: z.array(z.string()),
+    /** How each link in the repository was copied (the copy holds none). Absent in older recordings. */
+    links: z.array(z.string()).optional(),
+  }),
   environment: z.object({ bare: z.boolean(), removedEnv: z.array(z.string()), notes: z.array(z.string()) }),
   claudeMode: z.string().optional(),
   trials: z.array(TrialJson),

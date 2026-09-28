@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { agentEnv, claudeAdapter, claudeArgs, findClaude } from "../src/agents/claude/adapter.js";
-import { createSandbox, removeSandbox } from "../src/probe/sandbox.js";
+import { createSandbox, removeSandbox, SANDBOX_PREFIX } from "../src/probe/sandbox.js";
 import { SafetyError, type RunRequest } from "../src/probe/types.js";
 import { materialise, tempDir } from "./helpers/fixture.js";
 
@@ -183,6 +184,48 @@ describe("running the agent (with a fake claude executable)", () => {
     } finally {
       removeSandbox(box);
     }
+  });
+
+  describe("a directory made to look like a sandbox", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    /** A directory with a well-formed marker, a repo/ with its own .git, and the given name, under `parent`. */
+    function forge(parent: string, name: string, source: string): string {
+      const base = path.join(parent, name);
+      mkdirSync(path.join(base, "repo", ".git"), { recursive: true });
+      writeFileSync(path.join(base, "ctxreach-sandbox.json"), JSON.stringify({ tool: "ctxreach", base, source }));
+      return path.join(base, "repo");
+    }
+
+    it("is refused when it is not inside the system temp directory", async () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const repo = forge(tempDir("forged"), `${SANDBOX_PREFIX}forged`, fx.repo);
+      // Seen from a system temp directory elsewhere, the forged sandbox is outside it.
+      const elsewhere = tempDir("other-tmp");
+      vi.spyOn(os, "tmpdir").mockReturnValue(elsewhere);
+      const { agent, claudeHome } = adapter();
+      await expect(agent.run(request(repo))).rejects.toThrow(/not inside the system temp directory/);
+      // Refused before the agent started: it made no per-project folder.
+      expect(existsSync(path.join(claudeHome, "projects"))).toBe(false);
+    });
+
+    it("is refused when its name does not start with the sandbox prefix", async () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const repo = forge(tempDir("forged"), "not-a-sandbox", fx.repo);
+      const { agent, claudeHome } = adapter();
+      await expect(agent.run(request(repo))).rejects.toThrow(/not named like a ctxreach sandbox/);
+      expect(existsSync(path.join(claudeHome, "projects"))).toBe(false);
+    });
+
+    it("is refused by removeSandbox too, and left in place", () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const repo = forge(tempDir("forged"), `${SANDBOX_PREFIX}forged`, fx.repo);
+      vi.spyOn(os, "tmpdir").mockReturnValue(tempDir("other-tmp"));
+      expect(() => removeSandbox({ base: path.dirname(repo) })).toThrow(SafetyError);
+      expect(existsSync(repo)).toBe(true);
+    });
   });
 
   it("stops a run that does not finish in time", async () => {

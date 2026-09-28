@@ -121,13 +121,12 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
     for (const row of predict().matrix) {
       if (!isInside(row.path, box.repo)) continue;
       const rel = relPosix(box.repo, row.path);
+      // The copy holds no links (see sandbox.ts), so this is the file itself.
       const st = lstatSync(row.path, { throwIfNoEntry: false });
-      if (!st) continue;
-      if (st.isSymbolicLink()) {
-        unplanted.push({ file: rel, why: "a symlink; its target is planted if it is in the copy" });
+      if (!st?.isFile()) {
+        unplanted.push({ file: rel, why: st ? "not a regular file" : "not in the copy" });
         continue;
       }
-      if (!st.isFile()) continue;
       canaries.push(...plantFile(box.repo, rel, tokens));
     }
     canaries.push(...plantDecoy(box.repo, launchRel, tokens));
@@ -182,7 +181,7 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
       predicted,
       outside,
       unplanted,
-      sandbox: { stripped: box.stripped, skipped: box.skipped },
+      sandbox: { stripped: box.stripped, skipped: box.skipped, links: box.links },
       environment,
       ...(after.claude ? { claudeMode: after.claude.mode } : {}),
       trials: [],
