@@ -81,13 +81,13 @@ silent ctxreach makes an assumption and marks it **assumed** below.
 | `claude.agents-never` | Claude Code never reads `AGENTS.local.md`, `AGENTS.override.md`, or anything under a `.agents/` directory. | memory, "When Claude Code reads AGENTS.md". |
 | `claude.modes` | The **Project instructions** setting has four values: `claude-md-or-agents-md` (default), `claude-md-and-agents-md` (each directory's `CLAUDE.md` files, then its `AGENTS.md`, skipping an `AGENTS.md` already loaded through an import or symlink), `claude-md` (never `AGENTS.md`), and `managed-only` (at launch only the managed file and auto memory; a subdirectory's `CLAUDE.md` and rules still load on read). It is read from `pluginConfigs["agents-md@builtin"].options.instructionFiles` in `~/.claude/settings.json`, a `--settings` file or managed settings, and ignored in project and local settings files. | memory, "Choose which instruction files load". |
 | `claude.version` | Reading `AGENTS.md` needs Claude Code 2.1.277 or later. Before 2.1.281, some sessions (Amazon Bedrock, telemetry disabled) read `CLAUDE.md` only. The first session after upgrading from 2.1.276 or earlier may not read it either. | memory, "When AGENTS.md support is unavailable". |
-| `claude.imports` | `@path` in a loaded file imports that file at launch, after the file that imports it. Relative paths resolve against the importing file's directory; absolute and `~/` paths are allowed. Imports nest up to four hops. Text in code spans and fenced code blocks is not parsed for imports. An import in a project file that resolves outside the launch directory is *external*: Claude Code asks once to approve external imports for the project, and if you decline they stay off. User-level files import without asking. An `AGENTS.md` read through the setting loads external imports only if they were already approved. **Assumed:** an import is `@` at the start of a line or after whitespace, followed by non-space characters; if that path does not exist and ends in `.,;:!?)`, those characters are dropped and it is tried again. | memory, "Import additional files", "Where AGENTS.md differs from CLAUDE.md". |
+| `claude.imports` | `@path` in a loaded file imports that file at launch, after the file that imports it. Relative paths resolve against the importing file's directory; absolute and `~/` paths are allowed. Imports nest up to four hops. Text in code spans and fenced code blocks is not parsed for imports. An import in a project file that resolves outside the launch directory is *external*: Claude Code asks once to approve external imports for the project, and if you decline they stay off. User-level files import without asking. An `AGENTS.md` read through the setting loads external imports only if they were already approved. (A `claude -p` run shows no approval dialog; probe runs saw external imports not load there. See [Evidence from probe runs](#evidence-from-probe-runs).) **Assumed:** an import is `@` at the start of a line or after whitespace, followed by non-space characters; if that path does not exist and ends in `.,;:!?)`, those characters are dropped and it is tried again. | memory, "Import additional files", "Where AGENTS.md differs from CLAUDE.md". |
 | `claude.words` | A `CLAUDE.md` that tells Claude *in words* to read `AGENTS.md`, instead of importing it, means Claude sees `AGENTS.md` only if it decides to open the file. | memory, "Remove an earlier AGENTS.md workaround". |
 | `claude.symlink` | A `CLAUDE.md` that is a symlink to `AGENTS.md` delivers that content once, as a `CLAUDE.md`. | memory, "Remove an earlier AGENTS.md workaround", "Share one file with other coding tools". |
 | `claude.size` | A file over 4 MiB is skipped. | memory, "My CLAUDE.md is too large". |
-| `claude.rules` | `.claude/rules/**/*.md` without a `paths` field load at launch, like `.claude/CLAUDE.md`; with `paths` they load when Claude reads a matching file. Rules in `.claude/rules/` directories below the launch directory load on demand. ctxreach models the launch directory's and subdirectories' rules only; it does not say whether an ancestor's rules load, because the docs do not. | memory, "Organize rules with .claude/rules/". |
-| `claude.hook-blind` | The `InstructionsLoaded` hook does not fire for an `AGENTS.md` read through the setting. It does fire for one that a `CLAUDE.md` imports or symlinks to. (Not used by `map`; recorded for the planned `probe`.) | hooks, "InstructionsLoaded"; memory, "Where AGENTS.md differs from CLAUDE.md". |
-| `claude.bare` | `claude --bare` skips CLAUDE.md discovery, and the docs say it "will become the default for `-p` in a future release". Without `--bare`, `claude -p` runs the project's hooks and connects its MCP servers even in an untrusted folder. (Not used by `map`; recorded for the planned `probe`, which must not run with `--bare` and must strip hooks and MCP config from its copy of the repository.) | headless, "Start faster with bare mode". |
+| `claude.rules` | `.claude/rules/**/*.md` without a `paths` field load at launch, like `.claude/CLAUDE.md`; with `paths` they load when Claude reads a matching file. Rules in `.claude/rules/` directories below the launch directory load on demand. ctxreach models the launch directory's and subdirectories' rules only; it does not say whether an ancestor's rules load, because the docs do not. (A probe run saw an ancestor's rule without `paths` preloaded; see [Evidence from probe runs](#evidence-from-probe-runs).) | memory, "Organize rules with .claude/rules/". |
+| `claude.hook-blind` | The `InstructionsLoaded` hook does not fire for an `AGENTS.md` read through the setting. It does fire for one that a `CLAUDE.md` imports or symlinks to. (Not used by `map`. `probe` does not install a hook yet, so this blind spot is not measured.) | hooks, "InstructionsLoaded"; memory, "Where AGENTS.md differs from CLAUDE.md". |
+| `claude.bare` | `claude --bare` skips CLAUDE.md discovery, and the docs say it "will become the default for `-p` in a future release". Without `--bare`, `claude -p` runs the project's hooks and connects its MCP servers even in an untrusted folder. (Not used by `map`. `probe` never passes `--bare`, reports `CLAUDE_CODE_SIMPLE` as a warning, and strips hooks and MCP config from its copy of the repository; see [Probe](#probe).) | headless, "Start faster with bare mode". |
 
 ### What ctxreach does not model for Claude Code
 
@@ -130,3 +130,95 @@ intended.
 | `claude.external-import` | info | `claude.imports` | An import resolves outside the launch directory and needs a one-time approval. |
 | `claude.nested` | info | `claude.subdirs`, `claude.agents-default` | A file below the launch directory loads only when Claude reads a file in its directory. |
 | `claude.version-some-sessions` | info | `claude.version` | On the given version, some sessions (Bedrock, telemetry off) read `CLAUDE.md` only. |
+
+## Probe
+
+`ctxreach probe` runs Claude Code itself. What follows is how it runs it, and
+what the runs have shown so far. Codex has no probe adapter yet.
+
+### How Claude Code is run
+
+Checked on 2026-09-28 against `claude --help` of Claude Code 2.1.280 and:
+
+- Docs: <https://code.claude.com/docs/en/cli-reference> (CLI flags).
+- Docs: <https://code.claude.com/docs/en/headless> ("Start faster with bare
+  mode", "Get structured output", "Stream responses", "Auto-approve tools").
+- Docs: <https://code.claude.com/docs/en/permissions> ("Permission system",
+  "Working directories", "What runs before you trust a folder").
+
+The prompt goes to stdin. Every run gets these flags:
+
+| Flag | Why | Source |
+|---|---|---|
+| `-p` | Headless: one prompt, then exit. | `claude --help`; headless. |
+| `--output-format stream-json --verbose` | One JSON event per line: every message, tool call and tool result, so the classifier can see what the agent did before it repeated a token. | `claude --help`; headless, "Stream responses". |
+| `--no-session-persistence` | No session file is written. | `claude --help`; cli-reference. |
+| `--strict-mcp-config` (and no `--mcp-config`) | No MCP server from any configuration connects. | `claude --help`. |
+| `--permission-mode dontAsk` | Anything that would ask for permission is denied. File reads inside the working directory need no approval, so they still work. | headless, "Auto-approve tools"; permissions, "Permission system". |
+| `--tools ""` (recall mode) | No tools exist in the session. | `claude --help`: `""` disables all tools. |
+| `--tools Read,Glob,Grep` (task mode) | Only the read tools exist. | `claude --help`. |
+
+And never these:
+
+| Flag | Why not | Source |
+|---|---|---|
+| `--bare` | Skips CLAUDE.md, so it would measure nothing (rule `claude.bare`). | headless. |
+| `--allowedTools` | A bare `Read` rule would also allow reads outside the copy. Without it, `dontAsk` denies them. | permissions, "Working directories". |
+| `--setting-sources`, `--settings`, `--safe-mode`, `--restricted` | Each changes which settings, and so possibly which instruction files, apply; excluding `project` from `--setting-sources` skips project rules. | `claude --help`; memory, "Organize rules with .claude/rules/". |
+
+Every trial is checked against its own `system/init` event: the working
+directory must be the launch directory in the copy, the version must match
+`claude --version`, and the tools must be none (recall) or only the read tools
+(task). A trial that fails a check is excluded and the whole run is marked as
+an instrument fault.
+
+When ctxreach itself runs inside a Claude Code session, the variables that
+session sets for its children (`CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`,
+`CLAUDE_CODE_ENTRYPOINT` and others, listed in
+`src/agents/claude/adapter.ts`) are removed from the agent's environment, so
+the agent starts as a top-level session. Variables a person sets, such as
+`CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CONFIG_DIR`, are kept. `CLAUDE_CODE_SIMPLE`
+(bare mode) and `CLAUDE_CODE_SAFE_MODE` are reported as warnings.
+
+Observed on 2.1.280: even with `--no-session-persistence`, Claude Code creates
+an empty folder `~/.claude/projects/<the copy's path>/memory`. The probe
+removes it after each trial if it holds no file, and reports it otherwise.
+
+### What the temporary copy loses
+
+A `claude -p` session runs a project's hooks, its settings' `env` block and
+helper commands, a project skill's hooks, and its `.mcp.json` servers, even
+in a folder that was never trusted (permissions, "What runs before you trust
+a folder"). So before any run the copy loses, wherever they appear:
+`.claude/settings.json`, `.claude/settings.local.json`, `.claude/skills/`,
+`.claude/agents/`, `.claude/hooks/`, `.claude-plugin/`, `.mcp.json` and
+`.codex/`. The repository's `.git` is never copied (its config and hooks can
+run commands); the copy gets `git init --template=`, which installs no hooks.
+`node_modules` is not copied. Removing the project settings also removes any
+setting in them that changes loading (such as `claudeMdExcludes`, which `map`
+does not model either).
+
+### Stream events
+
+The parser (`src/agents/claude/events.ts`) validates, with zod, the events it
+reads: `system/init` (working directory, tools, model, version), `assistant`
+(text and `tool_use` blocks), `user` (`tool_result` blocks) and `result`. A
+change in their shape fails the parse with the line number. Other event
+types, `system` subtypes and content blocks are tolerated and counted, and the
+report says how many there were. On 2.1.280 the only kind seen that the
+parser does not know is `system/thinking_tokens`.
+
+### Evidence from probe runs
+
+Claude Code 2.1.280 on Windows 11, 2026-09-28. Each fraction is trials in
+which the planted token arrived that way, over usable trials. Recordings are
+in `test/recorded/`. An echo shows the text reached the model, not that the
+model follows it.
+
+| Rule | Observed | Recording |
+|---|---|---|
+| `claude.ancestors` | A `CLAUDE.local.md` or `CLAUDE.md` at the repository root was preloaded when launched in `packages/api`: 3/3, 2/2. | `demo-api-recall`, `nested-api-recall` |
+| `claude.agents-default` | With a `CLAUDE.local.md` at the root, no `AGENTS.md` arrived: 0/3 launched in `packages/api`; 0/3 launched at the root while reading `packages/api/src/payments.ts`. With no `CLAUDE.md`-family file, the root `AGENTS.md` was preloaded (2/2, 3/3) and `packages/api/AGENTS.md` arrived after a read in `packages/api` (3/3), not before (0/2). | `demo-*`, `agents-*` |
+| `claude.subdirs` | `packages/api/CLAUDE.md` was not preloaded from the root (0/2) and arrived after a read in `packages/api` (3/3). | `nested-recall`, `nested-task` |
+| `claude.imports` | An import inside the launch directory was preloaded (2/2, 3/3, and 2/2 from an ancestor's `CLAUDE.md`). An import from outside the launch directory, in an ancestor's `CLAUDE.md`, was **not loaded** in `claude -p` (0/2, 0/2). `map` marks it "needs approval"; the docs describe the approval dialog but not what `-p`, which shows none, does. | `nested-*`, `ancestor-imports-recall` |
+| `claude.rules` | A rule without `paths` was preloaded (2/2, 3/3). A rule with `paths` was not preloaded (0/2) and arrived after a read of a matching file (3/3). An **ancestor directory's** rule without `paths` was preloaded when launched in `packages/api` (2/2), where `map` shows ancestors' rules as not modelled. | `nested-*` |
