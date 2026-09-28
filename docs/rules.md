@@ -85,7 +85,7 @@ silent ctxreach makes an assumption and marks it **assumed** below.
 | `claude.words` | A `CLAUDE.md` that tells Claude *in words* to read `AGENTS.md`, instead of importing it, means Claude sees `AGENTS.md` only if it decides to open the file. | memory, "Remove an earlier AGENTS.md workaround". |
 | `claude.symlink` | A `CLAUDE.md` that is a symlink to `AGENTS.md` delivers that content once, as a `CLAUDE.md`. | memory, "Remove an earlier AGENTS.md workaround", "Share one file with other coding tools". |
 | `claude.size` | A file over 4 MiB is skipped. | memory, "My CLAUDE.md is too large". |
-| `claude.rules` | `.claude/rules/**/*.md` without a `paths` field load at launch, like `.claude/CLAUDE.md`; with `paths` they load when Claude reads a matching file. Rules in `.claude/rules/` directories below the launch directory load on demand. ctxreach models the launch directory's and subdirectories' rules only; it does not say whether an ancestor's rules load, because the docs do not. (A probe run saw an ancestor's rule without `paths` preloaded; see [Evidence from probe runs](#evidence-from-probe-runs).) | memory, "Organize rules with .claude/rules/". |
+| `claude.rules` | `.claude/rules/**/*.md` without a `paths` field load at launch, like `.claude/CLAUDE.md`; with `paths` they load when Claude reads a matching file. Rules in `.claude/rules/` directories below the launch directory load on demand. ctxreach models the launch directory's and subdirectories' rules only; it does not say whether an ancestor's rules load, because the docs do not, and marks them not modelled. (Launched in `packages/api`, a probe run saw the rule without `paths` in the project and git root preloaded, 2/2 trials; no other ancestor had rules to test. See [Evidence from probe runs](#evidence-from-probe-runs).) | memory, "Organize rules with .claude/rules/". |
 | `claude.hook-blind` | The `InstructionsLoaded` hook does not fire for an `AGENTS.md` read through the setting. It does fire for one that a `CLAUDE.md` imports or symlinks to. (Not used by `map`. `probe` does not install a hook yet, so this blind spot is not measured.) | hooks, "InstructionsLoaded"; memory, "Where AGENTS.md differs from CLAUDE.md". |
 | `claude.bare` | `claude --bare` skips CLAUDE.md discovery, and the docs say it "will become the default for `-p` in a future release". Without `--bare`, `claude -p` runs the project's hooks and connects its MCP servers even in an untrusted folder. (Not used by `map`. `probe` never passes `--bare`, reports `CLAUDE_CODE_SIMPLE` as a warning, and strips hooks and MCP config from its copy of the repository; see [Probe](#probe).) | headless, "Start faster with bare mode". |
 
@@ -170,7 +170,10 @@ Every trial is checked against its own `system/init` event: the working
 directory must be the launch directory in the copy, the version must match
 `claude --version`, and the tools must be none (recall) or only the read tools
 (task). A trial that fails a check is excluded and the whole run is marked as
-an instrument fault.
+an instrument fault. A trial with no `system/init` event that also failed (a
+non-zero exit, a timeout or no result event), such as a run that is not
+logged in, stopped before its session started: it is counted as failed, not
+as a fault.
 
 When ctxreach itself runs inside a Claude Code session, the variables that
 session sets for its children (`CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`,
@@ -198,6 +201,19 @@ run commands); the copy gets `git init --template=`, which installs no hooks.
 setting in them that changes loading (such as `claudeMdExcludes`, which `map`
 does not model either).
 
+The copy holds no links (symlinks or junctions), checked with `lstat` before
+anything is removed from it and again before any run: otherwise removing
+`.claude/settings.json` through a linked `.claude` would delete the file the
+link points to, outside the copy. A link to a file or directory inside the
+repository is copied as that file or directory, so a `CLAUDE.md` that links
+to `AGENTS.md` becomes two separate files and rule `claude.symlink` is not
+measured. A link that leads outside the repository, to nothing, into a
+directory that is not copied, or to a directory that contains it is left out.
+The report lists every link and what was done with it.
+
+The user's own configuration is not touched: the hooks, plugins and skills in
+`~/.claude` and in managed settings run in every trial.
+
 ### Stream events
 
 The parser (`src/agents/claude/events.ts`) validates, with zod, the events it
@@ -217,8 +233,8 @@ model follows it.
 
 | Rule | Observed | Recording |
 |---|---|---|
-| `claude.ancestors` | A `CLAUDE.local.md` or `CLAUDE.md` at the repository root was preloaded when launched in `packages/api`: 3/3, 2/2. | `demo-api-recall`, `nested-api-recall` |
+| `claude.ancestors` | A `CLAUDE.local.md` or `CLAUDE.md` at the repository root was preloaded when launched in `packages/api`: 3/3, 2/2, 2/2. | `demo-api-recall`, `nested-api-recall`, `ancestor-imports-recall` |
 | `claude.agents-default` | With a `CLAUDE.local.md` at the root, no `AGENTS.md` arrived: 0/3 launched in `packages/api`; 0/3 launched at the root while reading `packages/api/src/payments.ts`. With no `CLAUDE.md`-family file, the root `AGENTS.md` was preloaded (2/2, 3/3) and `packages/api/AGENTS.md` arrived after a read in `packages/api` (3/3), not before (0/2). | `demo-*`, `agents-*` |
 | `claude.subdirs` | `packages/api/CLAUDE.md` was not preloaded from the root (0/2) and arrived after a read in `packages/api` (3/3). | `nested-recall`, `nested-task` |
 | `claude.imports` | An import inside the launch directory was preloaded (2/2, 3/3, and 2/2 from an ancestor's `CLAUDE.md`). An import from outside the launch directory, in an ancestor's `CLAUDE.md`, was **not loaded** in `claude -p` (0/2, 0/2). `map` marks it "needs approval"; the docs describe the approval dialog but not what `-p`, which shows none, does. | `nested-*`, `ancestor-imports-recall` |
-| `claude.rules` | A rule without `paths` was preloaded (2/2, 3/3). A rule with `paths` was not preloaded (0/2) and arrived after a read of a matching file (3/3). An **ancestor directory's** rule without `paths` was preloaded when launched in `packages/api` (2/2), where `map` shows ancestors' rules as not modelled. | `nested-*` |
+| `claude.rules` | A rule without `paths` was preloaded (2/2, 3/3). A rule with `paths` was not preloaded (0/2) and arrived after a read of a matching file (3/3; that task run cannot tell on-read from preloaded, which the 0/2 recall run settles). Launched in `packages/api`, the rules in the copy's root (its project and git root) behaved the same way: the one without `paths` was preloaded (2/2), the one with `paths` was not (0/2). No other directory above `packages/api` had rules to test. `map` marks ancestors' rules not modelled, so these cells get the verdict NOT MODELLED. | `nested-*` |

@@ -28,22 +28,25 @@ node dist/cli.js probe --replay test/recorded/<name>
 | `nested-task` | `--repo test/recorded/sources/nested-claude --from test/recorded/sources/nested-claude --mode task --task "Explain what packages/api/src/index.ts does." --trials 3 --save test/recorded/nested-task` | 14 of 14 agree; decoy 0/3 |
 | `agents-recall` | `--repo test/recorded/sources/agents-only --from test/recorded/sources/agents-only --mode recall --trials 2 --save test/recorded/agents-recall` | 6 of 6 agree; decoy 0/2 |
 | `agents-task` | `--repo test/recorded/sources/agents-only --from test/recorded/sources/agents-only --mode task --task "Explain what packages/api/src/index.ts does." --trials 3 --save test/recorded/agents-task` | 4 of 4 decided cells agree, 2 untested; decoy 0/3 |
-| `nested-api-recall` | `--repo test/recorded/sources/nested-claude --from test/recorded/sources/nested-claude/packages/api --mode recall --trials 2 --save test/recorded/nested-api-recall` | **10 of 14 agree: 2 EXTRA, 2 MISSED**; decoy 0/2 |
+| `nested-api-recall` | `--repo test/recorded/sources/nested-claude --from test/recorded/sources/nested-claude/packages/api --mode recall --trials 2 --save test/recorded/nested-api-recall` | **8 of 10 decided cells agree: 2 MISSED**; 4 NOT MODELLED; decoy 0/2 |
 | `ancestor-imports-recall` | `--repo test/recorded/sources/ancestor-imports --from test/recorded/sources/ancestor-imports/packages/api --mode recall --trials 2 --save test/recorded/ancestor-imports-recall` | **4 of 6 agree: 2 MISSED**; decoy 0/2 |
 
 The repositories the probe copied are `examples/demo-monorepo` and the three
 under `sources/`.
 
-## The two disagreements
+## Where the agent and `map` differ
 
-- **An ancestor directory's rules load.** Launched in `packages/api`, Claude
-  Code preloaded the root's `.claude/rules/style.md` (no `paths`) in 2/2
-  trials. `map` does not model an ancestor's rules and shows them as not
-  loaded (docs/rules.md, rule `claude.rules`), so the cell is EXTRA. The
-  documentation does not say either way, so the resolver is unchanged.
-- **An external import does not load in `claude -p`.** Launched in
-  `packages/api`, the root `CLAUDE.md`'s `@docs/testing.md` import was not
-  loaded in 2/2 trials. `map` predicted "import, needs approval": the
+- **The copy's root rules, launched from a subdirectory (not modelled).**
+  Launched in `packages/api`, Claude Code preloaded `.claude/rules/style.md`
+  (no `paths`) from the copy's root, which is also its git root, in 2/2
+  trials, and did not preload the rule with `paths` there (0/2). No other
+  directory above `packages/api` had rules, so no other was tested. `map` does not model an ancestor's rules
+  (docs/rules.md, rule `claude.rules`), so these cells are NOT MODELLED and
+  are not counted either way. The documentation does not say whether they
+  load, so the resolver is unchanged.
+- **An external import does not load in `claude -p` (the one disagreement).**
+  Launched in `packages/api`, the root `CLAUDE.md`'s `@docs/testing.md`
+  import was loaded in 0/2 trials. `map` predicted "import, needs approval": the
   documentation says Claude Code asks once to approve imports from outside
   the launch directory, but not what a `-p` session, which shows no dialog,
   does. `ancestor-imports-recall` separates the two possible causes: the

@@ -102,6 +102,10 @@ agent itself:
    everything that could make the agent run a command: project settings
    (hooks, helper commands), `.mcp.json`, skills, subagents, `.codex/`, and
    the repository's own `.git`. It gets a fresh `git init` with no hooks.
+   The copy holds no links: a link to a file or directory inside the
+   repository is copied as that file or directory, and a link that leads
+   outside the repository, to nothing, or into a loop is left out and
+   listed in the report.
 2. It plants a random token (`CTXR-` and 8 hex digits) on the first and last
    line of every instruction file `map` knows about in the copy, and in a
    decoy file that no documented rule loads.
@@ -112,9 +116,11 @@ agent itself:
 5. It works out, for each token, how it reached the agent, and compares that
    with the prediction.
 
-It only ever runs the agent inside its own temporary copy, and refuses
-otherwise. It never runs with `--bare`, which skips `CLAUDE.md`. The exact
-flags, and why each is there, are in [docs/rules.md](docs/rules.md#probe).
+It only ever runs the agent inside its own temporary copy (a
+`ctxreach-probe-` directory inside the system temp directory, with its marker
+file), and refuses otherwise. It never runs with `--bare`, which skips
+`CLAUDE.md`. The exact flags, and why each is there, are in
+[docs/rules.md](docs/rules.md#probe).
 
 Two modes:
 
@@ -138,16 +144,21 @@ For each token in each trial, the probe records one of:
 Each token then gets a verdict against `map`: **CONFIRMED**, **MISSED**
 (predicted to arrive, and did not in every usable trial), **EXTRA** (arrived
 by the agent's own loading where `map` said it would not), **DISCOVERED** (not
-loaded, but the model opened the file itself), or **UNTESTED** (for example,
-predicted on read, but no trial read a file there).
+loaded, but the model opened the file itself), **UNTESTED** (for example,
+predicted on read, but no trial read a file there), or **NOT MODELLED** (`map`
+says it does not model the file, such as an ancestor directory's rules, so it
+made no prediction; what was observed is still shown). UNTESTED and NOT
+MODELLED cells are not counted as agreeing or disagreeing.
 
 The probe also checks itself:
 
 - The decoy must be repeated in 0 of the usable trials, unless the agent
   read it first. Any other echo of it, and any trial whose session was not
   the one asked for (other tools, another directory, another version), marks
-  the run as an **instrument fault**, which voids its results and exits with
-  status 3.
+  the run as an **instrument fault**, which voids its results, prints no
+  agreement figure, and exits with status 3. A trial that stops before its
+  session starts (for example, when the agent is not logged in) is counted
+  as failed, not as a fault.
 - It warns when nothing is predicted to load at launch, since then a broken
   instrument that saw nothing would look like agreement.
 - It counts stream events it does not recognise, instead of failing on them
@@ -207,28 +218,42 @@ Recording: test/recorded/demo-api-recall  (re-score with: ctxreach probe --repla
 In this run every cell agreed with `map`: 3 of 3 trials repeated the
 `CLAUDE.local.md` tokens, and none repeated any `AGENTS.md` token. That is the
 documented rule, observed: a personal `CLAUDE.local.md` switches `AGENTS.md`
-off, so the payments rule in `packages/api/AGENTS.md` never reaches Claude
-Code.
+off, so the payments rule in `packages/api/AGENTS.md` reached Claude Code in
+0 of these 3 trials, and in 0 of 3 task-mode trials launched at the root that
+read `packages/api/src/payments.ts` (`demo-root-task`).
 
 ### Where the agent disagreed with `map`
 
 Eight recorded runs, 20 trials in all, are listed in
 [test/recorded/README.md](test/recorded/README.md). Six agreed with `map` in
-every decided cell. Two did not, both launched from a subdirectory:
+every decided cell. Two did not, both launched in `packages/api`, and for the
+same reason:
 
-- **An ancestor directory's rules load.** Launched in `packages/api`, Claude
-  Code preloaded the root's `.claude/rules/style.md` in 2/2 trials. The
-  documentation does not say whether an ancestor's rules load, and `map`
-  shows them as not loaded ("not modelled"). Verdict: EXTRA.
 - **An ancestor's import from outside the launch directory did not load
   under `claude -p`.**
-  Launched in `packages/api`, the root `CLAUDE.md`'s import of
-  `docs/testing.md` was loaded in 0/2 trials, while its import of a file
-  inside `packages/api` was loaded in 2/2. `map` says such an import "needs
-  approval"; the documentation describes the approval dialog, but not what a
-  headless run, which shows no dialog, does. Verdict: MISSED.
+  Launched in `packages/api`, the root `CLAUDE.md`'s import of a file outside
+  `packages/api` was loaded in 0/2 trials in each run (`nested-api-recall`,
+  `ancestor-imports-recall`). In `ancestor-imports-recall` the same
+  `CLAUDE.md`'s import of a file inside `packages/api` was loaded in 2/2.
+  `map` says such an import "needs approval"; the documentation describes
+  the approval dialog, but not what a headless run, which shows no dialog,
+  does. Verdict: MISSED (2 of the 10 decided cells in `nested-api-recall`, 2
+  of the 6 in `ancestor-imports-recall`).
 
-Both are small samples from one agent version on one machine. They are
+One more thing was seen that `map` does not model, so it is not counted
+either way:
+
+- **The copy's root rules, launched from a subdirectory.** Launched in
+  `packages/api`, Claude Code preloaded `.claude/rules/style.md` (no `paths`)
+  from the copy's root in 2/2 trials; the rule with `paths` beside it was not
+  preloaded (0/2). That root is both the copy's project root and its git
+  root, and it is the only directory above the launch directory that had
+  rules, so this says nothing about rules in other ancestors. The
+  documentation does not say whether an ancestor's rules load; `map` labels
+  them "not modelled", and the probe gives those cells the verdict NOT
+  MODELLED.
+
+These are small samples from one agent version on one machine. They are
 reported, not folded into `map`: `map` follows the documentation, and the
 probe is how a gap like this gets noticed.
 
@@ -251,6 +276,20 @@ probe is how a gap like this gets noticed.
   preloaded. When it does not arrive in task mode, the cell is UNTESTED, not
   MISSED: `map` does not work out which files match its `paths`, so the probe
   cannot tell whether any file read matched.
+- In task mode, a file below the launch directory whose token is repeated
+  after a read in its directory counts as "on read" even if it had been
+  preloaded: the order of events cannot tell the two apart. Whether such a
+  file is preloaded comes from a recall run from the same directory; the
+  recorded task runs with on-read cells (`nested-task`, `agents-task`) are
+  paired with one (`nested-recall`, `agents-recall`).
+- Your own Claude Code configuration still applies. The copy loses the
+  repository's hooks, skills and plugins, but the hooks, plugins and skills
+  in your `~/.claude` (and any managed settings) run in every trial, as in
+  any session, and your own instruction files there reach the agent too
+  (the report lists those `map` finds).
+- Links are copied as what they point to, so a `CLAUDE.md` that is a link
+  to `AGENTS.md` reaches the agent as two separate files, and rule
+  `claude.symlink` (the content delivered once) is not measured.
 - The copy lives in the system temp directory, so instruction files in that
   directory's ancestors would reach the agent too. The report lists any that
   `map` finds.
@@ -351,8 +390,9 @@ and a test checks that the committed copies still match it.
 drives the adapter, and the real runs in `test/recorded/` are replayed.
 `scripts/plant-probe-faults.mjs` breaks one part of `probe` at a time (the
 classifier ignoring tool calls, the decoy check switched off, recall mode left
-with a tool, the copy keeping its hooks, and more) and checks that a test
-fails for each.
+with a tool, the copy keeping its hooks or copying links as links, and more)
+and checks that a test fails for each. Each planted run gets a temporary
+directory of its own, which is all it deletes afterwards.
 
 When you change a rule, update [docs/rules.md](docs/rules.md) with its source
 and the date you checked it; a test fails if `map` produces a rule id or
