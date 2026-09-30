@@ -4,7 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import registry from "../../../docs/evidence.json" with { type: "json" };
 import { discoverSurfaces, markdownFilesUnder, type SurfaceKind } from "../../discover/surfaces.js";
-import { ancestors, displayPath, isFileNamed, isInside, samePath } from "../../util/fs.js";
+import { ancestors, displayPath, existsNamed, isFileNamed, isInside, samePath } from "../../util/fs.js";
 import type { Delivery, Finding } from "../types.js";
 import { externalImportApproval, type ExternalImportApproval } from "./approvals.js";
 import { importTokens, resolveImport } from "./imports.js";
@@ -75,6 +75,13 @@ export interface ClaudeResolveOptions {
   ceiling?: string;
   /** The file holding external-import approvals (rule `claude.imports`). Defaults to `.claude.json` in homeDir. */
   claudeJson?: string;
+  /**
+   * Predict the `.claude/rules/` of directories above the launch directory,
+   * which load like the launch directory's own (rule `claude.rules`). When
+   * false, the default for now, they are listed as not modelled, and those
+   * above the repository are not listed.
+   */
+  ancestorRules?: boolean;
 }
 
 const CLAUDE_NAMES = ["CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md"] as const;
@@ -163,6 +170,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   const claudeHome = options.claudeHome ?? defaultClaudeHome();
   const homeDir = options.homeDir ?? (options.claudeHome ? path.dirname(options.claudeHome) : os.homedir());
   const scanRoot = options.scanRoot ?? launchDir;
+  const modelAncestorRules = options.ancestorRules === true;
   const findings: Finding[] = [];
   const files: ClaudeFile[] = [];
   const unresolvedImports: { in: string; token: string }[] = [];
@@ -360,6 +368,30 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     listed.delete(real(file));
   };
 
+  // Rule claude.rules: a project rule without `paths` loads at launch, one
+  // with `paths` on read of a matching file; an ancestor's the same way.
+  const ruleRow = (file: string, bytes: number, ancestor: boolean): ClaudeFile => {
+    const paths = hasPathsFrontmatter(readFileSync(file, "utf8"));
+    if (mode === "managed-only" && !paths)
+      return {
+        path: file,
+        kind: ".claude/rules",
+        delivery: "not-loaded",
+        why: `Project instructions is "managed-only"`,
+        rule: "claude.modes",
+        bytes,
+      };
+    const whose = ancestor ? "ancestor's rule" : "rule";
+    return {
+      path: file,
+      kind: ".claude/rules",
+      delivery: paths ? "on-read" : "launch",
+      why: paths ? `${whose} with paths: on read of a matching file` : ancestor ? whose : "project rule",
+      rule: "claude.rules",
+      bytes,
+    };
+  };
+
   // Directories from the top of the walk down to the launch directory.
   const upward = ancestors(launchDir, options.ceiling).reverse();
   // Rule claude.home-ancestor: every directory counts, the home directory
@@ -482,6 +514,18 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         });
       }
     }
+    // Rule claude.rules: an ancestor's rules above the repository. Those in
+    // it are listed with the rest of the tree below.
+    if (
+      modelAncestorRules &&
+      !inRepo(dir) &&
+      existsNamed(dir, ".claude") &&
+      existsNamed(path.join(dir, ".claude"), "rules")
+    ) {
+      for (const file of markdownFilesUnder(path.join(dir, ".claude", "rules"))) {
+        if (!listed.has(real(file))) add(ruleRow(file, size(file), true));
+      }
+    }
   }
 
   // Everything else in the scanned tree.
@@ -507,26 +551,9 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     }
     if (!below) {
       if (s.kind === ".claude/rules" && samePath(s.dir, launchDir)) {
-        const paths = hasPathsFrontmatter(readFileSync(s.path, "utf8"));
-        if (mode === "managed-only" && !paths) {
-          add({
-            path: s.path,
-            kind: s.kind,
-            delivery: "not-loaded",
-            why: `Project instructions is "managed-only"`,
-            rule: "claude.modes",
-            bytes: s.bytes,
-          });
-        } else {
-          add({
-            path: s.path,
-            kind: s.kind,
-            delivery: paths ? "on-read" : "launch",
-            why: paths ? "rule with paths: on read of a matching file" : "project rule",
-            rule: "claude.rules",
-            bytes: s.bytes,
-          });
-        }
+        add(ruleRow(s.path, s.bytes, false));
+      } else if (s.kind === ".claude/rules" && atOrAbove && modelAncestorRules) {
+        add(ruleRow(s.path, s.bytes, true));
       } else if (s.kind === ".claude/rules" && atOrAbove) {
         add({
           path: s.path,

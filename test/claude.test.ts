@@ -500,6 +500,79 @@ describe("the recorded external imports that map got wrong", () => {
   });
 });
 
+describe("an ancestor's .claude/rules/", () => {
+  const rules = (fx: Materialised, r: ClaudeResult) =>
+    Object.fromEntries(
+      r.files
+        .filter((f) => f.kind === ".claude/rules")
+        .map((f) => [path.relative(fx.repo, f.path).split(path.sep).join("/"), [f.delivery, f.why]]),
+    );
+
+  it("loads like the launch directory's own: without paths at launch, with paths on read", () => {
+    const fx = materialise("claude-ancestor-rules");
+    const r = run(fx, "packages/api", { ancestorRules: true });
+    expect(rules(fx, r)).toEqual({
+      ".claude/rules/api-only.md": ["on-read", "ancestor's rule with paths: on read of a matching file"],
+      ".claude/rules/style.md": ["launch", "ancestor's rule"],
+      "packages/.claude/rules/packages.md": ["launch", "ancestor's rule"],
+    });
+    expect(r.files.every((f) => f.notModelled === undefined)).toBe(true);
+    expect(deliveries(fx, r)["AGENTS.md"]).toBe("launch");
+    expect(r.findings).toEqual([]);
+  });
+
+  it("is listed as not modelled unless asked for, as the recorded probe runs expect", () => {
+    const fx = materialise("claude-ancestor-rules");
+    const r = run(fx, "packages/api");
+    expect(r.files.filter((f) => f.kind === ".claude/rules").map((f) => [f.delivery, f.why, f.notModelled])).toEqual([
+      ["not-loaded", "ancestor's rule: not modelled", true],
+      ["not-loaded", "ancestor's rule: not modelled", true],
+      ["not-loaded", "ancestor's rule: not modelled", true],
+    ]);
+  });
+
+  it("twin: a sibling package's rule never loads, modelled or not", () => {
+    const fx = materialise("claude-ancestor-rules-twin");
+    for (const ancestorRules of [true, false]) {
+      const r = run(fx, "packages/api", { ancestorRules });
+      expect(rules(fx, r)).toEqual({
+        "packages/web/.claude/rules/web.md": ["not-loaded", "outside the launch dir's tree"],
+      });
+      expect(r.findings).toEqual([]);
+    }
+  });
+
+  it("loads rules above the repository too, as the pilot run above a git root saw", () => {
+    const fx = materialise("claude-ancestor-rules-twin");
+    mkdirSync(path.join(fx.base, ".claude", "rules"), { recursive: true });
+    writeFileSync(path.join(fx.base, ".claude", "rules", "above.md"), "# Above\n");
+    const on = run(fx, "packages/api", { ancestorRules: true });
+    expect(on.files.find((f) => f.path === path.join(fx.base, ".claude", "rules", "above.md"))).toMatchObject({
+      delivery: "launch",
+      why: "ancestor's rule",
+      rule: "claude.rules",
+    });
+    expect(run(fx, "packages/api").files.some((f) => f.path.endsWith("above.md"))).toBe(false);
+  });
+
+  it("lists ~/.claude/rules once, as the user's, for a repository under home", () => {
+    const fx = materialise("claude-home-ancestor-twin");
+    const repo = cloneUnderHome(fx);
+    const r = runIn(fx, repo, ".", { ancestorRules: true });
+    expect(r.files.filter((f) => f.path.endsWith("personal.md")).map((f) => f.kind)).toEqual(["user-rule"]);
+  });
+
+  it("drops an ancestor's rule without paths under managed-only, and keeps one with paths on read", () => {
+    const fx = materialise("claude-ancestor-rules");
+    const r = run(fx, "packages/api", { ancestorRules: true, mode: "managed-only" });
+    expect(rules(fx, r)).toEqual({
+      ".claude/rules/api-only.md": ["on-read", "ancestor's rule with paths: on read of a matching file"],
+      ".claude/rules/style.md": ["not-loaded", 'Project instructions is "managed-only"'],
+      "packages/.claude/rules/packages.md": ["not-loaded", 'Project instructions is "managed-only"'],
+    });
+  });
+});
+
 describe("trap: CLAUDE.md is a copy of AGENTS.md, and both are read", () => {
   it("loads the text once: the AGENTS.md with the same text is skipped", () => {
     const fx = materialise("claude-dedup-copy");

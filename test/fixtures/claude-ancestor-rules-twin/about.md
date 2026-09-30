@@ -1,0 +1,1 @@
+Twin of claude-ancestor-rules: the only rule is in packages/web/.claude/rules/, beside packages/api, not above it, so launched in packages/api it never loads, whether or not ancestors' rules are modelled. ctxreach must report nothing.
