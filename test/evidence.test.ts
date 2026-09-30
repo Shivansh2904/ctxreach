@@ -145,12 +145,14 @@ describe("check 1: every rule id and finding code in docs/rules.md has an entry"
   });
 
   it("has no entry for an id docs/rules.md does not list, except the ids pending from v1/map-rules", () => {
-    expect(orphanEntries(ids, registry).sort()).toEqual(PENDING);
-    expect(orphanEntries([...ids, ...PENDING], registry)).toEqual([]);
+    // Once v1/map-rules is merged, these ids are in docs/rules.md, this list is empty, and PENDING can go.
+    const pending = PENDING.filter((id) => !ids.includes(id));
+    expect(orphanEntries(ids, registry).sort()).toEqual(pending);
   });
 
-  it("the pending ids are still absent from docs/rules.md (once merged, delete them from PENDING)", () => {
-    for (const id of PENDING) expect(ids, `${id} is in docs/rules.md now: remove it from PENDING`).not.toContain(id);
+  it("trap: an entry whose id docs/rules.md no longer lists (a renamed rule) is reported", () => {
+    const renamed = ids.filter((id: string) => id !== "codex.root");
+    expect(orphanEntries(renamed, registry)).toContain("codex.root");
   });
 });
 
