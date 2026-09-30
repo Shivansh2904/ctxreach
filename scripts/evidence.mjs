@@ -540,6 +540,12 @@ export const PLANTS = [
     replace: "",
   },
   {
+    name: "summary-limit-in-characters",
+    file: "src/report/markdown.ts",
+    find: 'const bytes = (text: string) => Buffer.byteLength(text, "utf8");',
+    replace: "const bytes = (text: string) => text.length;",
+  },
+  {
     name: "action-reads-runner-home",
     file: "src/report/annotations.ts",
     find: 'codex: { home: path.join(home, ".codex") },',

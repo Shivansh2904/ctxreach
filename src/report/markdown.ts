@@ -11,8 +11,11 @@ type AgentKey = "codex" | "claude";
 
 const AGENT_TITLES: Record<AgentKey, string> = { codex: "Codex", claude: "Claude Code" };
 
-/** GitHub rejects a step summary over 1 MiB; stop adding sections well before that. */
+/** GitHub rejects a step summary over 1 MiB; stop adding sections well before that (bytes of UTF-8). */
 export const SUMMARY_LIMIT = 900_000;
+
+/** Size as GitHub counts it: bytes of UTF-8, so a CJK path or heading counts three a character. */
+const bytes = (text: string) => Buffer.byteLength(text, "utf8");
 
 /** Text safe inside a Markdown table cell. */
 export function tableText(text: string): string {
@@ -107,7 +110,7 @@ export interface SummaryOptions {
   scanned: string;
   /** Annotations written for this run (after merging launch directories). */
   annotations: number;
-  /** Stop adding launch-directory sections past this many characters (default SUMMARY_LIMIT). */
+  /** Stop adding launch-directory sections past this many bytes of UTF-8 (default SUMMARY_LIMIT). */
   limit?: number;
 }
 
@@ -147,14 +150,20 @@ export function renderSummary(runs: readonly MapJson[], options: SummaryOptions)
   head.push("");
 
   let out = head.join("\n");
+  let size = bytes(out);
   let shown = 0;
   for (const r of ordered) {
-    const section = launchSection(r);
-    if (out.length + section.length > (options.limit ?? SUMMARY_LIMIT)) break;
-    out += "\n" + section;
+    const section = "\n" + launchSection(r);
+    const more = bytes(section);
+    if (size + more > (options.limit ?? SUMMARY_LIMIT)) break;
+    out += section;
+    size += more;
     shown++;
   }
-  if (shown < ordered.length)
-    out += `\n${ordered.length - shown} more launch directories are left out of this summary to stay under GitHub's size limit; the JSON output has all of them.\n`;
+  const left = ordered.length - shown;
+  if (left > 0)
+    out +=
+      `\n${left} more launch ${left === 1 ? "directory is" : "directories are"} left out of this summary ` +
+      "to stay under GitHub's size limit; the JSON output has all of them.\n";
   return out;
 }

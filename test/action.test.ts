@@ -172,8 +172,40 @@ describe("the job summary", () => {
     const runs = [await mapJson(fx, "."), await mapJson(fx, "packages/api")];
     const whole = renderSummary(runs, { version: "1", scanned: ".", annotations: 0 });
     const cut = renderSummary(runs, { version: "1", scanned: ".", annotations: 0, limit: whole.length - 10 });
-    expect(cut).toContain("1 more launch directories are left out");
+    expect(cut).toContain("1 more launch directory is left out");
     expect(cut).not.toContain("### From `packages/api`");
+  });
+
+  it("trap: counts the limit in bytes, so a section in CJK that fits in characters is still left out", async () => {
+    const fx = materialise("codex-over-cap-twin");
+    const root = await mapJson(fx);
+    const cjk: MapJson = JSON.parse(JSON.stringify(root));
+    cjk.launchDir = "包";
+    cjk.matrix[0]!.path = "文档/".repeat(200) + "AGENTS.md";
+    const whole = renderSummary([root, cjk], { version: "1", scanned: ".", annotations: 0 });
+    const size = Buffer.byteLength(whole, "utf8");
+    // Counted in characters, the whole summary would fit under a limit 10 bytes short of its size.
+    expect(whole.length).toBeLessThan(size - 10);
+    const cut = renderSummary([root, cjk], { version: "1", scanned: ".", annotations: 0, limit: size - 10 });
+    expect(cut).toContain("1 more launch directory is left out");
+    expect(cut).not.toContain("### From `包`");
+  });
+
+  it("twin: a CJK summary exactly at the limit is whole", async () => {
+    const fx = materialise("codex-over-cap-twin");
+    const root = await mapJson(fx);
+    const cjk: MapJson = JSON.parse(JSON.stringify(root));
+    cjk.launchDir = "包";
+    cjk.matrix[0]!.path = "文档/".repeat(200) + "AGENTS.md";
+    const whole = renderSummary([root, cjk], { version: "1", scanned: ".", annotations: 0 });
+    const exact = renderSummary([root, cjk], {
+      version: "1",
+      scanned: ".",
+      annotations: 0,
+      limit: Buffer.byteLength(whole, "utf8"),
+    });
+    expect(exact).toBe(whole);
+    expect(exact).not.toContain("left out");
   });
 
   it("escapes a | in a table cell", async () => {

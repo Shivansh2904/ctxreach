@@ -130,15 +130,15 @@ function discoverSurfaces(root, options = {}) {
   const fallbacks = new Set(options.fallbackNames ?? []);
   const found = [];
   const add = (file2, dir, kind) => {
-    let bytes;
+    let bytes2;
     try {
       const st = (0, import_node_fs2.statSync)(file2);
       if (!st.isFile()) return;
-      bytes = st.size;
+      bytes2 = st.size;
     } catch {
       return;
     }
-    found.push({ path: file2, rel: displayPath(file2, root), dir, kind, bytes });
+    found.push({ path: file2, rel: displayPath(file2, root), dir, kind, bytes: bytes2 });
   };
   const walkRules = (dir, owner) => {
     for (const entry of safeReaddir(dir)) {
@@ -1524,16 +1524,16 @@ function cleanEnum(obj) {
 }
 function base64ToUint8Array(base643) {
   const binaryString = atob(base643);
-  const bytes = new Uint8Array(binaryString.length);
+  const bytes2 = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+    bytes2[i] = binaryString.charCodeAt(i);
   }
-  return bytes;
+  return bytes2;
 }
-function uint8ArrayToBase64(bytes) {
+function uint8ArrayToBase64(bytes2) {
   let binaryString = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binaryString += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes2.length; i++) {
+    binaryString += String.fromCharCode(bytes2[i]);
   }
   return btoa(binaryString);
 }
@@ -1542,22 +1542,22 @@ function base64urlToUint8Array(base64url3) {
   const padding = "=".repeat((4 - base643.length % 4) % 4);
   return base64ToUint8Array(base643 + padding);
 }
-function uint8ArrayToBase64url(bytes) {
-  return uint8ArrayToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+function uint8ArrayToBase64url(bytes2) {
+  return uint8ArrayToBase64(bytes2).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 function hexToUint8Array(hex3) {
   const cleanHex = hex3.replace(/^0x/, "");
   if (cleanHex.length % 2 !== 0) {
     throw new Error("Invalid hex string length");
   }
-  const bytes = new Uint8Array(cleanHex.length / 2);
+  const bytes2 = new Uint8Array(cleanHex.length / 2);
   for (let i = 0; i < cleanHex.length; i += 2) {
-    bytes[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
+    bytes2[i / 2] = Number.parseInt(cleanHex.slice(i, i + 2), 16);
   }
-  return bytes;
+  return bytes2;
 }
-function uint8ArrayToHex(bytes) {
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+function uint8ArrayToHex(bytes2) {
+  return Array.from(bytes2).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 var Class = class {
   constructor(..._args) {
@@ -20407,8 +20407,8 @@ function resolveClaude(options) {
 var import_node_path7 = __toESM(require("node:path"), 1);
 
 // src/util/text.ts
-function decodeLossy(bytes) {
-  return new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
+function decodeLossy(bytes2) {
+  return new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes2);
 }
 var RUST_WHITESPACE = new RegExp(
   "^[	\n\v\f\r \x85\xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]*$",
@@ -20417,17 +20417,17 @@ var RUST_WHITESPACE = new RegExp(
 function isBlankRust(text) {
   return RUST_WHITESPACE.test(text);
 }
-function splitsCodepoint(bytes, offset) {
-  if (offset <= 0 || offset >= bytes.length) return false;
-  const next = bytes[offset];
+function splitsCodepoint(bytes2, offset) {
+  if (offset <= 0 || offset >= bytes2.length) return false;
+  const next = bytes2[offset];
   return next !== void 0 && (next & 192) === 128;
 }
-function lineAndColumn(bytes, offset) {
+function lineAndColumn(bytes2, offset) {
   let line = 1;
   let lineStart = 0;
-  const end = Math.min(offset, bytes.length);
+  const end = Math.min(offset, bytes2.length);
   for (let i = 0; i < end; i++) {
-    if (bytes[i] === 10) {
+    if (bytes2[i] === 10) {
       line++;
       lineStart = i + 1;
     }
@@ -20436,14 +20436,14 @@ function lineAndColumn(bytes, offset) {
 }
 var FENCE2 = /^ {0,3}(`{3,}|~{3,})/;
 var ATX = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*#*[ \t]*$/;
-function headings(bytes) {
+function headings(bytes2) {
   const out = [];
   let fence = null;
   let start = 0;
-  while (start <= bytes.length) {
-    let end = bytes.indexOf(10, start);
-    if (end === -1) end = bytes.length;
-    let line = decodeLossy(bytes.subarray(start, end));
+  while (start <= bytes2.length) {
+    let end = bytes2.indexOf(10, start);
+    if (end === -1) end = bytes2.length;
+    let line = decodeLossy(bytes2.subarray(start, end));
     if (line.endsWith("\r")) line = line.slice(0, -1);
     const fenceMatch = FENCE2.exec(line);
     if (fenceMatch?.[1]) {
@@ -21416,12 +21416,12 @@ function resolveCodex(options) {
       const [chosen, ...others] = present;
       if (!chosen) continue;
       const file2 = import_node_path7.default.join(dir, chosen);
-      const bytes = readBytes(file2);
+      const bytes2 = readBytes(file2);
       const entry = {
         dir,
         path: file2,
         name: chosen,
-        bytes: bytes.length,
+        bytes: bytes2.length,
         keptBytes: 0,
         status: "loaded",
         budgetBefore: left,
@@ -21432,16 +21432,16 @@ function resolveCodex(options) {
         entry.status = "no-budget";
         continue;
       }
-      const kept = Math.min(bytes.length, left);
-      const text = decodeLossy(bytes.subarray(0, kept));
+      const kept = Math.min(bytes2.length, left);
+      const text = decodeLossy(bytes2.subarray(0, kept));
       if (isBlankRust(text)) {
         entry.status = "empty";
         continue;
       }
       entry.keptBytes = kept;
-      if (kept < bytes.length) {
+      if (kept < bytes2.length) {
         entry.status = "cut";
-        entry.cut = describeCut(bytes, kept);
+        entry.cut = describeCut(bytes2, kept);
       }
       left -= kept;
     }
@@ -21536,12 +21536,12 @@ function readGlobal(codexHome) {
   for (const name of ["AGENTS.override.md", "AGENTS.md"]) {
     if (!isFileNamed(codexHome, name)) continue;
     const file2 = import_node_path7.default.join(codexHome, name);
-    const bytes = readBytes(file2);
-    if (isBlankRust(decodeLossy(bytes))) {
+    const bytes2 = readBytes(file2);
+    if (isBlankRust(decodeLossy(bytes2))) {
       skippedEmpty.push(file2);
       continue;
     }
-    return { path: file2, bytes: bytes.length, skippedEmpty };
+    return { path: file2, bytes: bytes2.length, skippedEmpty };
   }
   return void 0;
 }
@@ -21550,9 +21550,9 @@ function listSections(sections, max = 4) {
   const more = sections.length - shown.length;
   return more > 0 ? `${shown.join(", ")} and ${more} more` : shown.join(", ");
 }
-function describeCut(bytes, at) {
-  const { line, column } = lineAndColumn(bytes, at);
-  const all = headings(bytes);
+function describeCut(bytes2, at) {
+  const { line, column } = lineAndColumn(bytes2, at);
+  const all = headings(bytes2);
   const before = all.filter((h) => h.offset < at);
   const lost = all.filter((h) => h.offset >= at).map((h) => h.text);
   const cutSection = before.at(-1)?.text;
@@ -21560,7 +21560,7 @@ function describeCut(bytes, at) {
     at,
     line,
     column,
-    midCodepoint: splitsCodepoint(bytes, at),
+    midCodepoint: splitsCodepoint(bytes2, at),
     ...cutSection !== void 0 ? { cutSection } : {},
     lostSections: lost
   };
@@ -21863,6 +21863,7 @@ function toJson(result, version3) {
 // src/report/markdown.ts
 var AGENT_TITLES = { codex: "Codex", claude: "Claude Code" };
 var SUMMARY_LIMIT = 9e5;
+var bytes = (text) => Buffer.byteLength(text, "utf8");
 function tableText(text) {
   return text.replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
 }
@@ -21962,16 +21963,20 @@ function renderSummary(runs, options) {
   }
   head.push("");
   let out = head.join("\n");
+  let size2 = bytes(out);
   let shown = 0;
   for (const r of ordered) {
-    const section = launchSection(r);
-    if (out.length + section.length > (options.limit ?? SUMMARY_LIMIT)) break;
-    out += "\n" + section;
+    const section = "\n" + launchSection(r);
+    const more = bytes(section);
+    if (size2 + more > (options.limit ?? SUMMARY_LIMIT)) break;
+    out += section;
+    size2 += more;
     shown++;
   }
-  if (shown < ordered.length)
+  const left = ordered.length - shown;
+  if (left > 0)
     out += `
-${ordered.length - shown} more launch directories are left out of this summary to stay under GitHub's size limit; the JSON output has all of them.
+${left} more launch ${left === 1 ? "directory is" : "directories are"} left out of this summary to stay under GitHub's size limit; the JSON output has all of them.
 `;
   return out;
 }
