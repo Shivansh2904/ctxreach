@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { map } from "../src/map/map.js";
 import { materialise } from "./helpers/fixture.js";
+// @ts-expect-error -- plain JavaScript script without type declarations
+import { documentedCodes, occurrences, PLANTS, sourceCodes } from "../scripts/plant-faults.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const doc = readFileSync(path.join(ROOT, "docs", "rules.md"), "utf8");
@@ -79,5 +81,20 @@ describe("docs/rules.md", () => {
   it("lists every finding code with the severity map gives it", () => {
     const missing = [...codes].filter(([code, severity]) => !doc.includes(`| \`${code}\` | ${severity} |`));
     expect(missing).toEqual([]);
+  });
+});
+
+describe("scripts/plant-faults.mjs", () => {
+  it("knows the same finding codes as the Findings table", () => {
+    expect(sourceCodes()).toEqual(documentedCodes());
+  });
+
+  it("finds each plant's text exactly once, so no plant silently changes nothing", () => {
+    for (const o of occurrences() as { name: string; count: number }[]) expect([o.name, o.count]).toEqual([o.name, 1]);
+  });
+
+  it("plants only in the resolvers and the approval reader", () => {
+    const files = new Set((PLANTS as { file: string }[]).map((p) => p.file));
+    expect([...files].sort()).toEqual(["src/agents/claude/approvals.ts", "src/agents/claude/resolve.ts"]);
   });
 });
