@@ -92,7 +92,10 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
   process.once("SIGINT", onSignal);
   process.once("SIGTERM", onSignal);
   try {
-    sandbox = createSandbox(repoRoot, options.tmpRoot !== undefined ? { tmpRoot: options.tmpRoot } : {});
+    sandbox = createSandbox(repoRoot, {
+      launchDir: launchRel,
+      ...(options.tmpRoot !== undefined ? { tmpRoot: options.tmpRoot } : {}),
+    });
     const box = sandbox;
     say(`copied ${box.files} files to a temporary directory`);
     const launchAbs = path.join(box.repo, ...(launchRel === "." ? [] : launchRel.split("/")));
@@ -199,6 +202,7 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
         timeoutMs: options.timeoutMs,
         transcriptPath: path.join(saveDir, transcript),
         redactions,
+        sandboxNonce: box.nonce,
       });
       manifest.trials.push({ trial, transcript, ...outcome });
       // Saved after every trial, so an interrupted run can still be replayed.

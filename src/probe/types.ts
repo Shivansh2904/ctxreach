@@ -150,6 +150,12 @@ export interface RunRequest {
   /** Where to save the transcript (redacted). */
   transcriptPath: string;
   redactions: Redaction[];
+  /**
+   * The nonce `createSandbox` wrote into the sandbox's marker when it had
+   * finished the copy. The adapter refuses a sandbox whose marker does not
+   * carry it: a marker proves where a directory is, this proves it was stripped.
+   */
+  sandboxNonce: string;
 }
 
 /** Settings in the environment that change what the agent loads, as far as ctxreach can tell. */

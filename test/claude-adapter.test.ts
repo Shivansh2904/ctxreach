@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +31,7 @@ function request(workdir: string, extra: Partial<RunRequest> = {}): RunRequest {
     timeoutMs: 30_000,
     transcriptPath: path.join(tempDir("transcript"), "t.jsonl"),
     redactions: [],
+    sandboxNonce: "",
     ...extra,
   };
 }
@@ -114,7 +116,10 @@ describe("running the agent (with a fake claude executable)", () => {
     const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
     try {
       const { agent, claudeHome } = adapter({ CLAUDECODE: "1", CLAUDE_CODE_USE_BEDROCK: "1" });
-      const req = request(box.repo, { redactions: [{ from: box.base, to: "C:\\ctxreach-probe" }] });
+      const req = request(box.repo, {
+        sandboxNonce: box.nonce,
+        redactions: [{ from: box.base, to: "C:\\ctxreach-probe" }],
+      });
       const out = await agent.run(req);
       expect(out).toMatchObject({ exitCode: 0, timedOut: false, leftovers: [] });
       const text = readFileSync(req.transcriptPath, "utf8");
@@ -142,7 +147,7 @@ describe("running the agent (with a fake claude executable)", () => {
       const slug = box.repo.replace(/[^A-Za-z0-9]/g, "-");
       mkdirSync(path.join(claudeHome, "projects", slug, "memory"), { recursive: true });
       writeFileSync(path.join(claudeHome, "projects", slug, "memory", "MEMORY.md"), "note");
-      const out = await agent.run(request(box.repo));
+      const out = await agent.run(request(box.repo, { sandboxNonce: box.nonce }));
       expect(out.leftovers).toEqual([path.join(claudeHome, "projects", slug)]);
       expect(existsSync(path.join(claudeHome, "projects", slug, "memory", "MEMORY.md"))).toBe(true);
     } finally {
@@ -160,6 +165,7 @@ describe("running the agent (with a fake claude executable)", () => {
       writeFileSync(path.join(claudeHome, "projects", slug, "memory", "MEMORY.md"), "note");
       const out = await agent.run(
         request(box.repo, {
+          sandboxNonce: box.nonce,
           redactions: [
             { from: box.base, to: "/tmp/ctxreach-probe" },
             { from: claudeHome, to: "/home/user/.claude" },
@@ -176,11 +182,13 @@ describe("running the agent (with a fake claude executable)", () => {
   it("refuses to run anywhere but a sandbox's copy, even in a directory with its own .git", async () => {
     const fx = materialise("claude-local-shadows-agents");
     const { agent } = adapter();
-    await expect(agent.run(request(fx.repo))).rejects.toThrow(SafetyError);
+    await expect(agent.run(request(fx.repo))).rejects.toThrow(/is not inside a ctxreach sandbox/);
     const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
     try {
       // The sandbox directory itself, outside its repo/ copy, is refused too.
-      await expect(agent.run(request(box.base))).rejects.toThrow(SafetyError);
+      await expect(agent.run(request(box.base, { sandboxNonce: box.nonce }))).rejects.toThrow(
+        /is not inside the sandbox's copy/,
+      );
     } finally {
       removeSandbox(box);
     }
@@ -226,6 +234,102 @@ describe("running the agent (with a fake claude executable)", () => {
       expect(() => removeSandbox({ base: path.dirname(repo) })).toThrow(SafetyError);
       expect(existsSync(repo)).toBe(true);
     });
+
+    it("is refused, in the right place and with the right name, when its marker does not say it was finished", async () => {
+      // As createSandbox leaves a sandbox before stripping it: a marker that says where, not that it was stripped.
+      const fx = materialise("claude-local-shadows-agents");
+      const repo = forge(tempDir("sandboxes"), `${SANDBOX_PREFIX}unfinished`, fx.repo);
+      mkdirSync(path.join(repo, ".claude"));
+      writeFileSync(path.join(repo, ".claude", "settings.json"), '{"hooks":{}}');
+      const { agent, claudeHome } = adapter();
+      await expect(agent.run(request(repo, { sandboxNonce: "0".repeat(32) }))).rejects.toThrow(/never finished/);
+      expect(existsSync(path.join(claudeHome, "projects"))).toBe(false);
+    });
+  });
+
+  describe("checks made on the copy right before the agent starts", () => {
+    /** A finished sandbox, and the fake agent; `started()` says whether the agent ever ran. */
+    function setUp() {
+      const fx = materialise("claude-local-shadows-agents");
+      const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+      const { agent, claudeHome } = adapter();
+      return { box, agent, started: () => existsSync(path.join(claudeHome, "projects")) };
+    }
+
+    it("refuses a sandbox this run did not make: its marker carries another nonce", async () => {
+      const { box, agent, started } = setUp();
+      try {
+        await expect(agent.run(request(box.repo, { sandboxNonce: "0".repeat(32) }))).rejects.toThrow(/another nonce/);
+        expect(started()).toBe(false);
+      } finally {
+        removeSandbox(box);
+      }
+    });
+
+    it("refuses a copy that holds a stripped path again, in any case", async () => {
+      const { box, agent, started } = setUp();
+      try {
+        mkdirSync(path.join(box.repo, ".Claude"));
+        writeFileSync(path.join(box.repo, ".Claude", "Settings.json"), '{"hooks":{}}');
+        await expect(agent.run(request(box.repo, { sandboxNonce: box.nonce }))).rejects.toThrow(
+          /still holds \.Claude\/Settings\.json/,
+        );
+        rmSync(path.join(box.repo, ".Claude"), { recursive: true });
+        mkdirSync(path.join(box.repo, "sub"));
+        writeFileSync(path.join(box.repo, "sub", ".MCP.json"), "{}");
+        await expect(agent.run(request(box.repo, { sandboxNonce: box.nonce }))).rejects.toThrow(
+          /still holds sub\/\.MCP\.json/,
+        );
+        expect(started()).toBe(false);
+      } finally {
+        removeSandbox(box);
+      }
+    });
+
+    it("refuses a copy that holds a link", async () => {
+      const { box, agent, started } = setUp();
+      try {
+        symlinkSync(
+          tempDir("outside"),
+          path.join(box.repo, "linked"),
+          process.platform === "win32" ? "junction" : "dir",
+        );
+        await expect(agent.run(request(box.repo, { sandboxNonce: box.nonce }))).rejects.toThrow(
+          /holds a link at linked/,
+        );
+        expect(started()).toBe(false);
+      } finally {
+        rmSync(path.join(box.repo, "linked"));
+        removeSandbox(box);
+      }
+    });
+
+    it("refuses a copy whose .git is a gitdir file, not a directory of its own", async () => {
+      const { box, agent, started } = setUp();
+      try {
+        rmSync(path.join(box.repo, ".git"), { recursive: true });
+        writeFileSync(path.join(box.repo, ".git"), `gitdir: ${path.join(tempDir("elsewhere"), ".git")}\n`);
+        await expect(agent.run(request(box.repo, { sandboxNonce: box.nonce }))).rejects.toThrow(
+          /no \.git directory of its own/,
+        );
+        expect(started()).toBe(false);
+      } finally {
+        removeSandbox(box);
+      }
+    });
+
+    it("refuses a launch directory where git finds another repository", async () => {
+      const { box, agent, started } = setUp();
+      try {
+        const pkg = path.join(box.repo, "pkg");
+        mkdirSync(pkg);
+        execFileSync("git", ["init", "-q", "--template="], { cwd: pkg, stdio: "ignore" });
+        await expect(agent.run(request(pkg, { sandboxNonce: box.nonce }))).rejects.toThrow(/not the copy's own/);
+        expect(started()).toBe(false);
+      } finally {
+        removeSandbox(box);
+      }
+    });
   });
 
   it("stops a run that does not finish in time", async () => {
@@ -233,7 +337,7 @@ describe("running the agent (with a fake claude executable)", () => {
     const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
     try {
       const { agent } = adapter({ FAKE_CLAUDE_BEHAVIOUR: "hang" });
-      const out = await agent.run(request(box.repo, { timeoutMs: 800 }));
+      const out = await agent.run(request(box.repo, { sandboxNonce: box.nonce, timeoutMs: 800 }));
       expect(out.timedOut).toBe(true);
       // Stopped at the limit, not when the fake gave up on its own after 10 seconds.
       expect(out.durationMs).toBeLessThan(5000);

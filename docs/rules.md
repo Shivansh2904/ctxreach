@@ -196,10 +196,18 @@ a folder"). So before any run the copy loses, wherever they appear:
 `.claude/settings.json`, `.claude/settings.local.json`, `.claude/skills/`,
 `.claude/agents/`, `.claude/hooks/`, `.claude-plugin/`, `.mcp.json` and
 `.codex/`. The repository's `.git` is never copied (its config and hooks can
-run commands); the copy gets `git init --template=`, which installs no hooks.
-`node_modules` is not copied. Removing the project settings also removes any
-setting in them that changes loading (such as `claudeMdExcludes`, which `map`
-does not model either).
+run commands), whether it is a directory or a `gitdir:` file, and neither is a
+nested one; the copy gets `git init --template=`, which installs no hooks.
+Then git, run from the copy's root and from the launch directory, must use
+the copy's own `.git` and no other (a repository nested in the copy would
+bring its own config). `node_modules` is not copied. All these names are
+matched without case and without trailing dots or spaces, on every system:
+on Windows and macOS `.GIT` opens as `.git`, and `.Claude/Settings.json` as
+`.claude/settings.json`. git itself is run by its absolute path, found in an
+absolute `PATH` directory: run by name, Windows looks for it in the copy
+first. Removing the project settings also removes any setting in them that
+changes loading (such as `claudeMdExcludes`, which `map` does not model
+either).
 
 The copy holds no links (symlinks or junctions), checked with `lstat` before
 anything is removed from it and again before any run: otherwise removing
@@ -208,8 +216,17 @@ link points to, outside the copy. A link to a file or directory inside the
 repository is copied as that file or directory, so a `CLAUDE.md` that links
 to `AGENTS.md` becomes two separate files and rule `claude.symlink` is not
 measured. A link that leads outside the repository, to nothing, into a
-directory that is not copied, or to a directory that contains it is left out.
+directory that is not copied, or to a directory that contains it is left out,
+and so is a link to a directory another link already copied (links to links
+could otherwise copy a directory once for every path to it). Files,
+directories and links all count towards the copy's limit of 20,000 entries.
 The report lists every link and what was done with it.
+
+The copy's marker file says that it was stripped, with a random nonce, only
+once all of this is done. Right before each trial, the adapter checks that
+marker and nonce, that no path above is in the copy (in any case), that it
+holds no link, and where git finds its `.git`, and refuses to start the agent
+otherwise.
 
 The user's own configuration is not touched: the hooks, plugins and skills in
 `~/.claude` and in managed settings run in every trial.

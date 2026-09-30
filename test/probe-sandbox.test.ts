@@ -1,10 +1,14 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -274,16 +278,212 @@ describe("links in the repository", () => {
   });
 
   it("refuses to remove anything reached through a link, even if one were in the copy", () => {
-    // A hand-made tree standing in for a copy that a fault left a link in.
-    const repo = path.join(tempDir("strip"), "repo");
-    mkdirSync(repo);
+    // A real copy that a fault left a link in.
+    const fx = materialise("claude-local-shadows-agents");
+    const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
     const outside = tempDir("strip-outside");
     writeFileSync(path.join(outside, "settings.json"), "{}");
     mkdirSync(path.join(outside, "skills"));
     writeFileSync(path.join(outside, "keep.txt"), "keep");
-    dirLink(outside, path.join(repo, ".claude"));
+    dirLink(outside, path.join(box.repo, ".claude"));
     const before = treeHash(outside);
-    expect(() => stripTree({ repo, stripped: [] })).toThrow(SafetyError);
-    expect(treeHash(outside)).toBe(before);
+    try {
+      expect(() => stripTree({ repo: box.repo, stripped: [] })).toThrow(/a link leads it outside/);
+      expect(treeHash(outside)).toBe(before);
+    } finally {
+      rmSync(path.join(box.repo, ".claude"));
+      removeSandbox(box);
+    }
+  });
+});
+
+describe("stripping only a sandbox's own copy", () => {
+  it("refuses a directory that is not a sandbox's copy, and removes nothing from it", () => {
+    const repo = path.join(tempDir("strip"), "repo");
+    mkdirSync(repo);
+    writeFileSync(path.join(repo, ".mcp.json"), "{}");
+    expect(() => stripTree({ repo, stripped: [] })).toThrow(/is not inside a ctxreach sandbox/);
+    expect(existsSync(path.join(repo, ".mcp.json"))).toBe(true);
+  });
+
+  it("refuses a sandbox's copy reached through a link, or a directory inside it", () => {
+    const fx = materialise("claude-local-shadows-agents");
+    const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+    const via = path.join(tempDir("via"), "base");
+    dirLink(box.base, via);
+    try {
+      mkdirSync(path.join(box.repo, "sub"));
+      writeFileSync(path.join(box.repo, "sub", ".mcp.json"), "{}");
+      expect(() => stripTree({ repo: path.join(via, "repo"), stripped: [] })).toThrow(/is not the copy's root/);
+      expect(() => stripTree({ repo: path.join(box.repo, "sub"), stripped: [] })).toThrow(/is not the copy's root/);
+      expect(existsSync(path.join(box.repo, "sub", ".mcp.json"))).toBe(true);
+    } finally {
+      rmSync(via);
+      removeSandbox(box);
+    }
+  });
+});
+
+/** Run git in `cwd` with no GIT_ variables, as the agent would. */
+function git(cwd: string, ...args: string[]): string {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.toUpperCase().startsWith("GIT_")));
+  return execFileSync("git", args, { cwd, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+}
+
+/** Make `dir` a git repository, then rename its .git to `name`. */
+function gitDirNamed(dir: string, name: string): string {
+  mkdirSync(dir, { recursive: true });
+  git(dir, "init", "-q", "--template=");
+  renameSync(path.join(dir, ".git"), path.join(dir, name));
+  return path.join(dir, name);
+}
+
+describe("the repository's own git, whatever its name's case", () => {
+  it("leaves out a .GIT directory, so git never runs its fsmonitor command", () => {
+    const fx = materialise("claude-local-shadows-agents", { git: false });
+    const marker = path.join(tempDir("fsmonitor"), "ran");
+    const dotGit = gitDirNamed(fx.repo, ".GIT");
+    writeFileSync(
+      path.join(dotGit, "config"),
+      `[core]\n\trepositoryformatversion = 0\n\tfsmonitor = "touch '${marker.split(path.sep).join("/")}'; echo"\n`,
+    );
+    const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+    try {
+      // What the agent's own git calls would do in the copy.
+      git(box.repo, "status");
+      expect(existsSync(marker)).toBe(false);
+      expect(readFileSync(path.join(box.repo, ".git", "config"), "utf8")).not.toContain("fsmonitor");
+      expect(box.skipped).toContain(".GIT");
+      expect(readdirSync(box.repo).filter((n) => n.toLowerCase() === ".git")).toEqual([".git"]);
+    } finally {
+      removeSandbox(box);
+    }
+  });
+
+  it("leaves out a nested pkg/.Git, and names with trailing dots or spaces, so git in pkg uses the copy's .git", () => {
+    const fx = materialise("claude-local-shadows-agents");
+    gitDirNamed(fx.at("pkg"), ".Git");
+    mkdirSync(fx.at("other/.git."), { recursive: true });
+    mkdirSync(fx.at("third/node_modules "), { recursive: true });
+    const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes"), launchDir: "pkg" });
+    try {
+      const own = realpathSync.native(path.join(box.repo, ".git"));
+      expect(realpathSync.native(git(path.join(box.repo, "pkg"), "rev-parse", "--absolute-git-dir"))).toBe(own);
+      expect(box.skipped).toEqual(expect.arrayContaining([".git", "pkg/.Git", "other/.git.", "third/node_modules "]));
+    } finally {
+      removeSandbox(box);
+    }
+  });
+
+  it("leaves out a .GIT file that points git init at a repository outside, which stays unchanged", () => {
+    const fx = materialise("claude-local-shadows-agents", { git: false });
+    const outside = tempDir("outside-repo");
+    git(outside, "init", "-q", "--template=");
+    writeFileSync(path.join(outside, ".git", "config"), "[core]\n\trepositoryformatversion = 0\n");
+    const before = treeHash(outside);
+    writeFileSync(fx.at(".GIT"), `gitdir: ${path.join(outside, ".git").split(path.sep).join("/")}\n`);
+    let box: ReturnType<typeof createSandbox> | undefined;
+    try {
+      box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+    } finally {
+      // Checked even when createSandbox throws.
+      expect(treeHash(outside)).toBe(before);
+    }
+    try {
+      expect(box.skipped).toContain(".GIT");
+      expect(lstatSync(path.join(box.repo, ".git")).isDirectory()).toBe(true);
+    } finally {
+      removeSandbox(box);
+    }
+  });
+
+  describe("never runs a git that the repository holds", () => {
+    it.runIf(process.platform === "win32")(
+      "on Windows, where a program is looked for in its working directory first (unless NoDefaultCurrentDirectoryInExePath is set)",
+      () => {
+        const fake = path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "whoami.exe");
+        const fx = materialise("claude-local-shadows-agents");
+        copyFileSync(fake, fx.at("git.exe"));
+        const saved = process.env.NoDefaultCurrentDirectoryInExePath;
+        delete process.env.NoDefaultCurrentDirectoryInExePath;
+        let box: ReturnType<typeof createSandbox> | undefined;
+        try {
+          // whoami.exe run as git fails, and the copy would get no .git.
+          box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+          expect(lstatSync(path.join(box.repo, ".git")).isDirectory()).toBe(true);
+        } finally {
+          if (saved !== undefined) process.env.NoDefaultCurrentDirectoryInExePath = saved;
+          if (box) removeSandbox(box);
+        }
+      },
+    );
+
+    it.runIf(process.platform !== "win32")("through a relative PATH entry such as .", () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const marker = path.join(tempDir("fake-git"), "ran");
+      writeFileSync(fx.at("git"), `#!/bin/sh\ntouch '${marker}'\nexit 1\n`, { mode: 0o755 });
+      const saved = process.env.PATH;
+      process.env.PATH = `.${path.delimiter}${saved ?? ""}`;
+      let box: ReturnType<typeof createSandbox> | undefined;
+      try {
+        box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+        expect(existsSync(marker)).toBe(false);
+        expect(lstatSync(path.join(box.repo, ".git")).isDirectory()).toBe(true);
+      } finally {
+        process.env.PATH = saved;
+        if (box) removeSandbox(box);
+      }
+    });
+  });
+});
+
+describe("links that fan out", () => {
+  /** fan/l0 ... fan/l9, where each level holds two links, a and b, to the next. */
+  function fanOut(fx: ReturnType<typeof materialise>): void {
+    for (let i = 0; i < 10; i++) mkdirSync(fx.at(`fan/l${i}`), { recursive: true });
+    for (let i = 0; i < 9; i++) for (const n of ["a", "b"]) dirLink(fx.at(`fan/l${i + 1}`), fx.at(`fan/l${i}/${n}`));
+  }
+
+  function dirsUnder(dir: string): number {
+    let n = 0;
+    const walk = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true }))
+        if (e.isDirectory()) {
+          n++;
+          walk(path.join(d, e.name));
+        }
+    };
+    walk(dir);
+    return n;
+  }
+
+  it("copies each directory at most once through a link, and says which links it left out", () => {
+    const fx = materialise("claude-local-shadows-agents");
+    fanOut(fx);
+    const started = Date.now();
+    const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+    try {
+      // Copied through every path, 10 levels of two links make 2^10 copies of the last level.
+      expect(Date.now() - started).toBeLessThan(10_000);
+      // The 10 levels, and at most one more copy of each through a link.
+      expect(dirsUnder(path.join(box.repo, "fan"))).toBeLessThanOrEqual(20);
+      // Which of a and b comes first is the order the directory lists them in.
+      const dup = /^fan\/l0\/[ab] \(a duplicate target: fan\/l1, already copied through fan\/l0\/[ab]\)$/;
+      expect(box.skipped.filter((s) => dup.test(s))).toHaveLength(1);
+      expect(linksUnder(box.repo)).toEqual([]);
+    } finally {
+      removeSandbox(box);
+    }
+  });
+
+  it("counts directories and links, not only files, against the limit", () => {
+    const fx = materialise("claude-local-shadows-agents");
+    fanOut(fx);
+    const tmp = tempDir("sandboxes");
+    // The fixture has 2 files, far under the limit; its directories and links are not.
+    expect(() => createSandbox(fx.repo, { tmpRoot: tmp, limits: { maxFiles: 30, maxBytes: 1e9 } })).toThrow(
+      /more than 30 files, directories and links/,
+    );
+    expect(readdirSync(tmp)).toEqual([]);
   });
 });

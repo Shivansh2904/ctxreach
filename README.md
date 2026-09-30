@@ -117,8 +117,10 @@ agent itself:
    with the prediction.
 
 It only ever runs the agent inside its own temporary copy (a
-`ctxreach-probe-` directory inside the system temp directory, with its marker
-file), and refuses otherwise. It never runs with `--bare`, which skips
+`ctxreach-probe-` directory inside the system temp directory, whose marker
+file says this run finished stripping it), checks the copy again right before
+each trial (nothing it strips, no link, and git using the copy's own `.git`),
+and refuses otherwise. It never runs with `--bare`, which skips
 `CLAUDE.md`. The exact flags, and why each is there, are in
 [docs/rules.md](docs/rules.md#probe).
 

@@ -8,9 +8,8 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, rmdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { sandboxOf, SANDBOX_PREFIX } from "../../probe/sandbox.js";
+import { assertReadyToRun, sandboxOf, SANDBOX_PREFIX } from "../../probe/sandbox.js";
 import type { AgentAdapter, AgentEnvironment, ProbeMode, RunOutcome, RunRequest, ToolUse } from "../../probe/types.js";
-import { SafetyError } from "../../probe/types.js";
 import { memoryDirOf, parseClaudeTranscript, redactClaudeTranscript, redactString } from "./events.js";
 import { samePath } from "../../util/fs.js";
 import { defaultClaudeHome } from "./settings.js";
@@ -185,10 +184,10 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
     },
 
     async run(request: RunRequest): Promise<RunOutcome> {
-      // The agent only ever runs inside a sandbox's copy of the repository.
+      // The agent only ever runs inside a sandbox's copy of the repository,
+      // one this run finished, checked again on disk right before it starts.
       const box = sandboxOf(request.workdir);
-      if (!existsSync(path.join(box.repo, ".git")))
-        throw new SafetyError(`${box.repo} has no .git of its own; refusing to run`);
+      assertReadyToRun(box, request.sandboxNonce, request.workdir);
       const exe = binary();
       const started = Date.now();
       const child = spawn(exe, [...prefix, ...claudeArgs(request.mode)], {

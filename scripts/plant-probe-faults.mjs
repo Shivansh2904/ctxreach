@@ -152,8 +152,62 @@ export const PLANTS = [
   {
     name: "sandbox-copies-git",
     file: "src/probe/sandbox.ts",
-    find: "if (SKIP_NAMES.has(entry.name)) {",
+    find: "if (SKIP_NAMES.has(nameKey(entry.name))) {",
     replace: "if (false) {",
+  },
+  {
+    name: "sandbox-names-exact-case",
+    file: "src/probe/sandbox.ts",
+    find: 'return name.toLowerCase().replace(/[. ]+$/, "");',
+    replace: "return name;",
+  },
+  {
+    name: "git-run-by-name",
+    file: "src/probe/sandbox.ts",
+    find: "function findGit(): string {",
+    replace: 'function findGit(): string {\n  return "git";',
+  },
+  {
+    name: "no-own-git-check",
+    file: "src/probe/sandbox.ts",
+    find: "if (real !== expected)",
+    replace: "if (false)",
+  },
+  {
+    name: "unfinished-sandbox-accepted",
+    file: "src/probe/sandbox.ts",
+    find: "if (!box.finished)",
+    replace: "if (false)",
+  },
+  {
+    name: "sandbox-nonce-not-checked",
+    file: "src/probe/sandbox.ts",
+    find: "if (!nonce || box.nonce !== nonce)",
+    replace: "if (false)",
+  },
+  {
+    name: "no-checks-right-before-run",
+    file: "src/agents/claude/adapter.ts",
+    find: "assertReadyToRun(box, request.sandboxNonce, request.workdir);",
+    replace: "",
+  },
+  {
+    name: "strip-accepts-any-directory",
+    file: "src/probe/sandbox.ts",
+    find: "if (!samePath(box.repo, sandbox.repo))",
+    replace: "if (false)",
+  },
+  {
+    name: "link-fan-out-copied-every-time",
+    file: "src/probe/sandbox.ts",
+    find: "if (first !== undefined) {",
+    replace: "if (false) {",
+  },
+  {
+    name: "limit-counts-only-files",
+    file: "src/probe/sandbox.ts",
+    find: "function count(state: CopyState, bytes = 0): void {",
+    replace: "function count(state: CopyState, bytes = 0): void {\n  if (bytes === 0) return;",
   },
   {
     // What the sandbox did before links were handled: cpSync with verbatimSymlinks.
