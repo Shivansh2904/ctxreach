@@ -266,13 +266,15 @@ describe("trap: an import chain five hops deep", () => {
 });
 
 describe("trap: an import that resolves outside the launch directory", () => {
-  it("needs a one-time approval when launched in a package", () => {
+  it("is left out when launched in a package with no approval recorded", () => {
     const fx = materialise("claude-import-outside-launch");
     const r = run(fx, "packages/api");
     const imported = r.files.find((f) => f.kind === "import");
     expect(imported?.path).toBe(fx.at("docs/testing.md"));
+    expect(imported?.delivery).toBe("not-loaded");
     expect(imported?.needsApproval).toBe(true);
-    expect(codes(r)).toEqual(["claude.external-import"]);
+    expect(codes(r)).toEqual(["claude.external-import-headless"]);
+    expect(r.approval).toMatchObject({ project: fx.repo, approved: false, why: "no .claude.json" });
   });
 
   it("twin: launched at the root, the same import loads without asking", () => {
@@ -292,6 +294,164 @@ describe("trap: an import that resolves outside the launch directory", () => {
     expect(r.files[1]).toMatchObject({ path: path.join(fx.home, "notes.md"), delivery: "import" });
     expect(r.files[1]?.needsApproval).toBeUndefined();
     expect(r.findings).toEqual([]);
+  });
+});
+
+/** Write `.claude.json` in the fixture's home with `entries` as its projects. */
+function writeClaudeJson(fx: Materialised, projects: Record<string, unknown>): string {
+  const file = path.join(fx.home, ".claude.json");
+  writeFileSync(file, JSON.stringify({ numStartups: 3, projects }));
+  return file;
+}
+
+describe("trap: CLAUDE.md = @AGENTS.md, launched headless in a package", () => {
+  it("leaves the root AGENTS.md out: its import is external and nothing approved it", () => {
+    const fx = materialise("claude-external-headless");
+    const r = run(fx, "packages/api");
+    expect(deliveries(fx, r)).toEqual({
+      "CLAUDE.md": "launch",
+      "AGENTS.md": "not-loaded",
+      "packages/api/CLAUDE.md": "launch",
+      "packages/api/AGENTS.md": "import",
+    });
+    const root = r.files.find((f) => f.path === fx.at("AGENTS.md"));
+    expect(root).toMatchObject({ kind: "import", rule: "claude.imports", needsApproval: true });
+    expect(root?.why).toBe(
+      "imported by CLAUDE.md from outside the launch dir: no approval recorded, so left out (claude -p, SDK, CI)",
+    );
+    // One row per file, and the switched-off AGENTS.md is not blamed on the shadowing: it is imported.
+    expect(r.files).toHaveLength(4);
+    expect(codes(r)).toEqual(["claude.external-import-headless"]);
+    const message = r.findings[0]?.message ?? "";
+    expect(message).toContain("CLAUDE.md imports AGENTS.md, which is outside the launch directory");
+    expect(message).toContain("claude -p, the Agent SDK and CI never ask");
+    expect(message).toContain(
+      "Setting Project instructions to claude-md-and-agents-md reads AGENTS.md without the import.",
+    );
+  });
+
+  it("delivers everything when launched at the root", () => {
+    const fx = materialise("claude-external-headless");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({
+      "CLAUDE.md": "launch",
+      "AGENTS.md": "import",
+      "packages/api/CLAUDE.md": "on-read",
+      "packages/api/AGENTS.md": "on-read",
+    });
+    expect(codes(r)).toEqual(["claude.nested"]);
+    expect(r.approval).toBeUndefined();
+  });
+
+  it("twin: with claude-md-and-agents-md the root AGENTS.md is read as an AGENTS.md, no approval needed", () => {
+    const fx = materialise("claude-external-headless-twin");
+    const r = run(fx, "packages/api");
+    expect(r.mode).toBe("claude-md-and-agents-md");
+    expect(deliveries(fx, r)).toEqual({
+      "CLAUDE.md": "launch",
+      "AGENTS.md": "launch",
+      "packages/api/CLAUDE.md": "launch",
+      "packages/api/AGENTS.md": "import",
+    });
+    expect(r.files).toHaveLength(4);
+    expect(r.findings).toEqual([]);
+  });
+
+  it("loads the import once .claude.json records the approval, and says where that holds", () => {
+    const fx = materialise("claude-external-headless");
+    // Claude Code writes project keys with forward slashes on Windows too.
+    writeClaudeJson(fx, {
+      [fx.repo.split(path.sep).join("/")]: { hasClaudeMdExternalIncludesApproved: true, allowedTools: [] },
+    });
+    const r = run(fx, "packages/api");
+    expect(deliveries(fx, r)["AGENTS.md"]).toBe("import");
+    expect(r.files.find((f) => f.path === fx.at("AGENTS.md"))?.needsApproval).toBeUndefined();
+    expect(codes(r)).toEqual(["claude.external-import"]);
+    expect(r.findings[0]?.message).toContain(
+      "~/.claude.json records that external imports are approved for this project",
+    );
+    expect(r.approval).toMatchObject({ approved: true, why: "approved" });
+  });
+
+  it("treats a refusal, another project's approval or a missing key as no approval", () => {
+    for (const [projects, why] of [
+      [{ REPO: { hasClaudeMdExternalIncludesApproved: false } }, "not approved"],
+      [{ REPO: { hasClaudeMdExternalIncludesWarningShown: true } }, "not approved"],
+      [
+        { [path.join(path.sep, "elsewhere")]: { hasClaudeMdExternalIncludesApproved: true } },
+        "no entry for this project",
+      ],
+    ] as const) {
+      const fx = materialise("claude-external-headless");
+      const named = Object.fromEntries(Object.entries(projects).map(([k, v]) => [k === "REPO" ? fx.repo : k, v]));
+      writeClaudeJson(fx, named);
+      const r = run(fx, "packages/api");
+      expect(deliveries(fx, r)["AGENTS.md"]).toBe("not-loaded");
+      expect(r.approval?.why).toBe(why);
+      expect(r.findings[0]?.message).toContain(`(${why})`);
+    }
+  });
+
+  it("looks the approval up under the main worktree of a linked worktree", () => {
+    const fx = materialise("claude-external-headless", { git: false });
+    const main = path.join(fx.base, "main");
+    mkdirSync(path.join(main, ".git", "worktrees", "feature"), { recursive: true });
+    writeFileSync(path.join(fx.repo, ".git"), `gitdir: ${path.join(main, ".git", "worktrees", "feature")}\n`);
+    writeClaudeJson(fx, { [main]: { hasClaudeMdExternalIncludesApproved: true } });
+    const r = run(fx, "packages/api");
+    expect(r.approval).toMatchObject({ project: main, approved: true });
+    expect(deliveries(fx, r)["AGENTS.md"]).toBe("import");
+  });
+
+  it("uses the launch directory as the project outside git", () => {
+    const fx = materialise("claude-external-headless", { git: false });
+    const r = run(fx, "packages/api");
+    expect(r.approval?.project).toBe(fx.at("packages/api"));
+  });
+
+  it("fails loudly on a .claude.json that is not JSON or holds a non-boolean approval", () => {
+    const fx = materialise("claude-external-headless");
+    writeFileSync(path.join(fx.home, ".claude.json"), "{ not json");
+    expect(() => run(fx, "packages/api")).toThrow(/\.claude\.json: not valid JSON/);
+    writeClaudeJson(fx, { [fx.repo]: { hasClaudeMdExternalIncludesApproved: "yes" } });
+    expect(() => run(fx, "packages/api")).toThrow(/hasClaudeMdExternalIncludesApproved/);
+  });
+
+  it("does not read .claude.json when no import leaves the launch directory", () => {
+    const fx = materialise("claude-external-headless");
+    writeFileSync(path.join(fx.home, ".claude.json"), "{ not json");
+    expect(run(fx).approval).toBeUndefined();
+  });
+
+  it("leaves out an AGENTS.md's external import, which Claude Code never asks about", () => {
+    const fx = materialise("claude-root-shadows-package-twin");
+    mkdirSync(fx.at("docs"));
+    writeFileSync(fx.at("docs/api.md"), "# API notes\n");
+    writeFileSync(fx.at("packages/api/AGENTS.md"), "# API\n\n@../../docs/api.md\n");
+    const r = run(fx, "packages/api");
+    expect(deliveries(fx, r)).toMatchObject({ "packages/api/AGENTS.md": "launch", "docs/api.md": "not-loaded" });
+    expect(codes(r)).toEqual(["claude.external-import-headless"]);
+    expect(r.findings[0]?.message).toContain("loads an AGENTS.md's external imports only if they were approved");
+  });
+});
+
+describe("the recorded external imports that map got wrong", () => {
+  // test/recorded/nested-api-recall and ancestor-imports-recall (2.1.280,
+  // claude -p) saw these imports not load, 0/2 and 0/2, while map predicted
+  // "import, needs approval". The probe copy is a new path every run, so no
+  // approval can exist for it.
+  it.each([
+    ["nested-claude", "docs/testing.md"],
+    ["ancestor-imports", "docs/outside.md"],
+  ])("%s from packages/api: map now predicts %s not loaded, which is what the runs saw", (source, file) => {
+    const fx = materialise("claude-local-shadows-agents-twin");
+    const repo = path.join(fx.base, "copy");
+    cpSync(path.join(ROOT, "test", "recorded", "sources", source), repo, { recursive: true });
+    mkdirSync(path.join(repo, ".git"));
+    const r = runIn(fx, repo, "packages/api");
+    const row = r.files.find((f) => f.path === path.join(repo, ...file.split("/")));
+    expect(row).toMatchObject({ delivery: "not-loaded", needsApproval: true });
+    expect(codes(r)).toContain("claude.external-import-headless");
   });
 });
 

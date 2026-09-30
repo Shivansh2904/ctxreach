@@ -6,6 +6,7 @@ import registry from "../../../docs/evidence.json" with { type: "json" };
 import { discoverSurfaces, markdownFilesUnder, type SurfaceKind } from "../../discover/surfaces.js";
 import { ancestors, displayPath, isFileNamed, isInside, samePath } from "../../util/fs.js";
 import type { Delivery, Finding } from "../types.js";
+import { externalImportApproval, type ExternalImportApproval } from "./approvals.js";
 import { importTokens, resolveImport } from "./imports.js";
 import {
   CLAUDE_DEFAULT_MODE,
@@ -53,6 +54,8 @@ export interface ClaudeResult {
   files: ClaudeFile[];
   /** `@` tokens that name no existing file (Claude Code ignores them). */
   unresolvedImports: { in: string; token: string }[];
+  /** The external-import approval looked up in `.claude.json`, when an import resolved outside the launch directory. */
+  approval?: ExternalImportApproval;
   findings: Finding[];
 }
 
@@ -70,6 +73,8 @@ export interface ClaudeResolveOptions {
   version?: string;
   /** Stop the upward walk here. Claude Code itself walks to the filesystem root; tests use this to stay inside a temp dir. */
   ceiling?: string;
+  /** The file holding external-import approvals (rule `claude.imports`). Defaults to `.claude.json` in homeDir. */
+  claudeJson?: string;
 }
 
 const CLAUDE_NAMES = ["CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md"] as const;
@@ -139,9 +144,21 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   const files: ClaudeFile[] = [];
   const unresolvedImports: { in: string; token: string }[] = [];
   const delivered = new Map<string, ClaudeFile>();
+  /** Real paths of every row in `files`. */
+  const listed = new Set<string>();
   const rel = (p: string) => displayPath(p, scanRoot);
   const inRepo = (p: string) => isInside(p, scanRoot);
   const personalFile = path.join(homeDir, ".claude", "CLAUDE.md");
+  /** A path for messages: repository-relative inside it, `~/...` under home, else absolute. */
+  const show = (p: string) => (!inRepo(p) && isInside(p, homeDir) ? `~/${displayPath(p, homeDir)}` : rel(p));
+
+  // Rule claude.imports: an import from outside the launch directory loads
+  // only with an approval recorded in .claude.json, read when first needed.
+  const claudeJson = options.claudeJson ?? path.join(homeDir, ".claude.json");
+  let approval: ExternalImportApproval | undefined;
+  const approvalFor = () => (approval ??= externalImportApproval(launchDir, claudeJson, options.ceiling));
+  /** External imports left out for want of an approval, by real path. */
+  const blocked = new Map<string, { row: ClaudeFile; importer: string; scope: "project" | "agents" }>();
 
   // Rule claude.modes: user settings count, project and local settings do not.
   let mode: ClaudeMode = CLAUDE_DEFAULT_MODE;
@@ -218,6 +235,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
       });
     }
     files.push(file);
+    listed.add(real(file.path));
     if (file.delivery !== "not-loaded") delivered.set(real(file.path), file);
     return file;
   };
@@ -265,16 +283,32 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         continue;
       }
       const external = scope !== "user" && !isInside(target, launchDir);
+      if (external && !approvalFor().approved) {
+        // No recorded approval: left out, and so are its own imports.
+        if (blocked.has(real(target))) continue;
+        const row = add({
+          path: target,
+          kind: "import",
+          delivery: "not-loaded",
+          why: `imported by ${rel(file)} from outside the launch dir: no approval recorded, so left out (claude -p, SDK, CI)`,
+          rule: "claude.imports",
+          bytes: size(target),
+          importedBy: file,
+          depth: hops,
+          needsApproval: true,
+        });
+        blocked.set(real(target), { row, importer: file, scope });
+        continue;
+      }
       add({
         path: target,
         kind: "import",
         delivery: delivery === "on-read" ? "on-read" : "import",
-        why: `imported by ${rel(file)}${external ? (scope === "agents" ? " (external: loads only if already approved)" : " (external: needs approval)") : ""}`,
+        why: `imported by ${rel(file)}${external ? " (external: approved for this project)" : ""}`,
         rule: "claude.imports",
         bytes: size(target),
         importedBy: file,
         depth: hops,
-        ...(external ? { needsApproval: true } : {}),
       });
       if (external) {
         findings.push({
@@ -283,14 +317,21 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
           agent: "claude",
           rule: "claude.imports",
           path: target,
-          message:
-            scope === "agents"
-              ? `${rel(file)} imports ${rel(target)}, which is outside the launch directory. For an AGENTS.md, Claude Code loads it only if external imports were already approved for this project.`
-              : `${rel(file)} imports ${rel(target)}, which is outside the launch directory. Claude Code asks once to approve external imports; if that is declined, it never loads.`,
+          message: `${rel(file)} imports ${rel(target)}, which is outside the launch directory. ${show(claudeJson)} records that external imports are approved for this project, so it loads here; in a fresh clone, in CI or on another machine it does not.`,
         });
       }
       expandImports(target, scope, hops, delivery);
     }
+  };
+
+  // An imported file that loads anyway by another rule (an ancestor's
+  // CLAUDE.md, or an AGENTS.md the setting reads) is not left out after all.
+  const unblock = (file: string): void => {
+    const b = blocked.get(real(file));
+    if (!b) return;
+    blocked.delete(real(file));
+    files.splice(files.indexOf(b.row), 1);
+    listed.delete(real(file));
   };
 
   // Directories from the top of the walk down to the launch directory.
@@ -361,6 +402,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         continue;
       }
       if (delivered.has(real(file))) continue;
+      unblock(file);
       add({
         path: file,
         kind,
@@ -390,6 +432,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         continue;
       }
       if (agentsAtLaunch) {
+        unblock(file);
         add({
           path: file,
           kind,
@@ -399,6 +442,9 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
           bytes: size(file),
         });
         expandImports(file, "agents", 0, "launch");
+      } else if (blocked.has(real(file))) {
+        // Its import row already says why it does not arrive.
+        continue;
       } else {
         add({
           path: file,
@@ -413,9 +459,13 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   }
 
   // Everything else in the scanned tree.
-  const seen = new Set(files.map((f) => real(f.path)));
-  const surfaces = discoverSurfaces(scanRoot).filter((s) => !seen.has(real(s.path)));
-  for (const s of surfaces) {
+  // A file already listed (at launch, or imported by a file listed earlier in
+  // this loop) is not listed twice. AGENTS.md files come last, so a nested
+  // CLAUDE.md that imports its directory's AGENTS.md is seen first.
+  const isAgentsKind = (k: SurfaceKind) => k === "AGENTS.md" || k === ".claude/AGENTS.md";
+  const tree = discoverSurfaces(scanRoot);
+  for (const s of [...tree.filter((t) => !isAgentsKind(t.kind)), ...tree.filter((t) => isAgentsKind(t.kind))]) {
+    if (listed.has(real(s.path))) continue;
     const below = isInside(s.dir, launchDir) && !samePath(s.dir, launchDir);
     const atOrAbove = isInside(launchDir, s.dir);
     if (s.kind === "AGENTS.override.md" || s.kind === "AGENTS.local.md" || s.kind === "fallback") {
@@ -517,6 +567,27 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     }
   }
 
+  // Rule claude.imports: external imports left out for want of an approval.
+  for (const { row, importer, scope } of blocked.values()) {
+    const target = row.path;
+    const setting =
+      scope === "project" &&
+      (options.version === undefined || compareVersions(options.version, AGENTS_MD_MIN_VERSION) >= 0) &&
+      (path.basename(target) === "AGENTS.md" || target.endsWith(path.join(".claude", "AGENTS.md"))) &&
+      isInside(launchDir, path.dirname(target).replace(/[\\/]\.claude$/, ""));
+    findings.push({
+      code: "claude.external-import-headless",
+      severity: "warn",
+      agent: "claude",
+      rule: "claude.imports",
+      path: target,
+      message:
+        scope === "agents"
+          ? `${rel(importer)} imports ${rel(target)}, which is outside the launch directory. Claude Code loads an AGENTS.md's external imports only if they were approved for this project before, and never asks; ${show(claudeJson)} records no approval (${approvalFor().why}), so it is left out.`
+          : `${rel(importer)} imports ${rel(target)}, which is outside the launch directory, and ${show(claudeJson)} records no approval of external imports for this project (${approvalFor().why}). claude -p, the Agent SDK and CI never ask, so they leave it out; an interactive session asks once.${setting ? ` Setting Project instructions to claude-md-and-agents-md reads ${rel(target)} without the import.` : ""}`,
+    });
+  }
+
   // Findings about AGENTS.md that does not arrive.
   const lostAgents = files.filter(
     (f) =>
@@ -603,6 +674,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     shadowers,
     files,
     unresolvedImports,
+    ...(approval ? { approval } : {}),
     findings,
   };
 }

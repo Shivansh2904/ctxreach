@@ -56,7 +56,6 @@ const UNEXERCISED = [
   // version).
   "claude.home-ancestor",
   "claude.size",
-  "claude.subdirs",
   "claude.symlink",
   "claude.version",
   "codex.global",

@@ -6,6 +6,13 @@
       "agent": "claude",
       "date": "2026-09-30",
       "confidence": "source@2282079"
+    },
+    {
+      "rule": "claude.external-import-headless",
+      "status": "source",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "source@2282079"
     }
   ]
 }
