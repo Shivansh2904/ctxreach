@@ -22,8 +22,9 @@ jobs:
 
 There is no release tag yet, so pin a commit. The Action is a composite
 action that runs `node` on a committed single-file bundle
-(`action/dist/ctxreach.cjs`), so it needs no `npm install` and works on
-Ubuntu, Windows and macOS runners (Node 20 or later is on all of them).
+(`action/dist/ctxreach.cjs`), so it needs no `npm install`, only Node 20 or
+later on the runner's `PATH`, which GitHub-hosted runners have. Its own
+selftest runs it on Ubuntu and Windows.
 
 ## Inputs
 
@@ -35,8 +36,9 @@ Ubuntu, Windows and macOS runners (Node 20 or later is on all of them).
 | `fail-on` | `none` | `none` never fails the step. `warn` fails it on any warning. A list of finding codes (the Findings table in [rules.md](rules.md)), such as `codex.cut,claude.agents-shadowed`, fails it only on those. |
 
 An input that makes no sense (an unknown agent, a launch directory outside
-`path` or missing, a `fail-on` value that is not a finding code) fails the
-step with exit status 2 and an `::error` line saying which.
+`path` or missing, a `fail-on` code that is not in that Findings table, such
+as the typo `codex.cuts`, which would otherwise never match) fails the step
+with exit status 2 and an `::error` line saying which.
 
 ## Outputs
 
@@ -93,9 +95,11 @@ every runner. It does not see a developer's own `~/.claude/CLAUDE.md`,
 npx github:Shivansh2904/ctxreach map --from packages/api
 ```
 
-The same install was checked end to end from a local bare clone
-(`npx git+file:///.../ctxreach.git#<branch> map`) with an empty npm cache;
-see the branch's pull request for the transcript.
+On 2026-09-30 the same install was checked end to end on Windows (Node
+22.19.0, npm 10.9.3) from a local bare clone, `npx git+file:///<clone>#<branch>
+map`, with an empty npm cache; the same clone with the `prepare` script
+removed failed with no `ctxreach` command. The `github:` form itself goes
+through GitHub and was not run before the branch was pushed.
 
 ## For maintainers
 
