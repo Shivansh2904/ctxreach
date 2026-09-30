@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { agentEnv, claudeAdapter, claudeArgs, findClaude } from "../src/agents/claude/adapter.js";
-import { createSandbox, removeSandbox, SANDBOX_PREFIX } from "../src/probe/sandbox.js";
+import { createSandbox, gitEnv, removeSandbox, SANDBOX_PREFIX } from "../src/probe/sandbox.js";
 import { SafetyError, type RunRequest } from "../src/probe/types.js";
 import { materialise, tempDir } from "./helpers/fixture.js";
 
@@ -382,7 +382,7 @@ describe("running the agent (with a fake claude executable)", () => {
       try {
         const pkg = path.join(box.repo, "pkg");
         mkdirSync(pkg);
-        execFileSync("git", ["init", "-q", "--template="], { cwd: pkg, stdio: "ignore" });
+        execFileSync("git", ["init", "-q", "--template="], { cwd: pkg, env: gitEnv(), stdio: "ignore" });
         await expect(agent.run(request(pkg, { sandboxNonce: box.nonce }))).rejects.toThrow(/not the copy's own/);
         expect(started()).toBe(false);
       } finally {
