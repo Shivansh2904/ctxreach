@@ -91,6 +91,7 @@ describe("trap: ~/.claude/CLAUDE.md switches AGENTS.md off for a repository unde
     ]);
     expect(r.files[0]?.why).toBe("user file, and an ancestor's .claude/CLAUDE.md here");
     expect(r.shadowers).toEqual([personal]);
+    expect(r.agentsMd.reason).toBe("switched off by ~/.claude/CLAUDE.md");
     expect(r.agentsMd.read).toBe(false);
     expect(codes(r)).toEqual(["claude.agents-shadowed", "claude.home-ancestor"]);
     const finding = r.findings[1];

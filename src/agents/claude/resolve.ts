@@ -411,7 +411,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   } else if (shadowers.length === 0) {
     agentsAtLaunch = true;
   } else {
-    agentsReason = `switched off by ${shadowers.map(rel).join(", ")}`;
+    agentsReason = `switched off by ${shadowers.map(show).join(", ")}`;
   }
 
   // User scope (rules claude.user, claude.rules).
