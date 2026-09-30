@@ -20,6 +20,13 @@
       "agent": "claude",
       "date": "2026-09-30",
       "confidence": "docs@2026-09-30"
+    },
+    {
+      "rule": "codex.home-is-root",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-30",
+      "confidence": "source@c0d2694"
     }
   ]
 }

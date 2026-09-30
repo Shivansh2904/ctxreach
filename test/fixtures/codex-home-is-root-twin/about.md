@@ -1,0 +1,1 @@
+Clean twin of codex-home-is-root: Codex home is home/.codex, outside the repository, with its own AGENTS.md. The global file and the root AGENTS.md are different files, each read once. ctxreach must report nothing.

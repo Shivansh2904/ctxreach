@@ -216,6 +216,62 @@ describe("trap: a project .codex/config.toml raises the budget", () => {
   });
 });
 
+describe("trap: CODEX_HOME is the repository itself", () => {
+  it("reads the root AGENTS.md twice, as the global file and as the project's", () => {
+    const fx = materialise("codex-home-is-root");
+    const r = run(fx, ".", { codexHome: fx.repo });
+    expect(r.global?.path).toBe(fx.at("AGENTS.md"));
+    expect(names(r)).toEqual(["AGENTS.md"]);
+    expect(r.chain[0]?.status).toBe("loaded");
+    expect(codes(r)).toEqual(["codex.home-is-root", "codex.nested"]);
+    expect(r.findings[0]).toMatchObject({ path: fx.at("AGENTS.md"), rule: "codex.home-is-root", severity: "warn" });
+    expect(r.findings[0]?.message).toBe(
+      "Codex home (CODEX_HOME) is the project root, so Codex reads AGENTS.md twice: once as the global instructions file and once as that directory's project file. The model gets its text twice. Point CODEX_HOME at a directory outside the project.",
+    );
+    // The global copy is not charged to the budget; the project copy is.
+    expect(r.budget.used).toBe(r.chain[0]?.bytes);
+  });
+
+  it("still reads the root file twice from a package", () => {
+    const fx = materialise("codex-home-is-root");
+    const r = run(fx, "packages/api", { codexHome: fx.repo });
+    expect(names(r)).toEqual(["AGENTS.md", "packages/api/AGENTS.md"]);
+    expect(codes(r)).toEqual(["codex.home-is-root"]);
+  });
+
+  it("names the directory when CODEX_HOME is a package on the chain, and the cut of the second copy", () => {
+    const fx = materialise("codex-home-is-root");
+    // Room for the root file and 30 bytes of the package's.
+    const budget = readFileSync(fx.at("AGENTS.md")).length + 30;
+    const r = run(fx, "packages/api", { codexHome: fx.at("packages/api"), maxBytesOverride: budget });
+    expect(r.global?.path).toBe(fx.at("packages/api/AGENTS.md"));
+    const [finding] = r.findings.filter((f) => f.code === "codex.home-is-root");
+    expect(finding?.path).toBe(fx.at("packages/api/AGENTS.md"));
+    expect(finding?.message).toContain(
+      "Codex home (CODEX_HOME) is packages/api/, so Codex reads packages/api/AGENTS.md twice",
+    );
+    expect(finding?.message).toContain("(the second copy cut at byte 30)");
+  });
+
+  it("says nothing when the file there is empty, since neither copy adds text", () => {
+    const fx = materialise("codex-home-is-root");
+    writeFileSync(fx.at("AGENTS.md"), "  \n");
+    const r = run(fx, "packages/api", { codexHome: fx.repo });
+    expect(r.global).toBeUndefined();
+    expect(codes(r)).toEqual(["codex.empty"]);
+  });
+
+  it("twin: Codex home outside the repository has its own file, and each file is read once", () => {
+    const fx = materialise("codex-home-is-root-twin");
+    const r = run(fx);
+    expect(r.global?.path).toBe(path.join(fx.codexHome, "AGENTS.md"));
+    expect(names(r)).toEqual(["AGENTS.md"]);
+    expect(codes(r)).toEqual(["codex.nested"]);
+    const fromApi = run(fx, "packages/api");
+    expect(fromApi.findings).toEqual([]);
+  });
+});
+
 describe("other Codex rules", () => {
   it("loads no project files for a project marked untrusted", () => {
     const fx = materialise("codex-override-wins-twin");

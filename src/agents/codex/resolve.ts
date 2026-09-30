@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { discoverSurfaces, type Surface } from "../../discover/surfaces.js";
 import { dirsBetween, displayPath, isFileNamed, isInside, readBytes, samePath } from "../../util/fs.js";
@@ -220,6 +221,21 @@ export function resolveCodex(options: CodexResolveOptions): CodexResult {
     }
   }
 
+  // Rule codex.home-is-root: Codex home is a directory on the chain, so the
+  // file there is read once as the global file and again as a project file.
+  const twice = global && chain.find((e) => e.keptBytes > 0 && sameFile(e.path, global.path));
+  if (global && twice) {
+    const where = samePath(twice.dir, settings.projectRoot) ? "the project root" : `${rel(twice.dir)}/`;
+    findings.push({
+      code: "codex.home-is-root",
+      severity: "warn",
+      agent: "codex",
+      rule: "codex.home-is-root",
+      path: global.path,
+      message: `Codex home (CODEX_HOME) is ${where}, so Codex reads ${rel(global.path)} twice: once as the global instructions file and once as that directory's project file. The model gets its text twice${twice.status === "cut" ? ` (the second copy cut at byte ${twice.keptBytes})` : ""}. Point CODEX_HOME at a directory outside the project.`,
+    });
+  }
+
   const below = belowLaunch(options.scanRoot ?? launchDir, launchDir, candidates, settings.fallbackNames);
   for (const surface of below) {
     findings.push({
@@ -263,6 +279,18 @@ function readGlobal(codexHome: string): CodexGlobal | undefined {
     return { path: file, bytes: bytes.length, skippedEmpty };
   }
   return undefined;
+}
+
+/** One file under two spellings (a link, or case on Windows) counts as one. */
+function sameFile(a: string, b: string): boolean {
+  const real = (p: string) => {
+    try {
+      return realpathSync(p);
+    } catch {
+      return path.resolve(p);
+    }
+  };
+  return samePath(real(a), real(b));
 }
 
 function listSections(sections: string[], max = 4): string {
