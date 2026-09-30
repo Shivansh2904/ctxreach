@@ -1,0 +1,56 @@
+name: ctxreach
+description: Annotate where AGENTS.md and CLAUDE.md stop reaching Codex and Claude Code, as predicted by ctxreach map.
+author: Shivansh Mishra
+branding:
+  icon: eye
+  color: blue
+
+inputs:
+  path:
+    description: Directory to scan, usually the repository root, relative to the workspace.
+    required: false
+    default: "."
+  launch-dirs:
+    description: >-
+      Directories an agent is launched in, relative to path, one per line or
+      separated by commas. "auto" means path itself and every directory that
+      holds an instruction file.
+    required: false
+    default: auto
+  agents:
+    description: Agents to model, separated by commas (codex, claude), or all.
+    required: false
+    default: all
+  fail-on:
+    description: >-
+      none never fails the step; warn fails it on any warning; or a list of
+      finding codes, such as codex.cut,claude.agents-shadowed, fails it only
+      on those.
+    required: false
+    default: none
+
+outputs:
+  annotations:
+    description: Number of warning annotations written, after merging launch directories.
+    value: ${{ steps.map.outputs.annotations }}
+  warnings:
+    description: Number of warnings, summed over launch directories.
+    value: ${{ steps.map.outputs.warnings }}
+  launch-dirs:
+    description: Number of launch directories modelled.
+    value: ${{ steps.map.outputs.launch-dirs }}
+  json:
+    description: Path of a JSON file holding map's output for every launch directory.
+    value: ${{ steps.map.outputs.json }}
+
+runs:
+  using: composite
+  steps:
+    - id: map
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_LAUNCH_DIRS: ${{ inputs.launch-dirs }}
+        INPUT_AGENTS: ${{ inputs.agents }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+      run: node "${{ github.action_path }}/action/dist/ctxreach.cjs"

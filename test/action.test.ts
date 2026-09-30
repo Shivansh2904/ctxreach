@@ -1,4 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -21,6 +22,7 @@ import { materialise, tempDir, type Materialised } from "./helpers/fixture.js";
 vi.setConfig({ testTimeout: 60_000 });
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const BUNDLE = path.join(ROOT, "action", "dist", "ctxreach.cjs");
 
 /** `ctxreach map --json` from a launch directory of a fixture, with the fixture's own homes. */
 async function mapJson(fx: Materialised, from = "."): Promise<MapJson> {
@@ -284,5 +286,133 @@ describe("the Action (runAction)", () => {
     const fx = materialise("codex-over-cap");
     const r = action({ INPUT_PATH: "repo", GITHUB_WORKSPACE: fx.base }, fx.base);
     expect(warningLines(r.stdout)[0]).toMatch(/^::warning file=repo\/AGENTS\.md,line=\d+,/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// action.yml and its committed bundle, run the way GitHub runs them.
+
+const ACTION_YML = readFileSync(path.join(ROOT, "action.yml"), "utf8");
+
+/** The inputs action.yml declares, with their defaults (a deliberately small reader for this one file). */
+function declaredInputs(): Map<string, string> {
+  const block = ACTION_YML.split(/^inputs:\n/m)[1]?.split(/^\S/m)[0] ?? "";
+  const inputs = new Map<string, string>();
+  let current: string | undefined;
+  for (const line of block.split("\n")) {
+    const name = /^ {2}([a-z-]+):$/.exec(line);
+    if (name) current = name[1];
+    const def = /^ {4}default: (.*)$/.exec(line);
+    if (def && current) inputs.set(current, def[1]!.replace(/^"(.*)"$/, "$1"));
+  }
+  return inputs;
+}
+
+/** The env block of the composite step: variable name -> input name. */
+function stepEnv(): Map<string, string> {
+  return new Map(
+    [...ACTION_YML.matchAll(/^ {8}(INPUT_[A-Z_]+): \$\{\{ inputs\.([a-z-]+) \}\}$/gm)].map((m) => [m[1]!, m[2]!]),
+  );
+}
+
+/** Run the committed bundle with exactly the environment action.yml's step gives it. */
+function composite(inputs: Record<string, string>, workspace: string) {
+  const values = new Map(declaredInputs());
+  for (const [k, v] of Object.entries(inputs)) values.set(k, v);
+  const out = tempDir("composite");
+  const env: Record<string, string> = {
+    PATH: process.env.PATH ?? "",
+    SYSTEMROOT: process.env.SYSTEMROOT ?? "",
+    GITHUB_WORKSPACE: workspace,
+    GITHUB_ACTION_PATH: ROOT,
+    RUNNER_TEMP: out,
+    GITHUB_OUTPUT: path.join(out, "output"),
+    GITHUB_STEP_SUMMARY: path.join(out, "summary.md"),
+  };
+  for (const [variable, input] of stepEnv()) env[variable] = values.get(input) ?? "";
+  writeFileSync(env.GITHUB_OUTPUT!, "");
+  writeFileSync(env.GITHUB_STEP_SUMMARY!, "");
+  const run = /^ {6}run: node "\$\{\{ github\.action_path \}\}\/(action\/dist\/ctxreach\.cjs)"$/m.exec(ACTION_YML);
+  expect(run, "action.yml's step runs the bundle").not.toBeNull();
+  const p = spawnSync(process.execPath, [path.join(ROOT, run![1]!)], { cwd: workspace, env, encoding: "utf8" });
+  return {
+    status: p.status,
+    stdout: p.stdout,
+    stderr: p.stderr,
+    output: readFileSync(env.GITHUB_OUTPUT!, "utf8"),
+    summary: readFileSync(env.GITHUB_STEP_SUMMARY!, "utf8"),
+  };
+}
+
+describe("action.yml", () => {
+  it("passes every input to the step, and nothing else", () => {
+    const inputs = declaredInputs();
+    expect([...inputs.keys()]).toEqual(["path", "launch-dirs", "agents", "fail-on"]);
+    const env = stepEnv();
+    expect([...env.values()].sort()).toEqual([...inputs.keys()].sort());
+    for (const [variable, input] of env) expect(variable).toBe(`INPUT_${input.toUpperCase().replace(/-/g, "_")}`);
+  });
+
+  it("maps each output to the step's output of the same name", () => {
+    const outputs = [
+      ...ACTION_YML.matchAll(/^ {2}([a-z-]+):\n.*\n {4}value: \$\{\{ steps\.map\.outputs\.([a-z-]+) \}\}$/gm),
+    ];
+    expect(outputs.map((m) => [m[1], m[2]])).toEqual([
+      ["annotations", "annotations"],
+      ["warnings", "warnings"],
+      ["launch-dirs", "launch-dirs"],
+      ["json", "json"],
+    ]);
+  });
+});
+
+describe("the committed bundle, run as action.yml runs it (selftest)", () => {
+  it("trap: at least one annotation", () => {
+    const fx = materialise("codex-over-cap");
+    const r = composite({ path: "repo" }, fx.base);
+    expect(r.status, r.stderr).toBe(0);
+    expect(warningLines(r.stdout).length).toBeGreaterThanOrEqual(1);
+    expect(r.stdout).toContain("::warning file=repo/AGENTS.md,line=");
+    expect(r.output).toMatch(/^annotations=[1-9]\d*$/m);
+    expect(r.summary).toContain("### From `.`");
+  });
+
+  it("twin: exactly zero annotations", () => {
+    const fx = materialise("codex-over-cap-twin");
+    const r = composite({ path: "repo", "fail-on": "warn" }, fx.base);
+    expect(r.status, r.stderr).toBe(0);
+    expect(warningLines(r.stdout)).toEqual([]);
+    expect(r.output).toMatch(/^annotations=0$/m);
+  });
+
+  it("fail-on warn fails the step on the trap", () => {
+    const fx = materialise("codex-over-cap");
+    expect(composite({ path: "repo", "fail-on": "warn" }, fx.base).status).toBe(1);
+  });
+});
+
+describe("bundle freshness", () => {
+  const check = (...args: string[]) =>
+    spawnSync(process.execPath, [path.join(ROOT, "scripts", "bundle-action.mjs"), "--check", ...args], {
+      cwd: ROOT,
+      encoding: "utf8",
+    });
+
+  it("the committed bundle matches a fresh build", () => {
+    const r = check();
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stdout).toMatch(/matches a fresh build/);
+  });
+
+  it("a bundle one byte off fails the check, naming the byte", () => {
+    const copy = path.join(tempDir("drift"), "ctxreach.cjs");
+    copyFileSync(BUNDLE, copy);
+    const bytes = readFileSync(copy);
+    const at = Math.floor(bytes.length / 2);
+    bytes[at] = bytes[at] === 0x20 ? 0x21 : 0x20;
+    writeFileSync(copy, bytes);
+    const r = check("--against", copy);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(`differs from a fresh build at byte ${at}`);
   });
 });
