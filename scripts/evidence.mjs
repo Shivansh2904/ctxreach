@@ -552,6 +552,18 @@ export const PLANTS = [
     replace: "const bytes = (text: string) => text.length;",
   },
   {
+    name: "summary-says-nothing-above-path",
+    file: "src/report/markdown.ts",
+    find: "const above = [...aboveWords(agents, options.scanned), ...codexRootsAbove(runs, options.scanned)];",
+    replace: "const above = [`And nothing above ${code(options.scanned)} is read.`];",
+  },
+  {
+    name: "summary-claude-no-above-path",
+    file: "src/report/markdown.ts",
+    find: 'agent === "claude" && outside(row.path) && !json.claude?.files.some((f) => f.path === row.path)',
+    replace: "false",
+  },
+  {
     name: "action-reads-runner-home",
     file: "src/report/annotations.ts",
     find: 'codex: { home: path.join(home, ".codex") },',

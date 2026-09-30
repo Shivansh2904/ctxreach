@@ -30,7 +30,7 @@ selftest runs it on Ubuntu and Windows.
 
 | Input | Default | Meaning |
 |---|---|---|
-| `path` | `.` | Directory to scan, relative to the workspace: usually the repository root. Nothing above it is read. |
+| `path` | `.` | Directory to scan, relative to the workspace: usually the repository root. Claude Code is modelled up to it; Codex, from the nearest `.git` at or above each launch directory, which can be above it (see [What it models](#what-it-models)). |
 | `launch-dirs` | `auto` | Directories an agent is launched in, relative to `path`, one per line or separated by commas. `auto` is `path` itself and every directory that holds an instruction file (for a file under `.claude/`, the directory that holds `.claude`). |
 | `agents` | `all` | `codex`, `claude`, or both separated by a comma. |
 | `fail-on` | `none` | `none` never fails the step. `warn` fails it on any warning. A list of finding codes (the Findings table in [rules.md](rules.md)), such as `codex.cut,claude.agents-shadowed`, fails it only on those. |
@@ -80,11 +80,25 @@ log has every one, and the job summary lists every finding.
 ## What it models
 
 The Action models a machine with no personal configuration: an empty
-`~/.codex` and `~/.claude`, whatever the runner's home holds, and nothing
-above `path`. So it answers "what does a fresh clone deliver", the same on
-every runner. It does not see a developer's own `~/.claude/CLAUDE.md`,
-`~/.codex/config.toml` or `CLAUDE.local.md` files that are not committed. Run
-`ctxreach map` on your own machine for those.
+`~/.codex` and `~/.claude`, whatever the runner's home holds. So it answers
+"what does a fresh clone deliver", the same on every runner. It does not see a
+developer's own `~/.claude/CLAUDE.md`, `~/.codex/config.toml` or
+`CLAUDE.local.md` files that are not committed. Run `ctxreach map` on your own
+machine for those.
+
+Above `path`, the two agents are modelled differently, and the job summary
+says so in these words:
+
+- For Claude Code, nothing above `path` is read except a file an `@import`
+  names, so CLAUDE.md and AGENTS.md files above it are not modelled.
+- For Codex, files are read as Codex reads them: from the nearest directory at
+  or above the launch directory that holds `.git` (the launch directory alone
+  if none does), which can be above `path`.
+
+So with `path: services/api` in a repository whose root holds `.git` and an
+`AGENTS.md`, that `AGENTS.md` is read for Codex. The summary then names the
+directory Codex starts from, above `services/api`, and lists the file under
+its absolute path, with "not modelled" in the Claude Code column.
 
 ## Without the Action
 

@@ -15,7 +15,7 @@ import {
 } from "../src/report/annotations.js";
 import { map } from "../src/map/map.js";
 import { MapJson, toJson } from "../src/report/json.js";
-import { renderSummary } from "../src/report/markdown.js";
+import { aboveWords, renderSummary } from "../src/report/markdown.js";
 import { materialise, tempDir, type Materialised } from "./helpers/fixture.js";
 // @ts-expect-error -- plain JavaScript script without type declarations
 import { knownCodes } from "../scripts/bundle-action.mjs";
@@ -361,6 +361,83 @@ describe("the Action (runAction)", () => {
     const fx = materialise("codex-over-cap");
     const r = action({ INPUT_PATH: "repo", GITHUB_WORKSPACE: fx.base }, fx.base);
     expect(warningLines(r.stdout)[0]).toMatch(/^::warning file=repo\/AGENTS\.md,line=\d+,/);
+  });
+
+  /** A workspace whose root holds `.git` and an AGENTS.md, scanned at `sub/`, which holds neither. */
+  function gitRootAbovePath(): { workspace: string; above: string } {
+    const workspace = tempDir("git-root-above-path");
+    mkdirSync(path.join(workspace, ".git"));
+    writeFileSync(path.join(workspace, "AGENTS.md"), "# Rules for the whole repository\n");
+    mkdirSync(path.join(workspace, "sub"));
+    writeFileSync(path.join(workspace, "sub", "index.ts"), "export {};\n");
+    return { workspace, above: path.join(workspace, "AGENTS.md").split(path.sep).join("/") };
+  }
+
+  it("a .git and an AGENTS.md above path, none inside: Codex reads it, Claude Code does not, and the summary says so", () => {
+    const { workspace, above } = gitRootAbovePath();
+    const r = action({ INPUT_PATH: "sub", GITHUB_WORKSPACE: workspace }, workspace);
+    const run = r.runs[0]!;
+    // What map predicts: Codex's chain starts at the git root above path; Claude Code's walk stops at path.
+    expect(run.codex?.projectRoot).toBe(workspace.split(path.sep).join("/"));
+    expect(run.codex?.chain.map((e) => [e.path, e.status])).toEqual([[above, "loaded"]]);
+    expect(run.claude?.files).toEqual([]);
+    expect(run.matrix.map((m) => [m.path, m.codex?.delivery])).toEqual([[above, "launch"]]);
+    // What the summary says about it: the old "and nothing above `sub` is read" was false for Codex.
+    expect(r.summary).not.toContain("and nothing above `sub` is read.");
+    expect(r.summary).toContain(
+      "For Claude Code, nothing above `sub` is read except a file an `@import` names, " +
+        "so CLAUDE.md and AGENTS.md files above it are not modelled.",
+    );
+    expect(r.summary).toContain(
+      "For Codex, files are read as Codex reads them: from the nearest directory at or above the launch directory " +
+        "that holds `.git` (the launch directory alone if none does), which can be above `sub`.",
+    );
+    expect(r.summary).toContain(
+      `From \`.\`, Codex starts above \`sub\`, at \`${workspace.split(path.sep).join("/")}\`.`,
+    );
+    // Its row: Codex reads it at launch; for Claude Code the Action does not model it (not "no").
+    expect(r.summary).toContain(`| \`${above}\` | launch | not modelled (above \`sub\`) |`);
+  });
+
+  it("twin: with its own .git, path is where Codex starts, and the summary names no directory above it", () => {
+    const { workspace } = gitRootAbovePath();
+    mkdirSync(path.join(workspace, "sub", ".git"));
+    const r = action({ INPUT_PATH: "sub", GITHUB_WORKSPACE: workspace }, workspace);
+    expect(r.runs[0]!.codex?.projectRoot).toBe(".");
+    expect(r.runs[0]!.codex?.chain).toEqual([]);
+    expect(r.summary).toContain("which can be above `sub`.");
+    expect(r.summary).not.toContain("Codex starts above");
+  });
+
+  it("an @import that points above path is read for Claude Code, as the summary says", () => {
+    const { workspace } = gitRootAbovePath();
+    writeFileSync(path.join(workspace, "notes.md"), "# Notes\n");
+    writeFileSync(path.join(workspace, "sub", "CLAUDE.md"), "See @../notes.md\n");
+    const run = action({ INPUT_PATH: "sub", GITHUB_WORKSPACE: workspace }, workspace).runs[0]!;
+    expect(run.claude?.files.map((f) => [f.path, f.kind])).toEqual([
+      ["CLAUDE.md", "CLAUDE.md"],
+      [path.join(workspace, "notes.md").split(path.sep).join("/"), "import"],
+    ]);
+  });
+
+  it("names only the agents modelled when it says what is read above path", () => {
+    const { workspace } = gitRootAbovePath();
+    const codex = action({ INPUT_PATH: "sub", GITHUB_WORKSPACE: workspace, INPUT_AGENTS: "codex" }, workspace);
+    expect(codex.summary).toContain("For Codex, files are read as Codex reads them");
+    expect(codex.summary).not.toContain("For Claude Code");
+    const claude = action({ INPUT_PATH: "sub", GITHUB_WORKSPACE: workspace, INPUT_AGENTS: "claude" }, workspace);
+    expect(claude.summary).toContain("For Claude Code, nothing above `sub` is read except a file an `@import` names");
+    expect(claude.summary).not.toContain("For Codex");
+  });
+});
+
+describe("docs/action.md", () => {
+  it("says what is read above path in the words the summary uses", () => {
+    const doc = readFileSync(path.join(ROOT, "docs", "action.md"), "utf8").replace(/\s+/g, " ");
+    // The old claims, false for Codex: "Nothing above it is read" (the path input) and "and nothing above `path`".
+    expect(doc).not.toContain("Nothing above it is read");
+    expect(doc).not.toContain("and nothing above `path`.");
+    for (const sentence of aboveWords(["codex", "claude"], "path")) expect(doc).toContain(sentence);
   });
 });
 

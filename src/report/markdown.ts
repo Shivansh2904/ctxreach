@@ -61,18 +61,66 @@ function agentsOf(json: MapJson): AgentKey[] {
   return (["codex", "claude"] as AgentKey[]).filter((a) => json[a] !== undefined);
 }
 
-/** One launch directory: its matrix and its findings. */
-export function launchSection(json: MapJson): string {
+/** A path in `--json` output is outside the scanned directory when it is absolute. */
+const outside = (p: string) => p.startsWith("/") || /^[A-Za-z]:/.test(p);
+
+/**
+ * What the summary says is read above the scanned directory, per agent. The
+ * Action stops Claude Code's upward walk at the scanned directory; Codex's
+ * chain starts where Codex starts it, at the nearest `.git`, which can be
+ * above. docs/action.md carries the same sentences, with `path`.
+ */
+export function aboveWords(agents: readonly AgentKey[], scanned: string): string[] {
+  const out: string[] = [];
+  if (agents.includes("claude"))
+    out.push(
+      `For Claude Code, nothing above ${code(scanned)} is read except a file an \`@import\` names, ` +
+        "so CLAUDE.md and AGENTS.md files above it are not modelled.",
+    );
+  if (agents.includes("codex"))
+    out.push(
+      "For Codex, files are read as Codex reads them: from the nearest directory at or above the launch " +
+        `directory that holds \`.git\` (the launch directory alone if none does), which can be above ${code(scanned)}.`,
+    );
+  return out;
+}
+
+/** Where Codex's chain starts above the scanned directory, and from which launch directories. */
+function codexRootsAbove(runs: readonly MapJson[], scanned: string): string[] {
+  const from = new Map<string, string[]>();
+  for (const r of runs) {
+    const root = r.codex?.projectRoot;
+    if (root !== undefined && outside(root)) from.set(root, [...(from.get(root) ?? []), r.launchDir]);
+  }
+  return [...from].map(([root, dirs]) => {
+    const which =
+      runs.length > 1 && dirs.length === runs.length
+        ? "every launch directory"
+        : dirs.slice(0, 5).map(code).join(", ") + (dirs.length > 5 ? ` and ${dirs.length - 5} more` : "");
+    return `From ${which}, Codex starts above ${code(scanned)}, at ${code(root)}.`;
+  });
+}
+
+/**
+ * One launch directory: its matrix and its findings. `scanned` names the
+ * scanned directory, for a file above it that Claude Code's walk, stopped
+ * there, never reached.
+ */
+export function launchSection(json: MapJson, scanned?: string): string {
   const agents = agentsOf(json);
   const lines: string[] = [];
   lines.push(`### From ${code(json.launchDir)}`, "");
   if (json.matrix.length === 0) {
     lines.push("No instruction files found.", "");
   } else {
+    const words = (row: MapJson["matrix"][number], agent: AgentKey) =>
+      agent === "claude" && outside(row.path) && !json.claude?.files.some((f) => f.path === row.path)
+        ? `not modelled (above ${scanned === undefined ? "the scanned directory" : code(scanned)})`
+        : cellWords(row[agent]);
     lines.push(`| file | ${agents.map((a) => AGENT_TITLES[a]).join(" | ")} |`);
     lines.push(`|---|${agents.map(() => "---").join("|")}|`);
     for (const row of json.matrix)
-      lines.push(`| ${tableText(code(row.path))} | ${agents.map((a) => tableText(cellWords(row[a]))).join(" | ")} |`);
+      lines.push(`| ${tableText(code(row.path))} | ${agents.map((a) => tableText(words(row, a))).join(" | ")} |`);
     lines.push("");
   }
   const findings = [...json.findings].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "warn" ? -1 : 1));
@@ -127,10 +175,11 @@ export function renderSummary(runs: readonly MapJson[], options: SummaryOptions)
   head.push(
     `Predicted by ctxreach ${options.version} from each agent's documented loading rules ` +
       "([docs/rules.md](https://github.com/Shivansh2904/ctxreach/blob/main/docs/rules.md)). " +
-      "No agent was run. The machine modelled has no personal Codex or Claude Code configuration, " +
-      `and nothing above ${code(options.scanned)} is read.`,
+      "No agent was run. The machine modelled has no personal Codex or Claude Code configuration.",
     "",
   );
+  const above = [...aboveWords(agents, options.scanned), ...codexRootsAbove(runs, options.scanned)];
+  if (above.length) head.push(above.join(" "), "");
   const warn = runs.reduce((n, r) => n + counts(r).warn, 0);
   head.push(
     `${runs.length} launch ${runs.length === 1 ? "directory" : "directories"}, ` +
@@ -153,7 +202,7 @@ export function renderSummary(runs: readonly MapJson[], options: SummaryOptions)
   let size = bytes(out);
   let shown = 0;
   for (const r of ordered) {
-    const section = "\n" + launchSection(r);
+    const section = "\n" + launchSection(r, options.scanned);
     const more = bytes(section);
     if (size + more > (options.limit ?? SUMMARY_LIMIT)) break;
     out += section;

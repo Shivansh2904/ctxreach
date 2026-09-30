@@ -21901,17 +21901,42 @@ function cellWords(cell) {
 function agentsOf(json2) {
   return ["codex", "claude"].filter((a) => json2[a] !== void 0);
 }
-function launchSection(json2) {
+var outside = (p) => p.startsWith("/") || /^[A-Za-z]:/.test(p);
+function aboveWords(agents, scanned) {
+  const out = [];
+  if (agents.includes("claude"))
+    out.push(
+      `For Claude Code, nothing above ${code(scanned)} is read except a file an \`@import\` names, so CLAUDE.md and AGENTS.md files above it are not modelled.`
+    );
+  if (agents.includes("codex"))
+    out.push(
+      `For Codex, files are read as Codex reads them: from the nearest directory at or above the launch directory that holds \`.git\` (the launch directory alone if none does), which can be above ${code(scanned)}.`
+    );
+  return out;
+}
+function codexRootsAbove(runs, scanned) {
+  const from = /* @__PURE__ */ new Map();
+  for (const r of runs) {
+    const root = r.codex?.projectRoot;
+    if (root !== void 0 && outside(root)) from.set(root, [...from.get(root) ?? [], r.launchDir]);
+  }
+  return [...from].map(([root, dirs]) => {
+    const which = runs.length > 1 && dirs.length === runs.length ? "every launch directory" : dirs.slice(0, 5).map(code).join(", ") + (dirs.length > 5 ? ` and ${dirs.length - 5} more` : "");
+    return `From ${which}, Codex starts above ${code(scanned)}, at ${code(root)}.`;
+  });
+}
+function launchSection(json2, scanned) {
   const agents = agentsOf(json2);
   const lines = [];
   lines.push(`### From ${code(json2.launchDir)}`, "");
   if (json2.matrix.length === 0) {
     lines.push("No instruction files found.", "");
   } else {
+    const words = (row, agent) => agent === "claude" && outside(row.path) && !json2.claude?.files.some((f) => f.path === row.path) ? `not modelled (above ${scanned === void 0 ? "the scanned directory" : code(scanned)})` : cellWords(row[agent]);
     lines.push(`| file | ${agents.map((a) => AGENT_TITLES[a]).join(" | ")} |`);
     lines.push(`|---|${agents.map(() => "---").join("|")}|`);
     for (const row of json2.matrix)
-      lines.push(`| ${tableText(code(row.path))} | ${agents.map((a) => tableText(cellWords(row[a]))).join(" | ")} |`);
+      lines.push(`| ${tableText(code(row.path))} | ${agents.map((a) => tableText(words(row, a))).join(" | ")} |`);
     lines.push("");
   }
   const findings = [...json2.findings].sort((a, b) => a.severity === b.severity ? 0 : a.severity === "warn" ? -1 : 1);
@@ -21945,9 +21970,11 @@ function renderSummary(runs, options) {
   const head = [];
   head.push("## ctxreach map", "");
   head.push(
-    `Predicted by ctxreach ${options.version} from each agent's documented loading rules ([docs/rules.md](https://github.com/Shivansh2904/ctxreach/blob/main/docs/rules.md)). No agent was run. The machine modelled has no personal Codex or Claude Code configuration, and nothing above ${code(options.scanned)} is read.`,
+    `Predicted by ctxreach ${options.version} from each agent's documented loading rules ([docs/rules.md](https://github.com/Shivansh2904/ctxreach/blob/main/docs/rules.md)). No agent was run. The machine modelled has no personal Codex or Claude Code configuration.`,
     ""
   );
+  const above = [...aboveWords(agents, options.scanned), ...codexRootsAbove(runs, options.scanned)];
+  if (above.length) head.push(above.join(" "), "");
   const warn = runs.reduce((n, r) => n + counts(r).warn, 0);
   head.push(
     `${runs.length} launch ${runs.length === 1 ? "directory" : "directories"}, ${warn} ${warn === 1 ? "warning" : "warnings"} in all, ${options.annotations} ${options.annotations === 1 ? "annotation" : "annotations"} (GitHub shows at most 10 warning annotations per step; the log has every one).`,
@@ -21966,7 +21993,7 @@ function renderSummary(runs, options) {
   let size2 = bytes(out);
   let shown = 0;
   for (const r of ordered) {
-    const section = "\n" + launchSection(r);
+    const section = "\n" + launchSection(r, options.scanned);
     const more = bytes(section);
     if (size2 + more > (options.limit ?? SUMMARY_LIMIT)) break;
     out += section;

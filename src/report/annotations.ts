@@ -352,10 +352,12 @@ export function fails(runs: readonly MapJson[], failOn: ActionInputs["failOn"]):
 
 /**
  * Run the Action: `map` from each launch directory, on a machine with no
- * personal Codex or Claude Code configuration and nothing above the scanned
- * directory; print one `::warning` per merged annotation; append the job
- * summary; set the step outputs. Returns the exit status: 0, 1 when
- * `fail-on` is met, 2 for an input error.
+ * personal Codex or Claude Code configuration, with Claude Code's upward walk
+ * stopped at the scanned directory (Codex's chain starts where Codex starts
+ * it, at the nearest `.git`, which can be above that directory); print one
+ * `::warning` per merged annotation; append the job summary; set the step
+ * outputs. Returns the exit status: 0, 1 when `fail-on` is met, 2 for an
+ * input error.
  */
 export function runAction(io: ActionIo): ActionResult {
   let inputs: ActionInputs;
