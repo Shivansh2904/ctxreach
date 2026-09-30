@@ -17,6 +17,11 @@ import {
 import { MapJson } from "../src/report/json.js";
 import { renderSummary } from "../src/report/markdown.js";
 import { materialise, tempDir, type Materialised } from "./helpers/fixture.js";
+// @ts-expect-error -- plain JavaScript script without type declarations
+import { knownCodes } from "../scripts/bundle-action.mjs";
+
+/** The finding codes the bundle carries (docs/rules.md's Findings table). */
+const KNOWN_CODES: readonly string[] = knownCodes();
 
 // These tests copy repositories and start processes; on a busy machine that takes more than the default 5 s.
 vi.setConfig({ testTimeout: 60_000 });
@@ -228,6 +233,7 @@ function action(env: Record<string, string>, cwd = ROOT) {
     env: { RUNNER_TEMP: out, GITHUB_OUTPUT: files.output, GITHUB_STEP_SUMMARY: files.summary, ...env },
     cwd,
     version: "0.0.0-test",
+    knownCodes: KNOWN_CODES,
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
   });
@@ -303,6 +309,7 @@ describe("the Action (runAction)", () => {
   it.each([
     [{ INPUT_AGENTS: "gemini" }, /unknown agent "gemini"/],
     [{ INPUT_FAIL_ON: "sometimes" }, /fail-on: "sometimes"/],
+    [{ INPUT_FAIL_ON: "codex.cut,codex.cuts" }, /fail-on: "codex\.cuts" is not a finding code ctxreach reports/],
     [{ INPUT_LAUNCH_DIRS: ".." }, /launch-dirs: \.\. is outside/],
     [{ INPUT_LAUNCH_DIRS: "nope" }, /launch-dirs: nope is not a directory/],
     [{ INPUT_PATH: "no/such/dir" }, /path no\/such\/dir is not a directory/],
@@ -420,6 +427,27 @@ describe("the committed bundle, run as action.yml runs it (selftest)", () => {
   it("fail-on warn fails the step on the trap", () => {
     const fx = materialise("codex-over-cap");
     expect(composite({ path: "repo", "fail-on": "warn" }, fx.base).status).toBe(1);
+  });
+
+  it("carries the finding codes: a code with a typo is an input error, the real code fails the trap", () => {
+    const fx = materialise("codex-over-cap");
+    const typo = composite({ path: "repo", "fail-on": "codex.cuts" }, fx.base);
+    expect(typo.status).toBe(2);
+    expect(typo.stdout).toMatch(/^::error title=ctxreach::fail-on: "codex\.cuts" is not a finding code/);
+    expect(composite({ path: "repo", "fail-on": "codex.cut" }, fx.base).status).toBe(1);
+  });
+});
+
+describe("the finding codes fail-on may name", () => {
+  it("are the Findings table of docs/rules.md", () => {
+    const doc = readFileSync(path.join(ROOT, "docs", "rules.md"), "utf8");
+    const findings = doc.split(/^## Findings$/m)[1]?.split(/^## /m)[0] ?? "";
+    // Read here without the script's parser: the first column of each table row.
+    const codes = [...findings.matchAll(/^\| `((?:codex|claude)\.[a-z0-9-]+)` \|/gm)].map((m) => m[1]);
+    expect(codes.length).toBeGreaterThanOrEqual(20);
+    expect([...KNOWN_CODES]).toEqual([...new Set(codes)].sort());
+    expect(KNOWN_CODES).toContain("codex.cut");
+    expect(KNOWN_CODES).toContain("claude.agents-shadowed");
   });
 });
 

@@ -540,6 +540,12 @@ export const PLANTS = [
     replace: "",
   },
   {
+    name: "fail-on-unknown-code-accepted",
+    file: "src/report/annotations.ts",
+    find: "if (!knownCodes.includes(c))",
+    replace: "if (false)",
+  },
+  {
     name: "summary-limit-in-characters",
     file: "src/report/markdown.ts",
     find: 'const bytes = (text: string) => Buffer.byteLength(text, "utf8");',

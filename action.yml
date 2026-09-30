@@ -25,7 +25,8 @@ inputs:
     description: >-
       none never fails the step; warn fails it on any warning; or a list of
       finding codes, such as codex.cut,claude.agents-shadowed, fails it only
-      on those.
+      on those. A code that is not in the Findings table of docs/rules.md is
+      an input error.
     required: false
     default: none
 

@@ -22128,7 +22128,8 @@ var AGENTS = ["codex", "claude"];
 function list(value) {
   return value.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
 }
-function readInputs(env, cwd) {
+function readInputs(env, cwd, knownCodes) {
+  if (knownCodes.length === 0) throw new Error("readInputs: no known finding codes to check fail-on against");
   const given = (env.INPUT_PATH ?? "").trim() || ".";
   const root = import_node_path10.default.resolve(cwd, given);
   let isDir = false;
@@ -22150,9 +22151,14 @@ function readInputs(env, cwd) {
   if (failText === "none" || failText === "warn") failOn = failText;
   else {
     failOn = list(failText);
-    for (const c of failOn)
+    for (const c of failOn) {
       if (!/^(codex|claude)\.[a-z0-9-]+$/.test(c))
         throw new InputError(`fail-on: "${c}" is not none, warn, or a finding code such as codex.cut`);
+      if (!knownCodes.includes(c))
+        throw new InputError(
+          `fail-on: "${c}" is not a finding code ctxreach reports (known: ${[...knownCodes].sort().join(", ")})`
+        );
+    }
   }
   return { root, launchDirs, agents, failOn };
 }
@@ -22189,7 +22195,7 @@ function runAction(io) {
   let inputs;
   let dirs;
   try {
-    inputs = readInputs(io.env, io.cwd);
+    inputs = readInputs(io.env, io.cwd, io.knownCodes);
     dirs = launchDirsFor(inputs.root, inputs.launchDirs);
   } catch (err) {
     if (!(err instanceof InputError)) throw err;
@@ -22251,6 +22257,7 @@ try {
     env: process.env,
     cwd: process.cwd(),
     version,
+    knownCodes: ["claude.agents-shadowed", "claude.external-import", "claude.import-too-deep", "claude.mode-in-project-settings", "claude.nested", "claude.too-large", "claude.version-no-agents", "claude.version-some-sessions", "claude.words-not-import", "codex.cut", "codex.empty", "codex.empty-override", "codex.mid-codepoint", "codex.nested", "codex.no-budget", "codex.no-root", "codex.project-config-ignored", "codex.shadowed", "codex.untrusted", "codex.zero-budget"],
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text)
   });

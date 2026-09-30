@@ -3,7 +3,8 @@
 // The Action runs `node action/dist/ctxreach.cjs` (see action.yml), so the
 // bundle is committed: a workflow that uses the Action gets no npm install.
 // Everything it needs, zod and smol-toml included, is inlined. The entry is
-// a few lines below that call runAction() from src/report/annotations.ts.
+// a few lines below that call runAction() from src/report/annotations.ts,
+// with the finding codes of docs/rules.md that `fail-on` is checked against.
 //
 // The output is deterministic (same sources, same esbuild from the lockfile,
 // same bytes on every OS), so a fresh build can be compared with the
@@ -22,11 +23,23 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { rulesDocIds } from "./evidence.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const BUNDLE = path.join(ROOT, "action", "dist", "ctxreach.cjs");
 
-const ENTRY = `import { version } from "./package.json";
+/**
+ * The finding codes the Action's `fail-on` may name: the Findings table of
+ * docs/rules.md, read when the bundle is built, so the bundle (and its
+ * freshness check) changes when that table does.
+ */
+export function knownCodes(root = ROOT) {
+  const codes = rulesDocIds(readFileSync(path.join(root, "docs", "rules.md"), "utf8")).findings;
+  if (codes.length === 0) throw new Error("docs/rules.md: no finding codes in its Findings table");
+  return [...codes].sort();
+}
+
+const entry = (codes) => `import { version } from "./package.json";
 import { escapeData, runAction } from "./src/report/annotations.ts";
 
 try {
@@ -34,6 +47,7 @@ try {
     env: process.env,
     cwd: process.cwd(),
     version,
+    knownCodes: ${JSON.stringify(codes)},
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text),
   });
@@ -53,7 +67,7 @@ export async function buildBundle() {
   const require = createRequire(pathToFileURL(path.join(ROOT, "node_modules", "tsup", "package.json")));
   const esbuild = await import(pathToFileURL(require.resolve("esbuild")).href);
   const result = await esbuild.build({
-    stdin: { contents: ENTRY, resolveDir: ROOT, sourcefile: "action-entry.ts", loader: "ts" },
+    stdin: { contents: entry(knownCodes()), resolveDir: ROOT, sourcefile: "action-entry.ts", loader: "ts" },
     absWorkingDir: ROOT,
     bundle: true,
     platform: "node",

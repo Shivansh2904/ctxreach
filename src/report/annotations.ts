@@ -249,8 +249,14 @@ function list(value: string): string[] {
     .filter(Boolean);
 }
 
-/** Read the Action's inputs from the environment variables `action.yml` sets. */
-export function readInputs(env: NodeJS.ProcessEnv, cwd: string): ActionInputs {
+/**
+ * Read the Action's inputs from the environment variables `action.yml` sets.
+ * `knownCodes` are the finding codes `fail-on` may name: a code that is not
+ * one of them (a typo such as `codex.cuts`) would never match, so the step
+ * would pass for ever; it is an input error instead.
+ */
+export function readInputs(env: NodeJS.ProcessEnv, cwd: string, knownCodes: readonly string[]): ActionInputs {
+  if (knownCodes.length === 0) throw new Error("readInputs: no known finding codes to check fail-on against");
   const given = (env.INPUT_PATH ?? "").trim() || ".";
   const root = path.resolve(cwd, given);
   let isDir = false;
@@ -275,9 +281,14 @@ export function readInputs(env: NodeJS.ProcessEnv, cwd: string): ActionInputs {
   if (failText === "none" || failText === "warn") failOn = failText;
   else {
     failOn = list(failText);
-    for (const c of failOn)
+    for (const c of failOn) {
       if (!/^(codex|claude)\.[a-z0-9-]+$/.test(c))
         throw new InputError(`fail-on: "${c}" is not none, warn, or a finding code such as codex.cut`);
+      if (!knownCodes.includes(c))
+        throw new InputError(
+          `fail-on: "${c}" is not a finding code ctxreach reports (known: ${[...knownCodes].sort().join(", ")})`,
+        );
+    }
   }
   return { root, launchDirs, agents, failOn };
 }
@@ -319,6 +330,8 @@ export interface ActionIo {
   env: NodeJS.ProcessEnv;
   cwd: string;
   version: string;
+  /** The finding codes `fail-on` may name: the Findings table of docs/rules.md, which the bundle carries. */
+  knownCodes: readonly string[];
   stdout: (text: string) => void;
   stderr: (text: string) => void;
 }
@@ -348,7 +361,7 @@ export function runAction(io: ActionIo): ActionResult {
   let inputs: ActionInputs;
   let dirs: string[];
   try {
-    inputs = readInputs(io.env, io.cwd);
+    inputs = readInputs(io.env, io.cwd, io.knownCodes);
     dirs = launchDirsFor(inputs.root, inputs.launchDirs);
   } catch (err) {
     if (!(err instanceof InputError)) throw err;
