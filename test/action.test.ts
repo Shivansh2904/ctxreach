@@ -2,8 +2,7 @@ import { spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it, vi } from "vitest";
-import { createCli } from "../src/program.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   annotationsFor,
   escapeData,
@@ -14,7 +13,8 @@ import {
   workflowCommand,
   type ActionResult,
 } from "../src/report/annotations.js";
-import { MapJson } from "../src/report/json.js";
+import { map } from "../src/map/map.js";
+import { MapJson, toJson } from "../src/report/json.js";
 import { renderSummary } from "../src/report/markdown.js";
 import { materialise, tempDir, type Materialised } from "./helpers/fixture.js";
 // @ts-expect-error -- plain JavaScript script without type declarations
@@ -26,29 +26,35 @@ const KNOWN_CODES: readonly string[] = knownCodes();
 // These tests copy repositories and start processes; on a busy machine that takes more than the default 5 s.
 vi.setConfig({ testTimeout: 60_000 });
 
+// No test here may read the real home. map falls back to this process's home (and CODEX_HOME) when it
+// is given none, so point them at an empty directory for every test; withHome() below points them at a
+// fixture's home instead.
+const EMPTY_HOME = tempDir("empty-home");
+beforeEach(() => {
+  vi.stubEnv("HOME", EMPTY_HOME);
+  vi.stubEnv("USERPROFILE", EMPTY_HOME);
+  vi.stubEnv("CODEX_HOME", path.join(EMPTY_HOME, ".codex"));
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const BUNDLE = path.join(ROOT, "action", "dist", "ctxreach.cjs");
 
-/** `ctxreach map --json` from a launch directory of a fixture, with the fixture's own homes. */
+/**
+ * What `ctxreach map --json` prints from a launch directory of a fixture (the same toJson, round-tripped
+ * through JSON and its schema), with the fixture's own homes and nothing above the fixture: the walk
+ * for Claude Code's ancestor files stops at the fixture, so no file of the real home is read.
+ */
 async function mapJson(fx: Materialised, from = "."): Promise<MapJson> {
-  let stdout = "";
-  const cli = createCli({ stdout: (t) => (stdout += t), stderr: () => {} }, { exitOverride: true });
-  await cli.program.parseAsync([
-    "node",
-    "ctxreach",
-    "map",
-    "--json",
-    "--from",
-    fx.at(from),
-    "--repo",
-    fx.repo,
-    "--codex-home",
-    fx.codexHome,
-    "--claude-home",
-    fx.claudeHome,
-  ]);
-  expect(cli.status).toBe(0);
-  return MapJson.parse(JSON.parse(stdout));
+  const result = map({
+    launchDir: fx.at(from),
+    repoRoot: fx.repo,
+    codex: { home: fx.codexHome },
+    claude: { home: fx.claudeHome, ceiling: fx.base },
+  });
+  return MapJson.parse(JSON.parse(JSON.stringify(toJson(result, "0.0.0-test"))));
 }
 
 /** The 1-based line holding byte `offset` of a file, counted here without ctxreach's code. */
@@ -284,13 +290,43 @@ describe("the Action (runAction)", () => {
     expect(action({ INPUT_PATH: fx.repo, INPUT_FAIL_ON: "claude.agents-shadowed,codex.no-budget" }).status).toBe(0);
   });
 
-  it("models no personal configuration, whatever the runner's home holds", () => {
+  /**
+   * Point this process's home (and CODEX_HOME) at a fixture's home for the rest of the test (afterEach
+   * undoes it), so code that fell back to the default homes would read the fixture's personal
+   * configuration, never the real ~/.codex or ~/.claude. map reads process.env, not the env the Action
+   * is given.
+   */
+  function withHome<T>(fx: Materialised, body: () => T): T {
+    vi.stubEnv("HOME", fx.home);
+    vi.stubEnv("USERPROFILE", fx.home);
+    vi.stubEnv("CODEX_HOME", fx.codexHome);
+    return body();
+  }
+
+  it("models no personal Codex configuration, whatever the runner's home holds", () => {
+    // The fixture's ~/.codex/config.toml sets project_doc_max_bytes = 65536.
     const fx = materialise("codex-project-config-twin");
-    // The fixture's own home sets a budget; the Action must not read any home.
-    const r = action({ INPUT_PATH: fx.repo, HOME: fx.home, USERPROFILE: fx.home, CODEX_HOME: fx.codexHome });
-    const run = r.runs[0]!;
-    expect(run.codex?.settings.every((x) => x.from === "default")).toBe(true);
-    expect(run.codex?.budget.limit).toBe(32768);
+    withHome(fx, () => {
+      // Twin: the default home, as map resolves it here, does hold that budget, so a fallback would show.
+      expect(map({ launchDir: fx.repo, repoRoot: fx.repo, agents: ["codex"] }).codex?.budget.limit).toBe(65536);
+      const run = action({ INPUT_PATH: fx.repo }).runs[0]!;
+      expect(run.codex?.settings.every((x) => x.from === "default")).toBe(true);
+      expect(run.codex?.budget.limit).toBe(32768);
+    });
+  });
+
+  it("models no personal Claude Code configuration, whatever the runner's home holds", () => {
+    // The fixture's ~/.claude/settings.json sets Project instructions to claude-md-and-agents-md.
+    const fx = materialise("claude-mode-in-project-settings-twin");
+    withHome(fx, () => {
+      // Twin: the default home, as map resolves it here, does hold that setting.
+      expect(
+        map({ launchDir: fx.repo, repoRoot: fx.repo, agents: ["claude"], claude: { ceiling: fx.base } }).claude?.mode,
+      ).toBe("claude-md-and-agents-md");
+      const run = action({ INPUT_PATH: fx.repo }).runs[0]!;
+      expect([run.claude?.mode, run.claude?.modeFrom]).toEqual(["claude-md-or-agents-md", "default"]);
+      expect(run.findings.map((f) => f.code)).toContain("claude.agents-shadowed");
+    });
   });
 
   it("only the agents asked for", () => {
@@ -362,6 +398,9 @@ function composite(inputs: Record<string, string>, workspace: string) {
   const env: Record<string, string> = {
     PATH: process.env.PATH ?? "",
     SYSTEMROOT: process.env.SYSTEMROOT ?? "",
+    // An empty home, so the bundle could not read the real one even if it fell back to it.
+    HOME: EMPTY_HOME,
+    USERPROFILE: EMPTY_HOME,
     GITHUB_WORKSPACE: workspace,
     GITHUB_ACTION_PATH: ROOT,
     RUNNER_TEMP: out,

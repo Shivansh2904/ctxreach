@@ -557,6 +557,12 @@ export const PLANTS = [
     find: 'codex: { home: path.join(home, ".codex") },',
     replace: "codex: {},",
   },
+  {
+    name: "action-reads-runner-claude-home",
+    file: "src/report/annotations.ts",
+    find: 'claude: { home: path.join(home, ".claude"), homeDir: home, ceiling: inputs.root },',
+    replace: "claude: { ceiling: inputs.root },",
+  },
 ];
 
 const PLANT_TESTS = ["test/evidence.test.ts", "test/action.test.ts"];
