@@ -501,6 +501,146 @@ describe("the recorded external imports that map got wrong", () => {
   });
 });
 
+/** Each row as [path from the repository root, kind, delivery]. */
+function rows(fx: Materialised, r: ClaudeResult): [string, string, string][] {
+  const rel = relTo(fx);
+  return r.files.map((f) => [rel(f.path), f.kind, f.delivery]);
+}
+
+/** Each warning as [code, path from the repository root]. */
+function warnings(fx: Materialised, r: ClaudeResult): [string, string][] {
+  const rel = relTo(fx);
+  return r.findings.filter((f) => f.severity === "warn").map((f) => [f.code, f.path ? rel(f.path) : ""]);
+}
+
+describe("trap: CLAUDE.md files that import their AGENTS.md, beside an AGENTS.md nothing imports", () => {
+  // The study's known-answer fixture census-o2-external-import is this
+  // repository without packages/web.
+  it("launched at the root, reports only the AGENTS.md nothing imports", () => {
+    const fx = materialise("claude-agents-imported");
+    const r = run(fx);
+    expect(rows(fx, r)).toEqual([
+      ["CLAUDE.md", "CLAUDE.md", "launch"],
+      ["AGENTS.md", "import", "import"],
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "on-read"],
+      ["packages/api/AGENTS.md", "import", "on-read"],
+      ["packages/web/AGENTS.md", "AGENTS.md", "not-loaded"],
+    ]);
+    // Neither CLAUDE.md names AGENTS.md without importing it, and the package's
+    // AGENTS.md arrives through its import.
+    expect(warnings(fx, r)).toEqual([["claude.agents-shadowed", "packages/web/AGENTS.md"]]);
+    expect(r.findings[0]?.message).toContain("switched off by CLAUDE.md");
+    expect(codes(r)).toEqual(["claude.agents-shadowed", "claude.nested"]);
+  });
+
+  it("still names a CLAUDE.md that mentions AGENTS.md in words, and only that one", () => {
+    const fx = materialise("claude-agents-imported");
+    writeFileSync(fx.at("packages/api/CLAUDE.md"), "Read AGENTS.md in this directory before editing.\n");
+    const r = run(fx);
+    expect(warnings(fx, r)).toEqual([
+      ["claude.agents-shadowed", "packages/api/AGENTS.md"],
+      ["claude.agents-shadowed", "packages/web/AGENTS.md"],
+      ["claude.words-not-import", "packages/api/CLAUDE.md"],
+    ]);
+  });
+
+  it("launched headless in packages/api, leaves the root AGENTS.md out as an unapproved external import", () => {
+    const fx = materialise("claude-agents-imported");
+    const r = run(fx, "packages/api");
+    expect(rows(fx, r)).toEqual([
+      ["CLAUDE.md", "CLAUDE.md", "launch"],
+      ["AGENTS.md", "import", "not-loaded"],
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "launch"],
+      ["packages/api/AGENTS.md", "import", "import"],
+      ["packages/web/AGENTS.md", "AGENTS.md", "not-loaded"],
+    ]);
+    expect(r.files[4]?.rule).toBe("claude.subdirs");
+    expect(warnings(fx, r)).toEqual([["claude.external-import-headless", "AGENTS.md"]]);
+  });
+
+  it("twin: with a CLAUDE.md importing it in packages/web too, every AGENTS.md arrives and nothing warns", () => {
+    const fx = materialise("claude-agents-imported-twin");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({
+      "CLAUDE.md": "launch",
+      "AGENTS.md": "import",
+      "packages/api/CLAUDE.md": "on-read",
+      "packages/api/AGENTS.md": "on-read",
+      "packages/web/CLAUDE.md": "on-read",
+      "packages/web/AGENTS.md": "on-read",
+    });
+    expect(r.files).toHaveLength(6);
+    expect(codes(r)).toEqual(["claude.nested", "claude.nested"]);
+  });
+});
+
+describe("trap: a package CLAUDE.md imports the root AGENTS.md", () => {
+  it("launched headless in packages/api, lists the root AGENTS.md once, as an import left out", () => {
+    const fx = materialise("claude-package-imports-root");
+    const r = run(fx, "packages/api");
+    expect(rows(fx, r)).toEqual([
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "launch"],
+      ["AGENTS.md", "import", "not-loaded"],
+      ["packages/api/AGENTS.md", "import", "import"],
+    ]);
+    expect(r.files[1]).toMatchObject({ rule: "claude.imports", needsApproval: true });
+    expect(r.shadowers).toEqual([fx.at("packages/api/CLAUDE.md")]);
+    // It is imported, so the import, not the switch, decides whether it arrives.
+    expect(warnings(fx, r)).toEqual([["claude.external-import-headless", "AGENTS.md"]]);
+    const message = r.findings[0]?.message ?? "";
+    expect(message).toContain("packages/api/CLAUDE.md imports AGENTS.md, which is outside the launch directory");
+    expect(message).toContain(
+      "Setting Project instructions to claude-md-and-agents-md reads AGENTS.md without the import.",
+    );
+  });
+
+  it("with the approval recorded, the root AGENTS.md arrives through the import and nothing warns", () => {
+    const fx = materialise("claude-package-imports-root");
+    writeClaudeJson(fx, { [fx.repo.split(path.sep).join("/")]: { hasClaudeMdExternalIncludesApproved: true } });
+    const r = run(fx, "packages/api");
+    expect(rows(fx, r)).toEqual([
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "launch"],
+      ["AGENTS.md", "import", "import"],
+      ["packages/api/AGENTS.md", "import", "import"],
+    ]);
+    expect(codes(r)).toEqual(["claude.external-import"]);
+  });
+
+  it("lists the root AGENTS.md once in claude-md mode too, where the setting reads no AGENTS.md", () => {
+    const fx = materialise("claude-package-imports-root");
+    writeClaudeJson(fx, { [fx.repo.split(path.sep).join("/")]: { hasClaudeMdExternalIncludesApproved: true } });
+    const r = run(fx, "packages/api", { mode: "claude-md" });
+    expect(rows(fx, r)).toEqual([
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "launch"],
+      ["AGENTS.md", "import", "import"],
+      ["packages/api/AGENTS.md", "import", "import"],
+    ]);
+  });
+
+  it("launched at the root, reads the root AGENTS.md at launch and the package's on read", () => {
+    const fx = materialise("claude-package-imports-root");
+    const r = run(fx);
+    expect(rows(fx, r)).toEqual([
+      ["AGENTS.md", "AGENTS.md", "launch"],
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "on-read"],
+      ["packages/api/AGENTS.md", "import", "on-read"],
+    ]);
+    expect(codes(r)).toEqual(["claude.nested"]);
+  });
+
+  it("twin: with claude-md-and-agents-md the root AGENTS.md is read as an AGENTS.md, no approval needed", () => {
+    const fx = materialise("claude-package-imports-root-twin");
+    const r = run(fx, "packages/api");
+    expect(r.mode).toBe("claude-md-and-agents-md");
+    expect(rows(fx, r)).toEqual([
+      ["AGENTS.md", "AGENTS.md", "launch"],
+      ["packages/api/CLAUDE.md", "CLAUDE.md", "launch"],
+      ["packages/api/AGENTS.md", "import", "import"],
+    ]);
+    expect(r.findings).toEqual([]);
+  });
+});
+
 describe("an ancestor's .claude/rules/", () => {
   const rules = (fx: Materialised, r: ClaudeResult) =>
     Object.fromEntries(

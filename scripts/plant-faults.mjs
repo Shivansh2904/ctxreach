@@ -93,6 +93,18 @@ export const PLANTS = [
     replace: "} else if (false) {",
   },
   {
+    name: "imported-agents-left-switched-off",
+    file: RESOLVE,
+    find: "supersede(target);",
+    replace: "",
+  },
+  {
+    name: "words-ignores-the-import",
+    file: RESOLVE,
+    find: "if (importsAgents(f.path, text)) continue;",
+    replace: "",
+  },
+  {
     name: "tree-lists-a-file-twice",
     file: RESOLVE,
     find: "if (listed.has(real(s.path))) continue;",

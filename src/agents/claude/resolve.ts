@@ -273,6 +273,23 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     return file;
   };
 
+  // An AGENTS.md above the launch directory is listed as switched off before
+  // the walk reaches a CLAUDE.md below it that imports it. The import decides
+  // whether it arrives, so its row replaces the switched-off one: one row per
+  // file, and never reported as shadowed.
+  const supersede = (file: string): void => {
+    const i = files.findIndex(
+      (f) =>
+        (f.kind === "AGENTS.md" || f.kind === ".claude/AGENTS.md") &&
+        f.delivery === "not-loaded" &&
+        (f.rule === "claude.agents-default" || f.rule === "claude.modes") &&
+        real(f.path) === real(file),
+    );
+    if (i === -1) return;
+    files.splice(i, 1);
+    listed.delete(real(file));
+  };
+
   // Rule claude.imports: expand @imports depth-first after the importing file.
   const expandImports = (
     file: string,
@@ -293,6 +310,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         continue;
       }
       if (delivered.has(real(target))) continue;
+      supersede(target);
       const hops = depth + 1;
       if (hops > CLAUDE_MAX_IMPORT_DEPTH) {
         add({
@@ -756,12 +774,20 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   }
 
   // Rule claude.words: a CLAUDE.md that names AGENTS.md without importing it.
+  // One that imports an AGENTS.md (a line @AGENTS.md, @../../AGENTS.md) names
+  // it in that import, which is the fix this finding asks for.
+  const importsAgents = (file: string, text: string): boolean =>
+    importTokens(text).some((token) => {
+      const target = resolveImport(token, file, homeDir);
+      return target !== undefined && path.basename(target) === "AGENTS.md";
+    });
   if (lostAgents.length > 0 && agentsSupported) {
     for (const f of files) {
       if (!(f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md")) continue;
       if (f.delivery === "not-loaded" || linksAsText.has(f.path)) continue;
       const text = readFileSync(f.path, "utf8");
       if (!WORDS.test(text)) continue;
+      if (importsAgents(f.path, text)) continue;
       const inCode = /@AGENTS\.md/.test(text);
       findings.push({
         code: "claude.words-not-import",

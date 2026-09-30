@@ -1,0 +1,1 @@
+Clean twin of claude-package-imports-root: the same files, with Project instructions set to claude-md-and-agents-md in ~/.claude/settings.json. Claude Code then reads the root AGENTS.md as an AGENTS.md above the launch directory, not through the import, so launched in packages/api every file arrives without an approval. ctxreach must report nothing.

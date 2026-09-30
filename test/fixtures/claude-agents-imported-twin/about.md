@@ -1,0 +1,1 @@
+Clean twin of claude-agents-imported: packages/web also has a CLAUDE.md holding `@AGENTS.md`, so every AGENTS.md arrives through an import. Launched at the root, ctxreach must report no warning, only that the two package CLAUDE.md files load on read (claude.nested).

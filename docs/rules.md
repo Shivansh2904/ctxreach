@@ -140,9 +140,9 @@ intended.
 | `codex.shadowed` | info | `codex.one-per-dir` | Another file in the same directory takes precedence. |
 | `codex.empty` | info | `codex.empty-skip` | A file is empty after trimming, so Codex skips it. |
 | `codex.no-root` | info | `codex.root` | No project root marker was found, so only the launch directory is searched. |
-| `claude.agents-shadowed` | warn | `claude.agents-default` | An `AGENTS.md` does not reach Claude Code because of a `CLAUDE.md`-family file at or above the launch directory, or one in its own directory. |
+| `claude.agents-shadowed` | warn | `claude.agents-default` | An `AGENTS.md` does not reach Claude Code because of a `CLAUDE.md`-family file at or above the launch directory, or one in its own directory. An `AGENTS.md` that a `CLAUDE.md` imports is not reported: the import decides whether it arrives. |
 | `claude.home-ancestor` | warn | `claude.home-ancestor` | The only files switching `AGENTS.md` off are above the repository, such as `~/.claude/CLAUDE.md` for a repository under the home directory. The message ends with the rule's evidence status from `docs/evidence.json`, for example `[evidence: source]`. |
-| `claude.words-not-import` | warn | `claude.words` | A `CLAUDE.md` names `AGENTS.md` without importing it. |
+| `claude.words-not-import` | warn | `claude.words` | A `CLAUDE.md` names `AGENTS.md` without importing it, while some `AGENTS.md` is switched off. A `CLAUDE.md` that imports an `AGENTS.md` (`@AGENTS.md`, `@../../AGENTS.md`) is not reported. |
 | `claude.link-as-text` | warn | `claude.symlink` | A `CLAUDE.md`-family file holds only a relative path to an existing file: a symlink git checked out as a plain file. It imports nothing, and as a `CLAUDE.md` it switches `AGENTS.md` off. `claude.words-not-import` is not raised for the same file. |
 | `claude.import-too-deep` | warn | `claude.imports` | An import is more than four hops from a memory file. |
 | `claude.mode-in-project-settings` | warn | `claude.modes` | The Project instructions setting is in a project or local settings file, where it is ignored. |
