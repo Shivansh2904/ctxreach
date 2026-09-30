@@ -180,6 +180,8 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   const claudeJson = options.claudeJson ?? path.join(homeDir, ".claude.json");
   let approval: ExternalImportApproval | undefined;
   const approvalFor = () => (approval ??= externalImportApproval(launchDir, claudeJson, options.ceiling));
+  /** Real paths of files imported by the user's own files, which are not project files. */
+  const userScope = new Set<string>();
   /** External imports left out for want of an approval, by real path. */
   const blocked = new Map<string, { row: ClaudeFile; importer: string; scope: "project" | "agents" }>();
 
@@ -333,6 +335,7 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         importedBy: file,
         depth: hops,
       });
+      if (scope === "user") userScope.add(real(target));
       if (external) {
         findings.push({
           code: "claude.external-import",
@@ -589,6 +592,56 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
       });
     }
   }
+
+  // Rule claude.modes: an AGENTS.md whose text equals an instruction file
+  // already in the context is not loaded again; the mod compares by path,
+  // then by content. A nested AGENTS.md is also compared with the CLAUDE.md
+  // files on its path, which load with it.
+  const dedupeByText = (): void => {
+    const texts = new Map<string, string>();
+    const textOf = (p: string): string => {
+      let t = texts.get(p);
+      if (t === undefined) {
+        t = readFileSync(p, "utf8").trim();
+        texts.set(p, t);
+      }
+      return t;
+    };
+    const isClaudeKind = (f: ClaudeFile) =>
+      f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md";
+    const bySetting = (f: ClaudeFile) =>
+      (f.kind === "AGENTS.md" || f.kind === ".claude/AGENTS.md") &&
+      f.rule === "claude.agents-default" &&
+      f.delivery !== "not-loaded";
+    const projectFile = (f: ClaudeFile) => f.kind !== "user" && f.kind !== "user-rule" && !userScope.has(real(f.path));
+    const dirOf = (p: string) => path.dirname(p).replace(/[\\/]\.claude$/, "");
+    const handed = files.filter(
+      (f) => (f.delivery === "launch" || f.delivery === "import") && projectFile(f) && !bySetting(f),
+    );
+    const twinOf = (f: ClaudeFile, among: ClaudeFile[]) => {
+      const text = textOf(f.path);
+      return text === "" ? undefined : among.find((o) => real(o.path) !== real(f.path) && textOf(o.path) === text);
+    };
+    const drop = (f: ClaudeFile, twin: ClaudeFile) => {
+      f.delivery = "not-loaded";
+      f.why = `same text as ${rel(twin.path)}, which ${twin.delivery === "on-read" ? "loads with it" : "already loads"} (compared by content)`;
+      f.rule = "claude.modes";
+      delivered.delete(real(f.path));
+    };
+    for (const f of files.filter((x) => bySetting(x) && x.delivery === "launch")) {
+      const twin = twinOf(f, handed);
+      if (twin) drop(f, twin);
+    }
+    const inContext = [...handed, ...files.filter((x) => bySetting(x) && x.delivery === "launch")];
+    for (const f of files.filter((x) => bySetting(x) && x.delivery === "on-read")) {
+      const onPath = files.filter(
+        (o) => isClaudeKind(o) && o.delivery === "on-read" && isInside(dirOf(f.path), dirOf(o.path)),
+      );
+      const twin = twinOf(f, [...inContext, ...onPath]);
+      if (twin) drop(f, twin);
+    }
+  };
+  if (agentsSupported) dedupeByText();
 
   // Rule claude.imports: external imports left out for want of an approval.
   for (const { row, importer, scope } of blocked.values()) {

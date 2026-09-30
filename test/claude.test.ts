@@ -500,6 +500,64 @@ describe("the recorded external imports that map got wrong", () => {
   });
 });
 
+describe("trap: CLAUDE.md is a copy of AGENTS.md, and both are read", () => {
+  it("loads the text once: the AGENTS.md with the same text is skipped", () => {
+    const fx = materialise("claude-dedup-copy");
+    const r = run(fx);
+    expect(r.mode).toBe("claude-md-and-agents-md");
+    expect(deliveries(fx, r)).toEqual({ "CLAUDE.md": "launch", "AGENTS.md": "not-loaded" });
+    expect(r.files.find((f) => f.kind === "AGENTS.md")).toMatchObject({
+      rule: "claude.modes",
+      why: "same text as CLAUDE.md, which already loads (compared by content)",
+    });
+    // Its text arrives, so nothing is lost and nothing is reported.
+    expect(r.findings).toEqual([]);
+  });
+
+  it("compares text trimmed of surrounding whitespace", () => {
+    const fx = materialise("claude-dedup-copy");
+    writeFileSync(fx.at("CLAUDE.md"), `\n${readFileSync(fx.at("AGENTS.md"), "utf8")}\n\n`);
+    expect(deliveries(fx, run(fx))["AGENTS.md"]).toBe("not-loaded");
+  });
+
+  it("twin: a CLAUDE.md with one more line is a different file, and both load", () => {
+    const fx = materialise("claude-dedup-copy-twin");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({ "CLAUDE.md": "launch", "AGENTS.md": "launch" });
+    expect(r.findings).toEqual([]);
+  });
+
+  it("skips a package's AGENTS.md that copies the root one, in the default mode too", () => {
+    const fx = materialise("claude-root-shadows-package-twin");
+    writeFileSync(fx.at("packages/api/AGENTS.md"), readFileSync(fx.at("AGENTS.md")));
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({ "AGENTS.md": "launch", "packages/api/AGENTS.md": "not-loaded" });
+    expect(r.files[1]?.why).toBe("same text as AGENTS.md, which already loads (compared by content)");
+    expect(r.findings).toEqual([]);
+  });
+
+  it("skips a nested AGENTS.md that copies the CLAUDE.md read with it", () => {
+    const fx = materialise("claude-dedup-copy-twin");
+    mkdirSync(fx.at("packages/web"), { recursive: true });
+    writeFileSync(fx.at("packages/web/AGENTS.md"), "# Web\n\n- Use the design tokens.\n");
+    writeFileSync(fx.at("packages/web/CLAUDE.md"), "# Web\n\n- Use the design tokens.\n");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toMatchObject({
+      "packages/web/CLAUDE.md": "on-read",
+      "packages/web/AGENTS.md": "not-loaded",
+    });
+    expect(r.files.find((f) => f.path === fx.at("packages/web/AGENTS.md"))?.why).toBe(
+      "same text as packages/web/CLAUDE.md, which loads with it (compared by content)",
+    );
+  });
+
+  it("does not compare with the user's own files", () => {
+    const fx = materialise("claude-dedup-copy-twin");
+    writeFileSync(path.join(fx.claudeHome, "CLAUDE.md"), readFileSync(fx.at("AGENTS.md")));
+    expect(deliveries(fx, run(fx))["AGENTS.md"]).toBe("launch");
+  });
+});
+
 describe("trap: Project instructions set in project settings", () => {
   it("is ignored, and ctxreach says so", () => {
     const fx = materialise("claude-mode-in-project-settings");
