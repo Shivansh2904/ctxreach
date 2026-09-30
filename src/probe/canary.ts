@@ -7,9 +7,9 @@
  * HTML comments from instruction files.
  */
 import { randomBytes } from "node:crypto";
-import { lstatSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { lstatSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { isInside } from "../util/fs.js";
+import { canonicalPath, isInside } from "../util/fs.js";
 import { SafetyError, type Canary } from "./types.js";
 
 /** File name of the decoy: a Markdown file in the launch directory that no documented rule loads. */
@@ -58,11 +58,11 @@ export function plantText(bytes: Buffer, head: string, tail: string): { bytes: B
   return { bytes: out, head: headAt, tail: tailAt };
 }
 
-/** Refuse to write anywhere but a regular file inside the copy (never through a symlink). */
+/** Refuse to write anywhere but a regular file inside the copy (never through a symlink), whatever the spellings. */
 function assertPlantable(file: string, repo: string): void {
   const st = lstatSync(file);
   if (!st.isFile()) throw new SafetyError(`refusing to plant in ${file}: not a regular file`);
-  if (!isInside(realpathSync(file), realpathSync(repo)))
+  if (!isInside(canonicalPath(file), canonicalPath(repo)))
     throw new SafetyError(`refusing to plant in ${file}: outside the temporary copy`);
 }
 

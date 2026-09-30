@@ -109,12 +109,24 @@ describe("finding the claude executable", () => {
     const dir = tempDir("relative-bin");
     const name = process.platform === "win32" ? "claude.exe" : "claude";
     writeFileSync(path.join(dir, name), "");
-    const relative = path.relative(process.cwd(), dir);
-    expect(path.isAbsolute(relative)).toBe(false);
-    expect(findClaude({ PATH: relative })).toBeUndefined();
-    expect(findClaude({ PATH: [".", "", relative].join(path.delimiter) })).toBeUndefined();
-    // The same directory, given absolutely, is searched.
-    expect(findClaude({ PATH: dir })).toBe(path.join(dir, name));
+    // Run from that directory, so that each entry below names it. (The tests
+    // themselves may run on another drive than the temp directory, as on
+    // GitHub's Windows runners, from where no relative spelling reaches it.)
+    const entries = [".", "", path.join("..", path.basename(dir))];
+    // On Windows, a rooted path without a drive names a directory on
+    // whichever drive is current, and `C:name` one under its current directory.
+    if (process.platform === "win32") entries.push(dir.slice(2), `${dir.slice(0, 2)}.`);
+    const cwd = process.cwd();
+    process.chdir(dir);
+    try {
+      for (const entry of entries) expect([entry, findClaude({ PATH: entry })]).toEqual([entry, undefined]);
+      expect(findClaude({ PATH: entries.join(path.delimiter) })).toBeUndefined();
+      // The same directory, given absolutely, is searched.
+      expect(findClaude({ PATH: dir })).toBe(path.join(dir, name));
+      expect(findClaude({ PATH: [...entries, dir].join(path.delimiter) })).toBe(path.join(dir, name));
+    } finally {
+      process.chdir(cwd);
+    }
   });
 });
 

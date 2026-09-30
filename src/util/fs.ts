@@ -99,9 +99,14 @@ export function isInside(child: string, parent: string): boolean {
 
 /**
  * The spelling the operating system gives an existing path: links resolved,
- * and on Windows the `\\?\` and `\\?\UNC\` prefixes removed. Two spellings
- * of one directory can still differ (`\\localhost\C$\Users` and `C:\Users`),
- * so safety checks compare with `isInsideReal`, not with this alone.
+ * and on Windows long names (never the short `RUNNER~1` form of a name, which
+ * the system temp directory has on GitHub's Windows runners), in the case the
+ * disk holds them, and with the `\\?\` and `\\?\UNC\` prefixes removed.
+ * `realpathSync.native` does this; the JavaScript `realpathSync` keeps a
+ * short name, and the spelling a link was made with, so it is never used for
+ * a path that is stored or compared. Two spellings of one directory can still
+ * differ (`\\localhost\C$\Users` and `C:\Users`), so safety checks compare
+ * with `isInsideReal` or `sameReal`, not with this alone.
  */
 export function canonicalPath(p: string): string {
   const real = realpathSync.native(p);
@@ -109,6 +114,15 @@ export function canonicalPath(p: string): string {
   if (real.startsWith("\\\\?\\UNC\\")) return "\\\\" + real.slice(8);
   if (real.startsWith("\\\\?\\")) return real.slice(4);
   return real;
+}
+
+/** `canonicalPath` when `p` exists, else `p` resolved: for comparing a path that may not exist with one that does. */
+function spelled(p: string): string {
+  try {
+    return canonicalPath(p);
+  } catch {
+    return path.resolve(p);
+  }
 }
 
 /** Device and inode (on Windows, volume serial number and file index), or undefined when unknown. */
@@ -130,19 +144,38 @@ function fileId(p: string): string | undefined {
  * spelled. For checks that must refuse when a path IS inside another.
  */
 export function isInsideReal(child: string, parent: string): boolean {
-  const spelled = (p: string) => {
-    try {
-      return canonicalPath(p);
-    } catch {
-      return path.resolve(p);
-    }
-  };
   const c = spelled(child);
   const p = spelled(parent);
   if (isInside(c, p)) return true;
   const target = fileId(p);
   if (target === undefined) return false;
   return ancestors(c).some((dir) => fileId(dir) === target);
+}
+
+/**
+ * True when `a` and `b` are one file or directory, however either is spelled
+ * (through a link, by a short name, in another case, with a `\\?\` prefix or
+ * through a share): canonical spellings first, then device and inode. Paths
+ * that do not exist are compared as spelled.
+ */
+export function sameReal(a: string, b: string): boolean {
+  const ca = spelled(a);
+  const cb = spelled(b);
+  if (samePath(ca, cb)) return true;
+  const id = fileId(ca);
+  return id !== undefined && id === fileId(cb);
+}
+
+/**
+ * True when `p` names one place wherever a program runs: an absolute path
+ * that, on Windows, also carries its drive or share. A relative path (`.`,
+ * `bin`, `C:bin` or an empty string) names a directory under the current one,
+ * and a rooted path without a drive (`\bin`) one on whichever drive is
+ * current. For the directories a `PATH` search may look in.
+ */
+export function isFullyQualified(p: string): boolean {
+  if (!path.isAbsolute(p)) return false;
+  return process.platform !== "win32" || path.parse(p).root.length > 1;
 }
 
 /** `p` if it exists, or its nearest ancestor that does. */

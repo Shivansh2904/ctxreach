@@ -12,7 +12,7 @@ import { assertReadyToRun, sandboxOf, SANDBOX_PREFIX } from "../../probe/sandbox
 import type { AgentAdapter, AgentEnvironment, ProbeMode, RunOutcome, RunRequest, ToolUse } from "../../probe/types.js";
 import { SafetyError } from "../../probe/types.js";
 import { memoryDirOf, parseClaudeTranscript, redactClaudeTranscript, redactString } from "./events.js";
-import { isInsideReal, samePath } from "../../util/fs.js";
+import { isFullyQualified, isInsideReal, sameReal } from "../../util/fs.js";
 import { defaultClaudeHome } from "./settings.js";
 
 export const CLAUDE_READ_TOOLS = ["Read", "Glob", "Grep"] as const;
@@ -71,14 +71,18 @@ const truthy = (v: string | undefined) => v !== undefined && v !== "" && v !== "
 /**
  * Find the Claude Code executable. On Windows, npm installs `claude` as a
  * `.cmd` shim, which cannot be started without a shell; the executable the
- * shim calls is used instead. Only absolute PATH directories are searched: a
- * relative one (`.`, `bin`, or an empty entry) names a different directory
- * wherever ctxreach happens to run, such as inside the repository it probes.
+ * shim calls is used instead. Only fully qualified PATH directories are
+ * searched (`isFullyQualified`): a relative one (`.`, `bin`, or an empty
+ * entry), or on Windows one without a drive (`\bin`), names a different
+ * directory wherever ctxreach happens to run, such as inside the repository
+ * it probes. The path found keeps the spelling PATH gives it (a short name
+ * such as `C:\Users\RUNNER~1\...` included); it is compared with the copy by
+ * `isInsideReal`, which puts spellings aside.
  */
 export function findClaude(env: NodeJS.ProcessEnv = process.env): string | undefined {
   const given = env.CTXREACH_CLAUDE_BIN;
   if (given) return given;
-  const dirs = (env.PATH ?? env.Path ?? "").split(path.delimiter).filter((dir) => path.isAbsolute(dir));
+  const dirs = (env.PATH ?? env.Path ?? "").split(path.delimiter).filter((dir) => isFullyQualified(dir));
   for (const dir of dirs) {
     if (process.platform === "win32") {
       const exe = path.join(dir, "claude.exe");
@@ -115,12 +119,17 @@ export interface ClaudeAdapterOptions {
 
 const STDERR_KEEP = 4000;
 
-/** Remove the empty per-project folder Claude Code creates for a sandbox, and say what could not be removed. */
+/**
+ * Remove the empty per-project folder Claude Code creates for a sandbox, and
+ * say what could not be removed. The folder is removed only when it is
+ * directly under the user directory's `projects/`, however the agent spelled
+ * it; the paths reported keep the agent's spelling.
+ */
 function cleanUpMemoryDir(memoryDir: string | undefined, claudeHome: string): string[] {
   if (!memoryDir) return [];
   const projectDir = path.dirname(path.resolve(memoryDir));
   const projects = path.join(claudeHome, "projects");
-  if (!(samePath(path.dirname(projectDir), projects) && path.basename(projectDir).includes(SANDBOX_PREFIX)))
+  if (!(sameReal(path.dirname(projectDir), projects) && path.basename(projectDir).includes(SANDBOX_PREFIX)))
     return existsSync(projectDir) ? [projectDir] : [];
   // Only empty directories are removed: anything with a file in it is reported instead.
   const removeEmpty = (dir: string): boolean => {

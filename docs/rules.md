@@ -183,8 +183,9 @@ the agent starts as a top-level session. Variables a person sets, such as
 `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CONFIG_DIR`, are kept. `CLAUDE_CODE_SIMPLE`
 (bare mode) and `CLAUDE_CODE_SAFE_MODE` are reported as warnings.
 
-The `claude` executable is found in an absolute `PATH` directory, or given
-with `--claude-bin`, which is resolved from the directory ctxreach runs in:
+The `claude` executable is found in a fully qualified `PATH` directory
+(absolute, and on Windows with its drive), or given with `--claude-bin`,
+which is resolved from the directory ctxreach runs in:
 the agent's working directory is the copy, where a relative path would name
 the repository's own file. An executable inside the copy is refused. When
 ctxreach is interrupted (Ctrl+C or SIGTERM), it stops the agent first (on
@@ -211,9 +212,11 @@ the copy's own `.git` and no other (a repository nested in the copy would
 bring its own config). `node_modules` is not copied. All these names are
 matched without case and without trailing dots or spaces, on every system:
 on Windows and macOS `.GIT` opens as `.git`, and `.Claude/Settings.json` as
-`.claude/settings.json`. git itself is run by its absolute path, found in an
-absolute `PATH` directory: run by name, Windows looks for it in the copy
-first. Removing the project settings also removes any setting in them that
+`.claude/settings.json`. git itself is run by its absolute path, found in a
+fully qualified `PATH` directory (absolute, and on Windows with its drive):
+run by name, Windows looks for it in the copy first, and a relative entry
+such as `.`, or one without a drive such as `\bin`, names a different
+directory wherever ctxreach runs. Removing the project settings also removes any setting in them that
 changes loading (such as `claudeMdExcludes`, which `map` does not model
 either).
 
@@ -234,7 +237,11 @@ The copy's marker file says that it was stripped, with a random nonce, only
 once all of this is done. Right before each trial, the adapter checks that
 marker and nonce, that no path above is in the copy (in any case), that it
 holds no link, and where git finds its `.git`, and refuses to start the agent
-otherwise.
+otherwise. Every path the marker holds, and every path these checks compare,
+is in one spelling: links resolved and, on Windows, long names (the system
+temp directory is `C:\Users\RUNNER~1\...` on GitHub's Windows runners, and a
+junction keeps the spelling it was made with, so a path compared as spelled
+can put a link target inside the repository outside it).
 
 The user's own configuration is not touched: the hooks, plugins and skills in
 `~/.claude` and in managed settings run in every trial.

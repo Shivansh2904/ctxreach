@@ -33,6 +33,14 @@
  * The marker file says the copy is finished (stripped, with a nonce) only
  * once all of that is done, and the adapter checks it, and the copy itself,
  * again right before the agent starts.
+ *
+ * Every path that is stored (in the marker) or compared here is in one
+ * spelling, `canonicalPath`: links resolved and, on Windows, long names. The
+ * system temp directory can be given by a short name (`C:\Users\RUNNER~1\...`
+ * on GitHub's Windows runners), and a junction keeps the spelling it was
+ * made with, so a link target compared as spelled can look outside the
+ * repository it is in, and a marker can seem to name another directory. The
+ * paths in error messages keep the spelling they were given in.
  */
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -45,7 +53,6 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
-  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -53,7 +60,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ancestors, canonicalPath, isInside, isInsideReal, samePath } from "../util/fs.js";
+import { ancestors, canonicalPath, isFullyQualified, isInside, isInsideReal, sameReal, samePath } from "../util/fs.js";
 import { SafetyError } from "./types.js";
 
 export const SANDBOX_PREFIX = "ctxreach-probe-";
@@ -142,12 +149,13 @@ function assertCopyable(source: string): void {
 /**
  * Checks every sandbox directory must pass before an agent runs in it or it
  * is deleted: its name starts with `ctxreach-probe-`, and it is inside the
- * system temp directory.
+ * system temp directory. `base` is a canonical path (see `canonicalPath`),
+ * compared with the canonical spelling of the system temp directory.
  */
 function assertSandboxPlace(base: string): void {
   if (!path.basename(base).startsWith(SANDBOX_PREFIX))
     throw new SafetyError(`${base} is not named like a ctxreach sandbox (${SANDBOX_PREFIX}...)`);
-  const tmp = realpathSync(os.tmpdir());
+  const tmp = canonicalPath(os.tmpdir());
   if (!isInside(base, tmp) || samePath(base, tmp))
     throw new SafetyError(`${base} is not inside the system temp directory (${tmp})`);
 }
@@ -199,7 +207,7 @@ function copyTree(state: CopyState, from: string, to: string, chain: readonly st
     // lstat: a symlink, or a junction on Windows, is a link here, never what it points to.
     const st = lstatSync(fromEntry);
     if (st.isSymbolicLink()) copyLink(state, fromEntry, toEntry, chain);
-    else if (st.isDirectory()) copyTree(state, fromEntry, toEntry, [...chain, realpathSync(fromEntry)]);
+    else if (st.isDirectory()) copyTree(state, fromEntry, toEntry, [...chain, canonicalPath(fromEntry)]);
     else if (st.isFile()) copyFile(state, fromEntry, toEntry, st.size);
     else state.sandbox.skipped.push(`${rel(state.sandbox.repo, toEntry)} (not a file, directory or link)`);
   }
@@ -215,7 +223,7 @@ function copyLink(state: CopyState, from: string, to: string, chain: readonly st
   };
   let target: string;
   try {
-    target = realpathSync(from);
+    target = canonicalPath(from);
   } catch {
     skip("a link to nothing");
     return;
@@ -325,14 +333,15 @@ export function assertStripped(repo: string): void {
 }
 
 /**
- * git, found on PATH in an absolute directory. Run by name with the copy as
- * its working directory, git would be looked for in the copy itself first:
- * on Windows unless NoDefaultCurrentDirectoryInExePath is set, and anywhere
- * through a relative PATH entry such as `.`.
+ * git, found on PATH in a fully qualified directory (`isFullyQualified`).
+ * Run by name with the copy as its working directory, git would be looked
+ * for in the copy itself first: on Windows unless
+ * NoDefaultCurrentDirectoryInExePath is set, and anywhere through a relative
+ * PATH entry such as `.`.
  */
 function findGit(): string {
   const names = process.platform === "win32" ? ["git.exe"] : ["git"];
-  const dirs = (process.env.PATH ?? process.env.Path ?? "").split(path.delimiter).filter((d) => path.isAbsolute(d));
+  const dirs = (process.env.PATH ?? process.env.Path ?? "").split(path.delimiter).filter((d) => isFullyQualified(d));
   for (const dir of dirs)
     for (const name of names) {
       const p = path.join(dir, name);
@@ -342,7 +351,9 @@ function findGit(): string {
         // Not in this directory.
       }
     }
-  throw new Error("could not find git on PATH (in an absolute directory); probe needs it to give the copy a .git");
+  throw new Error(
+    "could not find git on PATH (in a fully qualified directory); probe needs it to give the copy a .git",
+  );
 }
 
 /**
@@ -379,7 +390,7 @@ export function assertOwnGit(repo: string, dirs: readonly string[]): void {
     throw new SafetyError(
       `${repo} has no .git directory of its own (found: ${names.join(", ") || "none"}); refusing to use it`,
     );
-  const expected = realpathSync.native(own);
+  const expected = canonicalPath(own);
   for (const dir of dirs) {
     let gitDir: string;
     try {
@@ -394,7 +405,7 @@ export function assertOwnGit(repo: string, dirs: readonly string[]): void {
     }
     let real = gitDir;
     try {
-      real = realpathSync.native(gitDir);
+      real = canonicalPath(gitDir);
     } catch {
       // Compared as git printed it.
     }
@@ -430,16 +441,18 @@ export function createSandbox(
 ): Sandbox {
   const src = canonicalPath(source);
   assertCopyable(src);
-  const tmpRoot = realpathSync(options.tmpRoot ?? os.tmpdir());
-  // Compared as spelled: a spelling that does not match is refused.
-  if (!isInside(tmpRoot, realpathSync(os.tmpdir())))
+  const tmpRoot = canonicalPath(options.tmpRoot ?? os.tmpdir());
+  // Compared in their canonical spellings: one that does not match (a share
+  // for a drive) is refused.
+  if (!isInside(tmpRoot, canonicalPath(os.tmpdir())))
     throw new SafetyError(`refusing to put the temporary copy outside the system temp directory (${tmpRoot})`);
   // Compared as directories: no spelling of the repository gets past this.
   if (isInsideReal(tmpRoot, src))
     throw new SafetyError(`refusing to put the temporary copy inside the repository being copied (${tmpRoot})`);
   const limits = options.limits ?? DEFAULT_LIMITS;
 
-  const base = realpathSync(mkdtempSync(path.join(tmpRoot, SANDBOX_PREFIX)));
+  // Stored in the marker and returned, so canonical.
+  const base = canonicalPath(mkdtempSync(path.join(tmpRoot, SANDBOX_PREFIX)));
   const repo = path.join(base, "repo");
   const sandbox: Sandbox = {
     base,
@@ -477,21 +490,25 @@ export function createSandbox(
 
 /**
  * Remove the `STRIP` paths, in any case, wherever they appear in a
- * sandbox's copy. Refuses (with `SafetyError`) when `sandbox.repo` is not
- * exactly a sandbox's `repo/` reached without a link, and refuses to remove
- * anything whose directory, links resolved, is not inside the copy: the copy
- * holds no links, so that would be a fault.
+ * sandbox's copy. Refuses (with `SafetyError`) when `sandbox.repo`, in
+ * whatever spelling, is not a sandbox's `repo/` itself, or is reached
+ * through a link, and refuses to remove anything whose directory, links
+ * resolved, is not inside the copy: the copy holds no links, so that would
+ * be a fault.
  */
 export function stripTree(sandbox: Pick<Sandbox, "repo" | "stripped">): void {
   const box = sandboxOf(sandbox.repo);
-  if (!samePath(box.repo, sandbox.repo))
+  const repoReal = canonicalPath(sandbox.repo);
+  if (!samePath(box.repo, repoReal))
     throw new SafetyError(`refusing to strip ${sandbox.repo}: it is not the copy's root, ${box.repo}`);
-  for (const dir of ancestors(path.resolve(sandbox.repo), box.base))
+  // From the copy's root, as spelled, up to the sandbox directory: no link on the way.
+  for (const dir of ancestors(path.resolve(sandbox.repo))) {
     if (lstatSync(dir).isSymbolicLink()) throw new SafetyError(`refusing to strip ${sandbox.repo}: ${dir} is a link`);
-  const repoReal = realpathSync(sandbox.repo);
+    if (sameReal(dir, box.base)) break;
+  }
   const walk = (dir: string) => {
     for (const target of stripTargets(dir)) {
-      if (!isInside(realpathSync(path.dirname(target)), repoReal))
+      if (!isInside(canonicalPath(path.dirname(target)), repoReal))
         throw new SafetyError(
           `refusing to remove ${rel(sandbox.repo, target)}: a link leads it outside the temporary copy`,
         );
@@ -514,10 +531,11 @@ export function stripTree(sandbox: Pick<Sandbox, "repo" | "stripped">): void {
  * The sandbox that `dir` is inside, found by its marker file. Throws
  * `SafetyError` when `dir` is not inside a sandbox's `repo/`, when the
  * sandbox is not a `ctxreach-probe-` directory inside the system temp
- * directory, or when it is inside the repository it was copied from.
+ * directory, or when it is inside the repository it was copied from. `dir`
+ * may be spelled any way; the paths returned are canonical.
  */
 export function sandboxOf(dir: string): SandboxInfo {
-  const real = realpathSync(dir);
+  const real = canonicalPath(dir);
   let cursor = real;
   for (;;) {
     const marker = path.join(cursor, MARKER);
@@ -530,7 +548,8 @@ export function sandboxOf(dir: string): SandboxInfo {
       }
       if (data.tool !== "ctxreach" || typeof data.base !== "string" || typeof data.source !== "string")
         throw new SafetyError(`${marker} is not a ctxreach sandbox marker`);
-      if (!samePath(data.base, cursor)) throw new SafetyError(`${marker} names a different directory`);
+      // The marker names the directory it is in, in whatever spelling.
+      if (!sameReal(data.base, cursor)) throw new SafetyError(`${marker} names a different directory`);
       assertSandboxPlace(cursor);
       const repo = path.join(cursor, "repo");
       if (!isInside(real, repo)) throw new SafetyError(`${dir} is not inside the sandbox's copy of the repository`);
@@ -576,7 +595,7 @@ export function removeSandbox(sandbox: { base: string }): void {
   if (!existsSync(path.join(sandbox.base, MARKER)))
     throw new SafetyError(`refusing to delete ${sandbox.base}: it does not look like a ctxreach sandbox`);
   try {
-    assertSandboxPlace(realpathSync(sandbox.base));
+    assertSandboxPlace(canonicalPath(sandbox.base));
   } catch (err) {
     if (!(err instanceof SafetyError)) throw err;
     throw new SafetyError(`refusing to delete ${sandbox.base}: ${err.message}`);

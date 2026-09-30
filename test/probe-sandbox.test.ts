@@ -327,11 +327,36 @@ describe("stripping only a sandbox's own copy", () => {
     try {
       mkdirSync(path.join(box.repo, "sub"));
       writeFileSync(path.join(box.repo, "sub", ".mcp.json"), "{}");
-      expect(() => stripTree({ repo: path.join(via, "repo"), stripped: [] })).toThrow(/is not the copy's root/);
+      expect(() => stripTree({ repo: path.join(via, "repo"), stripped: [] })).toThrow(/is a link/);
       expect(() => stripTree({ repo: path.join(box.repo, "sub"), stripped: [] })).toThrow(/is not the copy's root/);
       expect(existsSync(path.join(box.repo, "sub", ".mcp.json"))).toBe(true);
     } finally {
       rmSync(via);
+      removeSandbox(box);
+    }
+  });
+
+  it("refuses a marker that names another directory, in any spelling of it", () => {
+    // A real sandbox's marker, copied into another directory named like a sandbox.
+    const fx = materialise("claude-local-shadows-agents");
+    const tmp = tempDir("sandboxes");
+    const box = createSandbox(fx.repo, { tmpRoot: tmp });
+    const other = path.join(tmp, `${SANDBOX_PREFIX}other`);
+    mkdirSync(path.join(other, "repo"), { recursive: true });
+    writeFileSync(path.join(other, "repo", ".mcp.json"), "{}");
+    try {
+      copyFileSync(path.join(box.base, "ctxreach-sandbox.json"), path.join(other, "ctxreach-sandbox.json"));
+      expect(() => sandboxOf(path.join(other, "repo"))).toThrow(/names a different directory/);
+      expect(() => stripTree({ repo: path.join(other, "repo"), stripped: [] })).toThrow(/names a different directory/);
+      expect(existsSync(path.join(other, "repo", ".mcp.json"))).toBe(true);
+      // Its own directory, in another case, is the directory it is in.
+      const marker = JSON.parse(readFileSync(path.join(box.base, "ctxreach-sandbox.json"), "utf8")) as { base: string };
+      writeFileSync(
+        path.join(box.base, "ctxreach-sandbox.json"),
+        JSON.stringify({ ...marker, base: process.platform === "win32" ? marker.base.toUpperCase() : marker.base }),
+      );
+      expect(sandboxOf(box.repo).base).toBe(box.base);
+    } finally {
       removeSandbox(box);
     }
   });

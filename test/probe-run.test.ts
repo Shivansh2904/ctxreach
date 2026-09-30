@@ -20,6 +20,7 @@ import { scoreRecording, type ProbeResult } from "../src/probe/score.js";
 import { SafetyError, type AgentAdapter } from "../src/probe/types.js";
 import { createCli } from "../src/program.js";
 import { ProbeJson } from "../src/report/probe.js";
+import { canonicalPath, isInside } from "../src/util/fs.js";
 import { fakeAgent, type FakeBehaviour, type FakeRun } from "./helpers/fake-agent.js";
 import { materialise, tempDir, type Materialised } from "./helpers/fixture.js";
 
@@ -135,7 +136,8 @@ describe("probe on the demo monorepo with a fake agent", () => {
     for (const run of p.runs) {
       expect(run.hasGit).toBe(true);
       expect(path.relative(run.repo, run.workdir).split(path.sep).join("/")).toBe("packages/api");
-      expect(run.workdir.startsWith(p.tmp)).toBe(true);
+      // The copy is spelled canonically, whatever spelling the temp directory was given in.
+      expect(isInside(run.workdir, canonicalPath(p.tmp))).toBe(true);
     }
   });
 

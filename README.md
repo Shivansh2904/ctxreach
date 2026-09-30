@@ -312,7 +312,7 @@ probe is how a gap like this gets noticed.
 | `--replay <dir>` | Score a saved run instead of running the agent. |
 | `--json` | JSON output, schema `ctxreach.probe/v1`. |
 | `--timeout <s>` | Time limit per run (default 300). |
-| `--claude-bin <path>` | The `claude` executable (default: found in an absolute `PATH` directory). A relative path is taken from the current directory; one inside the temporary copy is refused. |
+| `--claude-bin <path>` | The `claude` executable (default: found in a fully qualified `PATH` directory: absolute, and on Windows with its drive). A relative path is taken from the current directory; one inside the temporary copy is refused. |
 | `--claude-home <dir>` | Claude Code user directory `map` reads for the prediction. |
 
 Exit status: 0 when at least one trial was usable and the instrument checks

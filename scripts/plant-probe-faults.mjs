@@ -158,7 +158,7 @@ export const PLANTS = [
   {
     name: "sandbox-outside-temp",
     file: "src/probe/sandbox.ts",
-    find: "if (!isInside(tmpRoot, realpathSync(os.tmpdir())))",
+    find: "if (!isInside(tmpRoot, canonicalPath(os.tmpdir())))",
     replace: "if (false)",
   },
   {
@@ -212,7 +212,7 @@ export const PLANTS = [
   {
     name: "strip-accepts-any-directory",
     file: "src/probe/sandbox.ts",
-    find: "if (!samePath(box.repo, sandbox.repo))",
+    find: "if (!samePath(box.repo, repoReal))",
     replace: "if (false)",
   },
   {
@@ -244,7 +244,7 @@ export const PLANTS = [
   {
     name: "strip-removes-through-links",
     file: "src/probe/sandbox.ts",
-    find: "if (!isInside(realpathSync(path.dirname(target)), repoReal))",
+    find: "if (!isInside(canonicalPath(path.dirname(target)), repoReal))",
     replace: "if (false)",
   },
   {
@@ -264,6 +264,12 @@ export const PLANTS = [
     file: "src/probe/sandbox.ts",
     find: "assertSandboxPlace(cursor);",
     replace: "",
+  },
+  {
+    name: "marker-names-any-directory",
+    file: "src/probe/sandbox.ts",
+    find: "if (!sameReal(data.base, cursor))",
+    replace: "if (false)",
   },
   {
     name: "verdict-lenient-on-launch",
@@ -328,7 +334,7 @@ export const PLANTS = [
   {
     name: "relative-path-entries-searched",
     file: "src/agents/claude/adapter.ts",
-    find: ".filter((dir) => path.isAbsolute(dir))",
+    find: ".filter((dir) => isFullyQualified(dir))",
     replace: ".filter(Boolean)",
   },
   {
