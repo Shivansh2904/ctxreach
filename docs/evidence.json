@@ -1,0 +1,475 @@
+{
+  "schema": "ctxreach.evidence/v1",
+  "entries": [
+    {
+      "rule": "codex.root",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.walk",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.one-per-dir",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.empty-skip",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694",
+      "note": "Pilot, not a result: an empty AGENTS.override.md took its directory's slot in a render by codex debug prompt-input 0.159.2 on Windows, 2026-09-30 (1/1). The render is not in this repository."
+    },
+    {
+      "rule": "codex.budget",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694",
+      "note": "Pilot, not a result: codex debug prompt-input 0.159.2 on Windows, 2026-09-30, kept 32,768 of a 40,064-byte chain, as map predicts, and 22/22 fixture launches agreed with map. The renders are not in this repository yet, so this stays source."
+    },
+    {
+      "rule": "codex.cut",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694",
+      "note": "Pilot, not a result: the same renders put U+FFFD where a cut split a character, as map predicts. Not in this repository yet."
+    },
+    {
+      "rule": "codex.zero",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.join",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.global",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.config",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.fallback-names",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.untrusted",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694",
+      "note": "Pilot, not a result: with the trust level given as an inline table (the dotted -c key form did not reach the project, issue #41499), an untrusted project got no project file in a 0.159.2 render. Not in this repository."
+    },
+    {
+      "rule": "codex.nested",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.mid-codepoint",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.no-budget",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.empty-override",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.project-config-ignored",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.zero-budget",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.shadowed",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.empty",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "codex.no-root",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-28",
+      "confidence": "source@c0d2694"
+    },
+    {
+      "rule": "claude.ancestors",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 14,
+      "n": 14,
+      "trials": 15,
+      "recording": [
+        "test/recorded/ancestor-imports-recall",
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "note": "Covers CLAUDE.md and CLAUDE.local.md in the launch directory and above it. Where .claude/CLAUDE.md goes (marked assumed in docs/rules.md) was not tested."
+    },
+    {
+      "rule": "claude.user",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28",
+      "note": "Branch v1/map-rules corrects this rule: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor)."
+    },
+    {
+      "rule": "claude.subdirs",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 8,
+      "n": 8,
+      "trials": 10,
+      "recording": [
+        "test/recorded/demo-api-recall",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "note": "A subdirectory's .claude/CLAUDE.md (marked assumed in docs/rules.md) was not tested."
+    },
+    {
+      "rule": "claude.agents-default",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 30,
+      "n": 30,
+      "trials": 18,
+      "recording": [
+        "test/recorded/agents-recall",
+        "test/recorded/agents-task",
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ]
+    },
+    {
+      "rule": "claude.agents-never",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.modes",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.version",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.imports",
+      "status": "contradicted",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 6,
+      "n": 10,
+      "trials": 9,
+      "recording": [
+        "test/recorded/ancestor-imports-recall",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "note": "Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Branch v1/map-rules predicts it not loaded (finding claude.external-import-headless)."
+    },
+    {
+      "rule": "claude.words",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.symlink",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.size",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.rules",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 8,
+      "n": 8,
+      "trials": 5,
+      "recording": [
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "note": "The launch directory's rules only. Rules in a directory above the launch directory are not modelled; their 4 cells (nested-api-recall) are not counted."
+    },
+    {
+      "rule": "claude.hook-blind",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28",
+      "note": "Pilot, not a result: an InstructionsLoaded hook passed with --settings fired under claude -p and did not report an AGENTS.md read through the setting (1/1, Claude Code 2.1.280, 2026-09-30). The run is not in this repository."
+    },
+    {
+      "rule": "claude.bare",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.agents-shadowed",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 20,
+      "n": 20,
+      "trials": 13,
+      "recording": [
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "select": {
+        "rule": [
+          "claude.agents-default"
+        ],
+        "delivery": [
+          "not-loaded"
+        ]
+      },
+      "note": "Cells of AGENTS.md files predicted not to load by rule claude.agents-default."
+    },
+    {
+      "rule": "claude.words-not-import",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.import-too-deep",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.mode-in-project-settings",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.too-large",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.version-no-agents",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.external-import",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28",
+      "note": "The approval it describes is documented. Under claude -p, which asks nothing, such an import did not load (see claude.imports)."
+    },
+    {
+      "rule": "claude.nested",
+      "status": "observed",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "canary@2.1.280",
+      "basis": "docs@2026-09-28",
+      "version": "2.1.280",
+      "os": "win32",
+      "instrument": "canary",
+      "unit": "cells",
+      "k": 10,
+      "n": 10,
+      "trials": 10,
+      "recording": [
+        "test/recorded/agents-recall",
+        "test/recorded/agents-task",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      "select": {
+        "rule": [
+          "claude.subdirs",
+          "claude.agents-default"
+        ],
+        "delivery": [
+          "on-read"
+        ]
+      },
+      "note": "Cells of files predicted to load on read of a file in their directory: never preloaded, and delivered after such a read in task mode."
+    },
+    {
+      "rule": "claude.version-some-sessions",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-28",
+      "confidence": "docs@2026-09-28"
+    },
+    {
+      "rule": "claude.home-ancestor",
+      "status": "source",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "source@2282079",
+      "note": "Pilot, not a result: a .claude/CLAUDE.md above the git root switched AGENTS.md off in 1/1 billed probe run (2.1.280) and 1/1 capture run (2.1.285), against 1/1 and 1/1 without it. The home-directory case has not been run."
+    },
+    {
+      "rule": "claude.external-import-headless",
+      "status": "source",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "source@2282079"
+    },
+    {
+      "rule": "claude.link-as-text",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "docs@2026-09-30"
+    },
+    {
+      "rule": "codex.home-is-root",
+      "status": "source",
+      "agent": "codex",
+      "date": "2026-09-30",
+      "confidence": "source@c0d2694",
+      "note": "Pilot, not a result: with CODEX_HOME at the project root, a 0.159.2 render showed the root AGENTS.md twice (1/1, issue #34193)."
+    }
+  ]
+}
