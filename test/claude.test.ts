@@ -224,6 +224,51 @@ describe("trap: CLAUDE.md names AGENTS.md in words instead of importing it", () 
   });
 });
 
+describe("trap: a CLAUDE.md -> AGENTS.md symlink checked out as a plain file", () => {
+  it("reports the 9-byte CLAUDE.md as a link git wrote as text", () => {
+    const fx = materialise("claude-link-as-text");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({ "CLAUDE.md": "launch", "AGENTS.md": "not-loaded" });
+    expect(r.files.find((f) => f.kind === "CLAUDE.md")?.bytes).toBe(9);
+    // claude.words-not-import would say the same thing less precisely, so it is not raised.
+    expect(codes(r)).toEqual(["claude.agents-shadowed", "claude.link-as-text"]);
+    expect(r.findings[1]).toMatchObject({ path: fx.at("CLAUDE.md"), rule: "claude.symlink" });
+    expect(r.findings[1]?.message).toBe(
+      'CLAUDE.md holds only the text "AGENTS.md": a symlink to AGENTS.md that git checked out as a plain file, as git does on Windows unless symlinks are enabled (core.symlinks). Claude Code reads it as a CLAUDE.md whose whole text is that path: it imports nothing, and as a CLAUDE.md it switches AGENTS.md off. A line "@AGENTS.md" works on every system.',
+    );
+  });
+
+  it("twin: a CLAUDE.md holding @AGENTS.md imports it", () => {
+    const fx = materialise("claude-link-as-text-twin");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({ "CLAUDE.md": "launch", "AGENTS.md": "import" });
+    expect(r.findings).toEqual([]);
+  });
+
+  it("recognises a .claude/CLAUDE.md link one level down, and a link to any file", () => {
+    const fx = materialise("claude-local-shadows-agents-twin");
+    mkdirSync(fx.at(".claude"));
+    writeFileSync(fx.at(".claude/CLAUDE.md"), "../AGENTS.md\n");
+    mkdirSync(fx.at("packages/api"), { recursive: true });
+    mkdirSync(fx.at("docs"));
+    writeFileSync(fx.at("docs/guide.md"), "# Guide\n");
+    writeFileSync(fx.at("packages/api/CLAUDE.md"), "../../docs/guide.md");
+    const r = run(fx);
+    expect(r.findings.filter((f) => f.code === "claude.link-as-text").map((f) => f.path)).toEqual([
+      fx.at(".claude/CLAUDE.md"),
+      fx.at("packages/api/CLAUDE.md"),
+    ]);
+  });
+
+  it("does not take a one-word CLAUDE.md, a missing target or an import for a link", () => {
+    const fx = materialise("claude-local-shadows-agents-twin");
+    for (const text of ["TODO", "missing.md", "@AGENTS.md", "AGENTS.md is the file to read"]) {
+      writeFileSync(fx.at("CLAUDE.md"), text);
+      expect(codes(run(fx))).not.toContain("claude.link-as-text");
+    }
+  });
+});
+
 describe("trap: @AGENTS.md inside a fenced code block", () => {
   it("is not an import, and the finding says why", () => {
     const fx = materialise("claude-import-in-code-block");

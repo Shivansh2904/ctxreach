@@ -13,6 +13,13 @@
       "agent": "claude",
       "date": "2026-09-30",
       "confidence": "source@2282079"
+    },
+    {
+      "rule": "claude.link-as-text",
+      "status": "documented",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "docs@2026-09-30"
     }
   ]
 }

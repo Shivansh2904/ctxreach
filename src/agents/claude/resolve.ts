@@ -1,4 +1,4 @@
-import { readFileSync, realpathSync, statSync } from "node:fs";
+import { lstatSync, readFileSync, realpathSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
@@ -124,6 +124,29 @@ export function evidenceLabel(rule: string, from: EvidenceRegistry = REGISTRY): 
     throw new Error(`docs/evidence.json: ${rule} is ${entry.status} but names no version`);
   const count = entry.k !== undefined && entry.n !== undefined ? ` ${entry.k}/${entry.n}` : "";
   return `${entry.status}@${entry.version}${count}`;
+}
+
+/**
+ * Rule `claude.symlink`: a file whose whole trimmed text is one relative path
+ * to an existing file, which is what git writes for a symlink it checks out
+ * as a plain file (`core.symlinks` false, the Windows default). A real link
+ * is not one.
+ */
+export function linkAsText(file: string): { text: string; target: string } | undefined {
+  try {
+    if (lstatSync(file).isSymbolicLink()) return undefined;
+  } catch {
+    return undefined;
+  }
+  const text = readFileSync(file, "utf8").trim();
+  if (text === "" || text.length > 4096 || /\s/.test(text)) return undefined;
+  if (text.startsWith("@") || text.startsWith("~") || path.isAbsolute(text)) return undefined;
+  const target = path.resolve(path.dirname(file), text);
+  try {
+    return statSync(target).isFile() ? { text, target } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function hasPathsFrontmatter(text: string): boolean {
@@ -632,11 +655,31 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
     }
   }
 
+  // Rule claude.symlink: a CLAUDE.md that is a symlink checked out as text.
+  const linksAsText = new Set<string>();
+  for (const f of files) {
+    if (!(f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md")) continue;
+    if (f.delivery === "not-loaded") continue;
+    const link = linkAsText(f.path);
+    if (!link) continue;
+    linksAsText.add(f.path);
+    const dirOf = (p: string) => path.dirname(p).replace(/[\\/]\.claude$/, "");
+    const switchesOff = shadowers.includes(f.path) || lostAgents.some((a) => samePath(dirOf(a.path), dirOf(f.path)));
+    findings.push({
+      code: "claude.link-as-text",
+      severity: "warn",
+      agent: "claude",
+      rule: "claude.symlink",
+      path: f.path,
+      message: `${rel(f.path)} holds only the text "${link.text}": a symlink to ${rel(link.target)} that git checked out as a plain file, as git does on Windows unless symlinks are enabled (core.symlinks). Claude Code reads it as a ${path.basename(f.path)} whose whole text is that path: it imports nothing${switchesOff && lostAgents.length > 0 ? ", and as a CLAUDE.md it switches AGENTS.md off" : ""}. A line "@${link.text}" works on every system.`,
+    });
+  }
+
   // Rule claude.words: a CLAUDE.md that names AGENTS.md without importing it.
   if (lostAgents.length > 0 && agentsSupported) {
     for (const f of files) {
       if (!(f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md")) continue;
-      if (f.delivery === "not-loaded") continue;
+      if (f.delivery === "not-loaded" || linksAsText.has(f.path)) continue;
       const text = readFileSync(f.path, "utf8");
       if (!WORDS.test(text)) continue;
       const inCode = /@AGENTS\.md/.test(text);
