@@ -6,6 +6,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -125,6 +126,58 @@ describe("the sandbox", () => {
       /more than 1 files/,
     );
     expect(readdirSync(tmp)).toEqual([]);
+  });
+
+  describe.runIf(process.platform === "win32")("another spelling of the same directory (Windows)", () => {
+    /** `C:\x` as `\\?\C:\x`. */
+    const longForm = (p: string) => `\\\\?\\${p}`;
+    /** `C:\x` as `\\host\C$\x`, the drive's administrative share. */
+    const adminShare = (host: string, p: string) => `\\\\${host}\\${p.slice(0, 1)}$${p.slice(2)}`;
+    const shareWorks = (host: string) => {
+      try {
+        return statSync(adminShare(host, os.homedir())).isDirectory();
+      } catch {
+        return false;
+      }
+    };
+    // Nothing is copied: this directory does not exist, so a check that
+    // missed would fail at the next step, not copy the home directory.
+    const nowhere = path.join(path.parse(os.homedir()).root, `ctxreach-no-such-dir-${process.pid}`);
+
+    it("refuses the home directory, and a directory above it, spelled \\\\?\\C:\\...", () => {
+      expect(existsSync(nowhere)).toBe(false);
+      for (const dir of [os.homedir(), path.dirname(os.homedir())])
+        expect(() => createSandbox(longForm(dir), { tmpRoot: nowhere })).toThrow(/home directory/);
+    });
+
+    for (const host of ["localhost", "127.0.0.1"])
+      it.skipIf(!shareWorks(host))(`refuses the home directory through the share \\\\${host}\\C$`, () => {
+        expect(() => createSandbox(adminShare(host, os.homedir()), { tmpRoot: nowhere })).toThrow(/home directory/);
+      });
+
+    it("refuses a temporary directory inside the repository when the repository is spelled another way", () => {
+      const fx = materialise("claude-local-shadows-agents");
+      mkdirSync(fx.at("tmp"));
+      const spellings = [longForm(fx.repo), ...(shareWorks("localhost") ? [adminShare("localhost", fx.repo)] : [])];
+      for (const spelled of spellings) {
+        // Small limits: a check that missed would copy the copy into itself.
+        expect(() =>
+          createSandbox(spelled, { tmpRoot: fx.at("tmp"), limits: { maxFiles: 50, maxBytes: 1e6 } }),
+        ).toThrow(/inside the repository being copied/);
+        expect(readdirSync(fx.at("tmp"))).toEqual([]);
+      }
+    });
+
+    it("finds a sandbox that overlaps the repository its marker names in another spelling", () => {
+      const outer = tempDir("overlap");
+      const base = path.join(outer, `${SANDBOX_PREFIX}forged`);
+      mkdirSync(path.join(base, "repo"), { recursive: true });
+      writeFileSync(
+        path.join(base, "ctxreach-sandbox.json"),
+        JSON.stringify({ tool: "ctxreach", base, source: longForm(outer) }),
+      );
+      expect(() => sandboxOf(path.join(base, "repo"))).toThrow(/overlaps the repository/);
+    });
   });
 
   it("says a directory is not in a sandbox, and refuses to delete one that is not", () => {

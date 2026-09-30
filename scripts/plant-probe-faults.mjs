@@ -178,7 +178,7 @@ export const PLANTS = [
   {
     name: "sandbox-copies-home",
     file: "src/probe/sandbox.ts",
-    find: "if (isInside(home, source))",
+    find: "if (isInsideReal(home, source))",
     replace: "if (false)",
   },
   {

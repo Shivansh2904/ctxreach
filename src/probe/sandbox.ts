@@ -43,7 +43,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isInside, samePath } from "../util/fs.js";
+import { canonicalPath, isInside, isInsideReal, samePath } from "../util/fs.js";
 import { SafetyError } from "./types.js";
 
 export const SANDBOX_PREFIX = "ctxreach-probe-";
@@ -94,11 +94,15 @@ function rel(from: string, to: string): string {
   return path.relative(from, to).split(path.sep).join("/") || ".";
 }
 
-/** Refuse sources that are never a repository: a filesystem root, the home directory or anything above it. */
+/**
+ * Refuse sources that are never a repository: a filesystem root, the home
+ * directory or anything above it. Compared as directories, not as spellings:
+ * `\\?\C:\Users\x` and `\\localhost\C$\Users\x` are the home directory too.
+ */
 function assertCopyable(source: string): void {
   const home = os.homedir();
   if (path.dirname(source) === source) throw new SafetyError(`refusing to copy ${source}: it is a filesystem root`);
-  if (isInside(home, source))
+  if (isInsideReal(home, source))
     throw new SafetyError(`refusing to copy ${source}: it is your home directory or contains it`);
 }
 
@@ -218,12 +222,14 @@ function assertNoLinks(root: string): void {
  * temp directory and not inside `source`.
  */
 export function createSandbox(source: string, options: { tmpRoot?: string; limits?: SandboxLimits } = {}): Sandbox {
-  const src = realpathSync(source);
+  const src = canonicalPath(source);
   assertCopyable(src);
   const tmpRoot = realpathSync(options.tmpRoot ?? os.tmpdir());
+  // Compared as spelled: a spelling that does not match is refused.
   if (!isInside(tmpRoot, realpathSync(os.tmpdir())))
     throw new SafetyError(`refusing to put the temporary copy outside the system temp directory (${tmpRoot})`);
-  if (isInside(tmpRoot, src))
+  // Compared as directories: no spelling of the repository gets past this.
+  if (isInsideReal(tmpRoot, src))
     throw new SafetyError(`refusing to put the temporary copy inside the repository being copied (${tmpRoot})`);
   const limits = options.limits ?? DEFAULT_LIMITS;
 
@@ -315,7 +321,7 @@ export function sandboxOf(dir: string): { base: string; repo: string; source: st
       assertSandboxPlace(cursor);
       const repo = path.join(cursor, "repo");
       if (!isInside(real, repo)) throw new SafetyError(`${dir} is not inside the sandbox's copy of the repository`);
-      if (isInside(cursor, data.source) || isInside(data.source, cursor))
+      if (isInsideReal(cursor, data.source) || isInsideReal(data.source, cursor))
         throw new SafetyError(`sandbox ${cursor} overlaps the repository it copies (${data.source})`);
       return { base: cursor, repo, source: data.source };
     }
