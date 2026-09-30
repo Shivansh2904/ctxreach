@@ -1,0 +1,90 @@
+name: Action selftest
+
+# Runs this repository's own Action (action.yml, action/dist/ctxreach.cjs) on a
+# trap and its clean twin. The trap must give at least one annotation, the twin
+# exactly none, and fail-on: warn must fail the step on the trap. The trap's
+# warnings show on this run: they are the test passing.
+
+on:
+  push:
+    paths:
+      - action.yml
+      - action/**
+      - src/**
+      - test/fixtures/codex-over-cap/**
+      - test/fixtures/codex-over-cap-twin/**
+      - .github/workflows/action-selftest.yml
+  pull_request:
+    paths:
+      - action.yml
+      - action/**
+      - src/**
+      - test/fixtures/codex-over-cap/**
+      - test/fixtures/codex-over-cap-twin/**
+      - .github/workflows/action-selftest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The oldest Node the bundle targets.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Each fixture becomes a repository of its own, so nothing in this
+      # checkout (above the fixture) is on its instruction chain.
+      - name: Copy the trap and its twin into repositories of their own
+        shell: bash
+        run: |
+          for name in codex-over-cap codex-over-cap-twin; do
+            mkdir -p "selftest/$name/.git"
+            cp -R "test/fixtures/$name/repo/." "selftest/$name/"
+          done
+
+      - id: trap
+        uses: ./
+        with:
+          path: selftest/codex-over-cap
+
+      - id: twin
+        uses: ./
+        with:
+          path: selftest/codex-over-cap-twin
+          fail-on: warn
+
+      - name: The trap gives at least one annotation, the twin none
+        shell: bash
+        env:
+          TRAP: ${{ steps.trap.outputs.annotations }}
+          TWIN: ${{ steps.twin.outputs.annotations }}
+        run: |
+          echo "trap: ${TRAP:-none} annotations; twin: ${TWIN:-none} annotations"
+          if ! [ "${TRAP:-0}" -ge 1 ] 2>/dev/null; then echo "::error::the trap gave no annotation"; exit 1; fi
+          if [ "${TWIN:-}" != "0" ]; then echo "::error::the twin gave ${TWIN:-no} annotations, expected 0"; exit 1; fi
+
+      - id: must-fail
+        continue-on-error: true
+        uses: ./
+        with:
+          path: selftest/codex-over-cap
+          fail-on: warn
+
+      - name: fail-on warn failed the step on the trap
+        if: steps.must-fail.outcome != 'failure'
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.must-fail.outcome }}
+        run: |
+          echo "::error::fail-on: warn did not fail the step on the trap (outcome $OUTCOME)"
+          exit 1

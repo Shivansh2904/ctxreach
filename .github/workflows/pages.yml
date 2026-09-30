@@ -1,0 +1,60 @@
+name: Pages
+
+# Deploys site/ to GitHub Pages, with the conformance results from the
+# gh-pages branch (data/conformance/) copied in beside it.
+#
+# Publishing is a decision, so nothing deploys on its own until the
+# repository variable CTXREACH_PAGES is set to "on" (and Pages is set to
+# deploy from GitHub Actions). A manual run (workflow_dispatch) always runs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - .github/workflows/pages.yml
+  workflow_run:
+    workflows: [Conformance]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.CTXREACH_PAGES == 'on'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: site/ exists
+        shell: bash
+        run: |
+          if [ ! -f site/index.html ]; then echo "::error::site/index.html does not exist"; exit 1; fi
+      - name: Copy the conformance results from gh-pages
+        shell: bash
+        run: |
+          if git fetch --depth 1 origin gh-pages; then
+            if git cat-file -e FETCH_HEAD:data/conformance 2>/dev/null; then
+              mkdir -p site/data
+              git archive FETCH_HEAD data/conformance | tar -x -C site
+            fi
+          else
+            echo "no gh-pages branch yet: deploying site/ without conformance results"
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

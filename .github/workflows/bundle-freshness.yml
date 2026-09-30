@@ -1,0 +1,33 @@
+name: Bundle freshness
+
+# Two generated files are committed: the Action's bundle (action/dist) and
+# docs/evidence.md. Each is rebuilt here and compared byte for byte with the
+# committed copy; any difference fails the check. On both systems, because the
+# bundle must come out the same everywhere.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fresh:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: action/dist/ctxreach.cjs matches a fresh build
+        run: node scripts/bundle-action.mjs --check
+      - name: docs/evidence.md matches docs/evidence.json
+        run: node scripts/evidence.mjs --check
