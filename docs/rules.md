@@ -69,13 +69,28 @@ Checked on 2026-09-28 against:
 - Docs: <https://code.claude.com/docs/en/headless> (section "Start faster with
   bare mode").
 
-The Claude Code docs do not publish the loader's source, so where they are
-silent ctxreach makes an assumption and marks it **assumed** below.
+Rows changed on 2026-09-30 were also checked against:
+
+- Source: the part of Claude Code that reads `AGENTS.md` is a built-in plugin,
+  `agents-md@builtin`, published in `anthropics/claude-code` at commit
+  [`2282079`](https://github.com/anthropics/claude-code/tree/2282079d6ac8824ec4b72a432a03e0c636e0512f/mods/agents-md),
+  directory `mods/agents-md` (`README.md`, `hooks/register.ts`, `hooks/files/`,
+  `hooks/frames/`, `hooks/names/`), referred to below as *mod*. That commit is
+  two commits after the `v2.1.285` tag; its only change to `mods/agents-md`
+  since that tag is where the "AGENTS.md loaded" line is logged.
+- Issue: <https://github.com/anthropics/claude-code/issues/80580> (comments by
+  a maintainer on 2026-08-25, Claude Code 2.1.233, and by a user on
+  2026-09-28, 2.1.284).
+
+The `AGENTS.md` half of the loader is published (the mod); the engine that
+loads `CLAUDE.md` files is not. Where the docs and the mod are both silent,
+ctxreach makes an assumption and marks it **assumed** below.
 
 | Id | Rule | Source |
 |---|---|---|
 | `claude.ancestors` | At launch Claude Code loads `CLAUDE.md` and `CLAUDE.local.md` from the launch directory and every directory above it, up to the filesystem root (it does not stop at the repository root). Files are ordered root-first; within a directory `CLAUDE.local.md` comes after `CLAUDE.md`. `.claude/CLAUDE.md` is a project file in the same way as `./CLAUDE.md`. **Assumed:** `.claude/CLAUDE.md` loads from ancestors too, and comes after `CLAUDE.md` and before `CLAUDE.local.md` in its directory; the docs list it as a project location and count it in the AGENTS.md check "in your working directory or any directory above it", but do not give its order. | memory, "Choose where to put CLAUDE.md files", "How CLAUDE.md files load", "When Claude Code reads AGENTS.md". |
-| `claude.user` | `~/.claude/CLAUDE.md` is the user file. It loads before project files and does not count towards the AGENTS.md check. | memory, "Choose where to put CLAUDE.md files", "When Claude Code reads AGENTS.md". |
+| `claude.user` | `~/.claude/CLAUDE.md` is the user file. It loads before project files. As the user file it does not count towards the AGENTS.md check. But for a launch directory under the home directory the same file is also `<home>/.claude/CLAUDE.md`, an ancestor's `.claude/CLAUDE.md`, and then it counts (rule `claude.home-ancestor`). Until 2026-09-30 this row said it never counts. | memory, "Choose where to put CLAUDE.md files", "When Claude Code reads AGENTS.md"; corrected from the mod and #80580, see `claude.home-ancestor`. |
+| `claude.home-ancestor` | A `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` in any directory above the repository counts for the AGENTS.md check like one inside it, so it switches `AGENTS.md` off for every repository below it, and nothing in the repository shows why. `~/.claude/CLAUDE.md` is such a file for every repository under the home directory (on Windows, every repository in the user profile). A file in `~/.claude/rules/` never counts. **Conflict:** the memory docs and the mod's README say the person's `~/.claude/CLAUDE.md` does not count; the mod's code counts any `project` or `local` file on the walk, and a maintainer's comment on #80580 says that for a project under the home directory the engine picks up `~/.claude/CLAUDE.md` as an ancestor's `.claude/CLAUDE.md`. ctxreach follows the code. The finding carries this rule's evidence status from `docs/evidence.json`. Pilot runs, not results: on 2026-09-30 a `.claude/CLAUDE.md` above the git root (not in the home directory) switched `AGENTS.md` off in 1/1 run on Claude Code 2.1.280 (`probe`, billed) and 1/1 on 2.1.285 (request capture), against 1/1 and 1/1 with it removed. The home-directory case has not been run. | mod: `hooks/register.ts` (the `prompt.context` hook: `isClaudeProject` checks the handed files with `Files.isClaudeFileOnWalk`, else walks every ancestor for the `CLAUDE.md` names with no upper bound), `hooks/files/is-claude-file-on-walk.ts`, `hooks/frames/is-below.ts`, `hooks/names/claude-names.ts`; #80580. |
 | `claude.subdirs` | `CLAUDE.md` and `CLAUDE.local.md` files in subdirectories below the launch directory are not loaded at launch; each loads when Claude reads a file in its directory. **Assumed:** a subdirectory's `.claude/CLAUDE.md` behaves the same way (the AGENTS.md rule refers to a subdirectory's "three `CLAUDE.md` files"). Directories beside or above the launch directory's subtree are not loaded this way. | memory, "How CLAUDE.md files load". |
 | `claude.agents-default` | By default (`claude-md-or-agents-md`), Claude reads `AGENTS.md` only when there is no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` in the launch directory or above it. `~/.claude/CLAUDE.md`, the managed `CLAUDE.md` and `.claude/rules/` files do not count. When none count, every `AGENTS.md` and `.claude/AGENTS.md` in the launch directory and above loads at launch, and a subdirectory's `AGENTS.md` loads when Claude reads a file there, if that subdirectory has none of the three `CLAUDE.md` files. So adding a personal `CLAUDE.local.md` switches `AGENTS.md` off. | memory, "When Claude Code reads AGENTS.md". |
 | `claude.agents-never` | Claude Code never reads `AGENTS.local.md`, `AGENTS.override.md`, or anything under a `.agents/` directory. | memory, "When Claude Code reads AGENTS.md". |
@@ -122,6 +137,7 @@ intended.
 | `codex.empty` | info | `codex.empty-skip` | A file is empty after trimming, so Codex skips it. |
 | `codex.no-root` | info | `codex.root` | No project root marker was found, so only the launch directory is searched. |
 | `claude.agents-shadowed` | warn | `claude.agents-default` | An `AGENTS.md` does not reach Claude Code because of a `CLAUDE.md`-family file at or above the launch directory, or one in its own directory. |
+| `claude.home-ancestor` | warn | `claude.home-ancestor` | The only files switching `AGENTS.md` off are above the repository, such as `~/.claude/CLAUDE.md` for a repository under the home directory. The message ends with the rule's evidence status from `docs/evidence.json`, for example `[evidence: source]`. |
 | `claude.words-not-import` | warn | `claude.words` | A `CLAUDE.md` names `AGENTS.md` without importing it. |
 | `claude.import-too-deep` | warn | `claude.imports` | An import is more than four hops from a memory file. |
 | `claude.mode-in-project-settings` | warn | `claude.modes` | The Project instructions setting is in a project or local settings file, where it is ignored. |

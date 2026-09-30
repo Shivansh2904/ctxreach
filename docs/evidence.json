@@ -1,0 +1,11 @@
+{
+  "entries": [
+    {
+      "rule": "claude.home-ancestor",
+      "status": "source",
+      "agent": "claude",
+      "date": "2026-09-30",
+      "confidence": "source@2282079"
+    }
+  ]
+}

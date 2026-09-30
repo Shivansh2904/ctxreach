@@ -1,10 +1,13 @@
-import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { resolveClaude, type ClaudeResult } from "../src/agents/claude/resolve.js";
+import { EvidenceRegistry, evidenceLabel, resolveClaude, type ClaudeResult } from "../src/agents/claude/resolve.js";
 import { importTokens } from "../src/agents/claude/imports.js";
 import { compareVersions } from "../src/agents/claude/settings.js";
 import { materialise, type Materialised } from "./helpers/fixture.js";
+
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function run(fx: Materialised, from = ".", extra: Partial<Parameters<typeof resolveClaude>[0]> = {}): ClaudeResult {
   return resolveClaude({
@@ -45,6 +48,122 @@ describe("trap: a personal CLAUDE.local.md switches AGENTS.md off", () => {
     const r = run(fx, ".", { mode: "claude-md-and-agents-md" });
     expect(deliveries(fx, r)).toEqual({ "CLAUDE.local.md": "launch", "AGENTS.md": "launch" });
     expect(r.findings).toEqual([]);
+  });
+});
+
+/** The fixture's repository cloned under its home directory, as every repository in a Windows profile is. */
+function cloneUnderHome(fx: Materialised): string {
+  const clone = path.join(fx.home, "code", "app");
+  cpSync(fx.repo, clone, { recursive: true });
+  return clone;
+}
+
+function runIn(fx: Materialised, repo: string, from = ".", extra: Partial<Parameters<typeof resolveClaude>[0]> = {}) {
+  return resolveClaude({
+    launchDir: path.join(repo, ...from.split("/")),
+    scanRoot: repo,
+    claudeHome: fx.claudeHome,
+    ceiling: fx.base,
+    ...extra,
+  });
+}
+
+/** The label docs/evidence.json gives a rule, worked out here without the resolver's code. */
+function registryLabel(rule: string): string {
+  const doc = JSON.parse(readFileSync(path.join(ROOT, "docs", "evidence.json"), "utf8")) as {
+    entries: { rule: string; status: string; version?: string; k?: number; n?: number }[];
+  };
+  const e = doc.entries.find((x) => x.rule === rule);
+  if (!e) throw new Error(`no registry entry for ${rule}`);
+  if (e.status === "source" || e.status === "documented") return e.status;
+  return `${e.status}@${e.version}${e.k !== undefined ? ` ${e.k}/${e.n}` : ""}`;
+}
+
+describe("trap: ~/.claude/CLAUDE.md switches AGENTS.md off for a repository under home", () => {
+  it("reports the personal file as an ancestor that switches AGENTS.md off, with its evidence label", () => {
+    const fx = materialise("claude-home-ancestor");
+    const repo = cloneUnderHome(fx);
+    const r = runIn(fx, repo);
+    const personal = path.join(fx.claudeHome, "CLAUDE.md");
+    expect(r.files.map((f) => [f.path, f.kind, f.delivery])).toEqual([
+      [personal, "user", "launch"],
+      [path.join(repo, "AGENTS.md"), "AGENTS.md", "not-loaded"],
+    ]);
+    expect(r.files[0]?.why).toBe("user file, and an ancestor's .claude/CLAUDE.md here");
+    expect(r.shadowers).toEqual([personal]);
+    expect(r.agentsMd.read).toBe(false);
+    expect(codes(r)).toEqual(["claude.agents-shadowed", "claude.home-ancestor"]);
+    const finding = r.findings[1];
+    expect(finding?.path).toBe(personal);
+    expect(finding?.message).toContain("~/.claude/CLAUDE.md, your personal file, switches AGENTS.md off here");
+    expect(finding?.message).toContain(`[evidence: ${registryLabel("claude.home-ancestor")}]`);
+  });
+
+  it("reads AGENTS.md when the same repository is cloned outside home", () => {
+    const fx = materialise("claude-home-ancestor");
+    const r = run(fx);
+    expect(deliveries(fx, r)).toEqual({ "../home/.claude/CLAUDE.md": "launch", "AGENTS.md": "launch" });
+    expect(r.files[0]?.why).toBe("user file");
+    expect(r.findings).toEqual([]);
+  });
+
+  it("twin: the same preferences as a rule in ~/.claude/rules/ leave AGENTS.md on", () => {
+    const fx = materialise("claude-home-ancestor-twin");
+    const repo = cloneUnderHome(fx);
+    const r = runIn(fx, repo);
+    expect(r.files.map((f) => [path.basename(f.path), f.kind, f.delivery])).toEqual([
+      ["personal.md", "user-rule", "launch"],
+      ["AGENTS.md", "AGENTS.md", "launch"],
+    ]);
+    expect(r.shadowers).toEqual([]);
+    expect(r.findings).toEqual([]);
+  });
+
+  it("does not blame the personal file when the repository has a CLAUDE.md of its own", () => {
+    const fx = materialise("claude-home-ancestor");
+    const repo = cloneUnderHome(fx);
+    writeFileSync(path.join(repo, "CLAUDE.md"), "# Team notes\n");
+    const r = runIn(fx, repo);
+    expect(r.shadowers).toHaveLength(2);
+    expect(codes(r)).toEqual(["claude.agents-shadowed"]);
+  });
+
+  it("reports any CLAUDE.md-family file above the repository, not only the personal one", () => {
+    const fx = materialise("claude-local-shadows-agents-twin");
+    writeFileSync(path.join(fx.base, "CLAUDE.md"), "# A file above the repository\n");
+    const r = run(fx);
+    expect(r.shadowers).toEqual([path.join(fx.base, "CLAUDE.md")]);
+    expect(deliveries(fx, r)["AGENTS.md"]).toBe("not-loaded");
+    expect(codes(r)).toEqual(["claude.agents-shadowed", "claude.home-ancestor"]);
+    expect(r.findings[1]?.message).toMatch(/\/CLAUDE\.md is above the repository and switches AGENTS\.md off for it/);
+  });
+
+  it("says nothing when no AGENTS.md is lost", () => {
+    const fx = materialise("claude-home-ancestor");
+    const repo = cloneUnderHome(fx);
+    const r = runIn(fx, repo, ".", { mode: "claude-md-and-agents-md" });
+    expect(r.files.map((f) => f.delivery)).toEqual(["launch", "launch"]);
+    expect(r.findings).toEqual([]);
+  });
+});
+
+describe("evidence labels", () => {
+  it("shows the registry's status, and the version and count once a run backs it", () => {
+    const at = (entry: Record<string, unknown>) =>
+      evidenceLabel("x.rule", EvidenceRegistry.parse({ entries: [{ rule: "x.rule", ...entry }] }));
+    expect(at({ status: "source" })).toBe("source");
+    expect(at({ status: "documented" })).toBe("documented");
+    expect(at({ status: "observed", version: "2.1.285", k: 10, n: 10 })).toBe("observed@2.1.285 10/10");
+    expect(at({ status: "contradicted", version: "2.1.285" })).toBe("contradicted@2.1.285");
+    expect(() => at({ status: "observed" })).toThrow(/names no version/);
+    expect(() => evidenceLabel("x.missing", { entries: [] })).toThrow(/no entry for x\.missing/);
+  });
+
+  it("parses docs/evidence.json and has an entry for every label map shows", () => {
+    expect(
+      EvidenceRegistry.safeParse(JSON.parse(readFileSync(path.join(ROOT, "docs", "evidence.json"), "utf8"))).success,
+    ).toBe(true);
+    expect(evidenceLabel("claude.home-ancestor")).toBe(registryLabel("claude.home-ancestor"));
   });
 });
 
@@ -209,27 +328,6 @@ describe("other Claude Code rules", () => {
     const own = r.files.find((f) => f.path === fx.at("packages/api/AGENTS.md"));
     expect(own?.why).toBe("packages/api/ has its own CLAUDE.md");
     expect(r.files.find((f) => f.kind === "AGENTS.override.md")?.rule).toBe("claude.agents-never");
-  });
-
-  it("walks above the repository root", () => {
-    const fx = materialise("claude-local-shadows-agents-twin");
-    writeFileSync(path.join(fx.base, "CLAUDE.md"), "# A file above the repository\n");
-    const r = run(fx);
-    expect(r.shadowers).toEqual([path.join(fx.base, "CLAUDE.md")]);
-    expect(deliveries(fx, r)["AGENTS.md"]).toBe("not-loaded");
-  });
-
-  it("does not count ~/.claude/CLAUDE.md as a project file when the repository is under home", () => {
-    // Treat the temp dir holding repo/ as the home directory, so the upward
-    // walk passes through home and sees home/.claude/CLAUDE.md.
-    const fx = materialise("claude-local-shadows-agents-twin");
-    const claudeHome = path.join(fx.base, ".claude");
-    mkdirSync(claudeHome);
-    writeFileSync(path.join(claudeHome, "CLAUDE.md"), "# Me\n");
-    const r = run(fx, ".", { claudeHome, homeDir: fx.base });
-    expect(r.files[0]).toMatchObject({ path: path.join(claudeHome, "CLAUDE.md"), kind: "user", delivery: "launch" });
-    expect(r.shadowers).toEqual([]);
-    expect(deliveries(fx, r)["AGENTS.md"]).toBe("launch");
   });
 
   it("reads project rules without paths at launch and with paths on read", () => {

@@ -52,12 +52,12 @@ const UNEXERCISED = [
   "codex.join",
   // Exercised by unit tests in claude.test.ts and codex.test.ts that build
   // the case at test time (a symlink, a file over 4 MiB, a user config with
-  // trust levels, a fake home directory, a given version).
-  "claude.rules",
+  // trust levels, a repository cloned under the fake home directory, a given
+  // version).
+  "claude.home-ancestor",
   "claude.size",
   "claude.subdirs",
   "claude.symlink",
-  "claude.user",
   "claude.version",
   "codex.global",
   "codex.root",

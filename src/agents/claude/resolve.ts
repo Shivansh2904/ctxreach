@@ -1,6 +1,8 @@
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { z } from "zod";
+import registry from "../../../docs/evidence.json" with { type: "json" };
 import { discoverSurfaces, markdownFilesUnder, type SurfaceKind } from "../../discover/surfaces.js";
 import { ancestors, displayPath, isFileNamed, isInside, samePath } from "../../util/fs.js";
 import type { Delivery, Finding } from "../types.js";
@@ -90,6 +92,35 @@ function size(p: string): number {
   }
 }
 
+// docs/evidence.json: how well each rule is supported. Only the fields a
+// label needs are checked; the registry may carry more.
+const EvidenceEntry = z.looseObject({
+  rule: z.string(),
+  status: z.enum(["documented", "source", "observed", "contradicted"]),
+  version: z.string().optional(),
+  k: z.number().int().nonnegative().optional(),
+  n: z.number().int().positive().optional(),
+});
+export const EvidenceRegistry = z.looseObject({ entries: z.array(EvidenceEntry) });
+export type EvidenceRegistry = z.infer<typeof EvidenceRegistry>;
+const REGISTRY = EvidenceRegistry.parse(registry);
+
+/**
+ * The evidence label a finding carries for `rule`, from docs/evidence.json:
+ * the status (`documented`, `source`), or for a run-backed status the
+ * version too (`observed@2.1.285 10/10`). Throws when the registry has no
+ * entry, so a rule never shows a label nobody wrote.
+ */
+export function evidenceLabel(rule: string, from: EvidenceRegistry = REGISTRY): string {
+  const entry = from.entries.find((e) => e.rule === rule);
+  if (!entry) throw new Error(`docs/evidence.json has no entry for ${rule}`);
+  if (entry.status === "documented" || entry.status === "source") return entry.status;
+  if (entry.version === undefined)
+    throw new Error(`docs/evidence.json: ${rule} is ${entry.status} but names no version`);
+  const count = entry.k !== undefined && entry.n !== undefined ? ` ${entry.k}/${entry.n}` : "";
+  return `${entry.status}@${entry.version}${count}`;
+}
+
 function hasPathsFrontmatter(text: string): boolean {
   const m = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
   return m?.[1] !== undefined && /^paths\s*:/m.test(m[1]);
@@ -109,6 +140,8 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   const unresolvedImports: { in: string; token: string }[] = [];
   const delivered = new Map<string, ClaudeFile>();
   const rel = (p: string) => displayPath(p, scanRoot);
+  const inRepo = (p: string) => isInside(p, scanRoot);
+  const personalFile = path.join(homeDir, ".claude", "CLAUDE.md");
 
   // Rule claude.modes: user settings count, project and local settings do not.
   let mode: ClaudeMode = CLAUDE_DEFAULT_MODE;
@@ -262,11 +295,11 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
 
   // Directories from the top of the walk down to the launch directory.
   const upward = ancestors(launchDir, options.ceiling).reverse();
-  const isHome = (dir: string) => samePath(dir, homeDir);
+  // Rule claude.home-ancestor: every directory counts, the home directory
+  // too, so ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md for a
+  // launch directory under home.
   const claudeFilesIn = (dir: string): string[] =>
-    CLAUDE_NAMES.filter((n) => !(n === ".claude/CLAUDE.md" && isHome(dir)) && isFileNamed(dir, n)).map((n) =>
-      path.join(dir, ...n.split("/")),
-    );
+    CLAUDE_NAMES.filter((n) => isFileNamed(dir, n)).map((n) => path.join(dir, ...n.split("/")));
 
   // Rule claude.agents-default: which files switch AGENTS.md off.
   const shadowers = upward.flatMap(claudeFilesIn);
@@ -286,11 +319,12 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
   if (mode !== "managed-only") {
     const userFile = path.join(claudeHome, "CLAUDE.md");
     if (isFileNamed(claudeHome, "CLAUDE.md")) {
+      const alsoAncestor = shadowers.some((s) => samePath(s, userFile));
       add({
         path: userFile,
         kind: "user",
         delivery: "launch",
-        why: "user file",
+        why: alsoAncestor ? "user file, and an ancestor's .claude/CLAUDE.md here" : "user file",
         rule: "claude.user",
         bytes: size(userFile),
       });
@@ -506,6 +540,25 @@ export function resolveClaude(options: ClaudeResolveOptions): ClaudeResult {
         ? `${rel(f.path)} does not reach Claude Code: the personal ${localShadowers.map(rel).join(", ")} switches AGENTS.md off. Import it with @AGENTS.md, or set Project instructions to claude-md-and-agents-md.`
         : `${rel(f.path)} does not reach Claude Code: ${f.why}. Import it with @AGENTS.md in a CLAUDE.md, or set Project instructions to claude-md-and-agents-md.`,
     });
+  }
+
+  // Rule claude.home-ancestor: the only files switching AGENTS.md off are
+  // above the repository, where nobody reading it can see them.
+  const aboveRepo = shadowers.filter((s) => !inRepo(s));
+  if (agentsSupported && lostAgents.length > 0 && aboveRepo.length > 0 && aboveRepo.length === shadowers.length) {
+    const label = evidenceLabel("claude.home-ancestor");
+    for (const s of aboveRepo) {
+      findings.push({
+        code: "claude.home-ancestor",
+        severity: "warn",
+        agent: "claude",
+        rule: "claude.home-ancestor",
+        path: s,
+        message: samePath(s, personalFile)
+          ? `~/.claude/CLAUDE.md, your personal file, switches AGENTS.md off here: the repository is under your home directory, so Claude Code also finds that file as an ancestor's .claude/CLAUDE.md, and nothing in the repository shows it. Keep personal instructions in ~/.claude/rules/ instead, add a CLAUDE.md with @AGENTS.md to the repository, or set Project instructions to claude-md-and-agents-md. [evidence: ${label}]`
+          : `${rel(s)} is above the repository and switches AGENTS.md off for it: Claude Code counts a CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md in any directory above the launch directory, and nothing in the repository shows it. Add a CLAUDE.md with @AGENTS.md to the repository, or set Project instructions to claude-md-and-agents-md. [evidence: ${label}]`,
+      });
+    }
   }
 
   // Rule claude.words: a CLAUDE.md that names AGENTS.md without importing it.
