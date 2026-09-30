@@ -214,12 +214,15 @@ export const ProbeJson = z.object({
     reasons: z.array(z.string()),
     decoy: z.object({ echoed: z.number().int(), usable: z.number().int() }),
   }),
-  agreement: z.object({
-    agree: z.number().int(),
-    decided: z.number().int(),
-    cells: z.number().int(),
-    byVerdict: z.record(VerdictJson, z.number().int()),
-  }),
+  /** null after an instrument fault: the verdicts are void, so there is no agreement figure. */
+  agreement: z
+    .object({
+      agree: z.number().int(),
+      decided: z.number().int(),
+      cells: z.number().int(),
+      byVerdict: z.record(VerdictJson, z.number().int()),
+    })
+    .nullable(),
   warnings: z.array(z.string()),
   notes: z.array(z.string()),
   scope: z.array(z.string()),
@@ -261,7 +264,7 @@ export function probeJson(result: ProbeResult): ProbeJson {
       verdict: c.verdict,
     })),
     instrument: result.instrument,
-    agreement: result.agreement,
+    agreement: result.instrument.fault ? null : result.agreement,
     warnings: result.warnings,
     notes: result.notes,
     scope: scopeStatements(result),

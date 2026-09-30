@@ -158,9 +158,9 @@ The probe also checks itself:
   read it first. Any other echo of it, and any trial whose session was not
   the one asked for (other tools, another directory, another version), marks
   the run as an **instrument fault**, which voids its results, prints no
-  agreement figure, and exits with status 3. A trial that stops before its
-  session starts (for example, when the agent is not logged in) is counted
-  as failed, not as a fault.
+  agreement figure (in `--json`, `agreement` is `null`), and exits with
+  status 3. A trial that stops before its session starts (for example, when
+  the agent is not logged in) is counted as failed, not as a fault.
 - It warns when nothing is predicted to load at launch, since then a broken
   instrument that saw nothing would look like agreement.
 - It counts stream events it does not recognise, instead of failing on them

@@ -488,9 +488,13 @@ describe("ctxreach probe (command line)", () => {
     const agent = fakeAgent(() => ({ preloads: ["ctxreach-decoy.md"] }));
     const out = await ctxreach(agent, "probe", "--from", fx.repo, "--trials", "1", "--save", save);
     expect(out.stdout).toContain("INSTRUMENT FAULT");
-    // The results are void, so no agreement figure is printed.
+    // The results are void, so no agreement figure is printed...
     expect(out.stdout).not.toContain("Agreement with map");
     expect(out.status).toBe(3);
+    // ...nor given in JSON.
+    const json = ProbeJson.parse(JSON.parse((await ctxreach(agent, "probe", "--replay", save, "--json")).stdout));
+    expect(json.instrument.fault).toBe(true);
+    expect(json.agreement).toBeNull();
   });
 
   it("says plainly that there is no Codex adapter yet", async () => {

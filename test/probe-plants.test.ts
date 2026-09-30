@@ -17,6 +17,8 @@ describe("scripts/plant-probe-faults.mjs", () => {
       "src/probe/probe.ts",
       "src/probe/sandbox.ts",
       "src/probe/score.ts",
+      "src/program.ts",
+      "src/report/probe.ts",
     ]);
   });
 

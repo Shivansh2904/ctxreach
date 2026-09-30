@@ -156,6 +156,24 @@ export const PLANTS = [
     replace: "if (false) {",
   },
   {
+    name: "sandbox-outside-temp",
+    file: "src/probe/sandbox.ts",
+    find: "if (!isInside(tmpRoot, realpathSync(os.tmpdir())))",
+    replace: "if (false)",
+  },
+  {
+    name: "no-color-not-passed",
+    file: "src/program.ts",
+    find: "opts.color === false ? { color: false } : {}",
+    replace: "{}",
+  },
+  {
+    name: "json-agreement-on-fault",
+    file: "src/report/probe.ts",
+    find: "agreement: result.instrument.fault ? null : result.agreement,",
+    replace: "agreement: result.agreement,",
+  },
+  {
     name: "sandbox-names-exact-case",
     file: "src/probe/sandbox.ts",
     find: 'return name.toLowerCase().replace(/[. ]+$/, "");',

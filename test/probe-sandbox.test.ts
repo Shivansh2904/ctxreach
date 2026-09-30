@@ -16,7 +16,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { plantFile, TokenSource } from "../src/probe/canary.js";
 import { createSandbox, removeSandbox, sandboxOf, SANDBOX_PREFIX, stripTree } from "../src/probe/sandbox.js";
 import { SafetyError } from "../src/probe/types.js";
@@ -121,6 +121,19 @@ describe("the sandbox", () => {
     const fx = materialise("claude-local-shadows-agents");
     mkdirSync(fx.at("tmp"));
     expect(() => createSandbox(fx.repo, { tmpRoot: fx.at("tmp") })).toThrow(SafetyError);
+  });
+
+  it("refuses a temporary directory outside the system temp directory, and makes nothing there", () => {
+    const fx = materialise("claude-local-shadows-agents");
+    const outside = tempDir("not-system-tmp");
+    // Seen from a system temp directory elsewhere, `outside` is not inside it.
+    vi.spyOn(os, "tmpdir").mockReturnValue(tempDir("system-tmp"));
+    try {
+      expect(() => createSandbox(fx.repo, { tmpRoot: outside })).toThrow(/outside the system temp directory/);
+      expect(readdirSync(outside)).toEqual([]);
+    } finally {
+      vi.restoreAllMocks();
+    }
   });
 
   it("refuses a repository over the size limit and leaves nothing behind", () => {

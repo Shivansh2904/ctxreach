@@ -1,7 +1,7 @@
 import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { claudeAdapter } from "../src/agents/claude/adapter.js";
 import { parseClaudeTranscript } from "../src/agents/claude/events.js";
 import { readRecording } from "../src/probe/recording.js";
@@ -9,6 +9,15 @@ import { scoreRecording, type ProbeResult } from "../src/probe/score.js";
 import { createCli } from "../src/program.js";
 import { observedText } from "../src/report/probe.js";
 import { tempDir } from "./helpers/fixture.js";
+
+// Colours on, on every system (on Windows they are on anyway), so that only
+// --no-color can take them away: a test of --no-color on a terminal without
+// colours could not fail. picocolors reads these once, when it is loaded,
+// and vi.hoisted runs before the imports above.
+vi.hoisted(() => {
+  process.env.FORCE_COLOR = "1";
+  delete process.env.NO_COLOR;
+});
 
 // Real runs of Claude Code 2.1.280 on Windows, recorded on 2026-09-28 with
 // `ctxreach probe --save test/recorded/<name>` (commands in
@@ -184,18 +193,24 @@ describe("replaying the recorded real runs", () => {
   });
 
   it("prints the README's example from the recording, with no agent", async () => {
-    let stdout = "";
-    const cli = createCli({ stdout: (t) => (stdout += t), stderr: () => undefined }, { exitOverride: true });
-    await cli.program.parseAsync([
-      "node",
-      "ctxreach",
-      "probe",
-      "--replay",
-      path.join(RECORDED, "demo-api-recall"),
-      "--no-color",
-    ]);
-    expect(cli.status).toBe(0);
-    // --no-color reaches the report: no colour codes at all.
+    const replay = async (...extra: string[]) => {
+      let stdout = "";
+      const cli = createCli({ stdout: (t) => (stdout += t), stderr: () => undefined }, { exitOverride: true });
+      await cli.program.parseAsync([
+        "node",
+        "ctxreach",
+        "probe",
+        "--replay",
+        path.join(RECORDED, "demo-api-recall"),
+        ...extra,
+      ]);
+      return { stdout, status: cli.status };
+    };
+    // The control: colours are on (FORCE_COLOR, above), so without --no-color the report has them...
+    expect((await replay()).stdout).toContain("\u001b[");
+    const { stdout, status } = await replay("--no-color");
+    expect(status).toBe(0);
+    // ...and --no-color reaches the report: no colour codes at all.
     expect(stdout).not.toContain("\u001b[");
     expect(stdout).toContain(
       "ctxreach probe  Claude Code 2.1.280, recall mode, launch dir packages/api  (demo-monorepo)",
