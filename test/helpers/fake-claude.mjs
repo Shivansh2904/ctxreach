@@ -7,7 +7,12 @@
 // FAKE_CLAUDE_HOME: a Claude Code user directory; the fake creates an empty
 // per-project memory folder there, as Claude Code does.
 // FAKE_CLAUDE_STDERR: text to write to stderr.
-import { mkdirSync } from "node:fs";
+// FAKE_CLAUDE_IGNORE_SIGTERM: "1" to ignore SIGTERM, as a busy agent might.
+// FAKE_CLAUDE_PIDS: a file; the fake starts a process of its own (which also
+// ends after 10 seconds) and writes both process ids there, as
+// {"agent": <its own>, "child": <the one it started>}.
+import { spawn } from "node:child_process";
+import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const args = process.argv.slice(2);
@@ -17,6 +22,13 @@ if (args.includes("--version")) {
 }
 // "hang" ends by itself after 10 seconds, so a test that fails to stop it leaves no process behind.
 if (process.env.FAKE_CLAUDE_BEHAVIOUR === "hang") setTimeout(() => process.exit(0), 10_000);
+if (process.env.FAKE_CLAUDE_IGNORE_SIGTERM === "1") process.on("SIGTERM", () => undefined);
+if (process.env.FAKE_CLAUDE_PIDS) {
+  const child = spawn(process.execPath, ["-e", "setTimeout(() => {}, 10000)"], { stdio: "ignore", windowsHide: true });
+  // Written whole, then renamed, so a reader never sees half of it.
+  writeFileSync(`${process.env.FAKE_CLAUDE_PIDS}.tmp`, JSON.stringify({ agent: process.pid, child: child.pid }));
+  renameSync(`${process.env.FAKE_CLAUDE_PIDS}.tmp`, process.env.FAKE_CLAUDE_PIDS);
+}
 
 const toolsAt = args.indexOf("--tools");
 const tools = toolsAt >= 0 && args[toolsAt + 1] ? args[toolsAt + 1].split(",") : [];

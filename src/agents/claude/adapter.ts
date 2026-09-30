@@ -5,13 +5,14 @@
  * "Probe"), with the date they were checked against `claude --help` and the
  * documentation.
  */
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync, readdirSync, rmdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertReadyToRun, sandboxOf, SANDBOX_PREFIX } from "../../probe/sandbox.js";
 import type { AgentAdapter, AgentEnvironment, ProbeMode, RunOutcome, RunRequest, ToolUse } from "../../probe/types.js";
+import { SafetyError } from "../../probe/types.js";
 import { memoryDirOf, parseClaudeTranscript, redactClaudeTranscript, redactString } from "./events.js";
-import { samePath } from "../../util/fs.js";
+import { isInsideReal, samePath } from "../../util/fs.js";
 import { defaultClaudeHome } from "./settings.js";
 
 export const CLAUDE_READ_TOOLS = ["Read", "Glob", "Grep"] as const;
@@ -70,12 +71,14 @@ const truthy = (v: string | undefined) => v !== undefined && v !== "" && v !== "
 /**
  * Find the Claude Code executable. On Windows, npm installs `claude` as a
  * `.cmd` shim, which cannot be started without a shell; the executable the
- * shim calls is used instead.
+ * shim calls is used instead. Only absolute PATH directories are searched: a
+ * relative one (`.`, `bin`, or an empty entry) names a different directory
+ * wherever ctxreach happens to run, such as inside the repository it probes.
  */
 export function findClaude(env: NodeJS.ProcessEnv = process.env): string | undefined {
   const given = env.CTXREACH_CLAUDE_BIN;
   if (given) return given;
-  const dirs = (env.PATH ?? env.Path ?? "").split(path.delimiter).filter(Boolean);
+  const dirs = (env.PATH ?? env.Path ?? "").split(path.delimiter).filter((dir) => path.isAbsolute(dir));
   for (const dir of dirs) {
     if (process.platform === "win32") {
       const exe = path.join(dir, "claude.exe");
@@ -97,7 +100,11 @@ export function findClaude(env: NodeJS.ProcessEnv = process.env): string | undef
 }
 
 export interface ClaudeAdapterOptions {
-  /** Path of the `claude` executable (default: found on PATH, or $CTXREACH_CLAUDE_BIN). */
+  /**
+   * Path of the `claude` executable (default: found on PATH, or
+   * $CTXREACH_CLAUDE_BIN). A relative path is taken from the current
+   * directory when the adapter is made, never from the copy the agent runs in.
+   */
   bin?: string;
   /** Arguments placed before ctxreach's own, for a wrapper such as `node script.mjs` (used by the tests). */
   prefixArgs?: string[];
@@ -141,14 +148,53 @@ function cleanUpMemoryDir(memoryDir: string | undefined, claudeHome: string): st
   return removeEmpty(projectDir) ? [] : [projectDir];
 }
 
+/**
+ * Stop the agent at once and, on Windows, every process it started
+ * (`taskkill /T /F`), so that nothing keeps running in the copy while it is
+ * deleted. Synchronous, so a signal handler can call it before exiting.
+ */
+function stopProcessTree(child: ChildProcess): void {
+  if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === "win32") {
+    // By its full path: run by name, it would be looked for in the current directory first.
+    const taskkill = path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "taskkill.exe");
+    const r = spawnSync(taskkill, ["/pid", String(child.pid), "/T", "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+      timeout: 10_000,
+    });
+    if (r.error || r.status !== 0) child.kill("SIGKILL");
+  } else {
+    // SIGKILL: an agent busy with its own work may ignore SIGTERM.
+    child.kill("SIGKILL");
+  }
+}
+
+/** Refuse an executable that is, however it is spelled or linked, inside the temporary copy of the repository. */
+function assertOutsideCopy(exe: string, base: string): void {
+  // Windows also runs `claude` as `claude.com` or `claude.exe`.
+  const candidates =
+    process.platform === "win32" && path.extname(exe) === "" ? [exe, `${exe}.com`, `${exe}.exe`] : [exe];
+  if (candidates.some((c) => isInsideReal(c, base)))
+    throw new SafetyError(
+      `refusing to run ${exe}: it is inside the temporary copy of the repository; pass --claude-bin outside it`,
+    );
+}
+
 export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter {
   const baseEnv = options.env ?? process.env;
   const { env, removed } = agentEnv(baseEnv);
   const claudeHome = options.claudeHome ?? baseEnv.CLAUDE_CONFIG_DIR ?? defaultClaudeHome();
-  let bin: string | undefined = options.bin;
+  // The agent runs with the copy as its working directory, so a relative
+  // path would name a file in the copy: resolve it here, from where ctxreach runs.
+  const cwd = process.cwd();
+  let bin: string | undefined = options.bin !== undefined ? path.resolve(cwd, options.bin) : undefined;
   const prefix = options.prefixArgs ?? [];
   const binary = (): string => {
-    bin ??= findClaude(baseEnv);
+    if (bin === undefined) {
+      const found = findClaude(baseEnv);
+      if (found) bin = path.resolve(cwd, found);
+    }
     if (!bin) throw new Error("could not find the claude executable on PATH; pass --claude-bin");
     return bin;
   };
@@ -189,6 +235,8 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
       const box = sandboxOf(request.workdir);
       assertReadyToRun(box, request.sandboxNonce, request.workdir);
       const exe = binary();
+      assertOutsideCopy(exe, box.base);
+      if (request.signal?.aborted) throw new Error("the probe was stopped before the agent started");
       const started = Date.now();
       const child = spawn(exe, [...prefix, ...claudeArgs(request.mode)], {
         cwd: request.workdir,
@@ -196,6 +244,8 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
         stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       });
+      const stop = () => stopProcessTree(child);
+      request.signal?.addEventListener("abort", stop, { once: true });
       let stdout = "";
       let stderr = "";
       child.stdout.setEncoding("utf8");
@@ -214,7 +264,10 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
         child.on("close", (code) => resolve(code));
         child.stdin.on("error", () => undefined);
         child.stdin.end(request.prompt);
-      }).finally(() => clearTimeout(timer));
+      }).finally(() => {
+        clearTimeout(timer);
+        request.signal?.removeEventListener("abort", stop);
+      });
 
       const leftovers = cleanUpMemoryDir(memoryDirOf(stdout), claudeHome).map((p) =>
         redactString(p, request.redactions),

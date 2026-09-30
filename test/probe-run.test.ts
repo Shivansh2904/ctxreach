@@ -1,7 +1,19 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { EventEmitter } from "node:events";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { claudeAdapter } from "../src/agents/claude/adapter.js";
 import { runProbe, type ProbeOptions } from "../src/probe/probe.js";
 import { SANDBOX_PREFIX } from "../src/probe/sandbox.js";
 import { scoreRecording, type ProbeResult } from "../src/probe/score.js";
@@ -23,6 +35,27 @@ function treeHash(dir: string): string {
   };
   walk(dir);
   return h.digest("hex");
+}
+
+const FAKE_CLAUDE = path.join(path.dirname(fileURLToPath(import.meta.url)), "helpers", "fake-claude.mjs");
+
+/** True while a process with this id exists. */
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/** Wait until `check` is true; fail after `ms`. */
+async function until(check: () => boolean, ms = 10_000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!check()) {
+    if (Date.now() > end) throw new Error(`still not true after ${ms} ms`);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
 }
 
 interface Probed {
@@ -297,6 +330,86 @@ describe("probe sandbox safety, end to end", () => {
     ).rejects.toThrow(SafetyError);
     expect(agent.runs).toEqual([]);
   });
+
+  it("refuses to record inside the repository reached through a link, and writes nothing there", async () => {
+    const fx = materialise("demo-monorepo", { example: true });
+    const via = path.join(tempDir("via"), "repo");
+    symlinkSync(fx.repo, via, process.platform === "win32" ? "junction" : "dir");
+    const before = treeHash(fx.repo);
+    const agent = fakeAgent(() => ({ preloads: [] }));
+    try {
+      await expect(
+        runProbe({
+          adapter: agent,
+          repoRoot: fx.repo,
+          launchDir: fx.repo,
+          mode: "recall",
+          trials: 1,
+          timeoutMs: 1000,
+          saveDir: path.join(via, "probe-out"),
+          ctxreachVersion: "0",
+          tmpRoot: tempDir("probe-tmp"),
+        }),
+      ).rejects.toThrow(/refusing to record inside the repository/);
+      expect(agent.runs).toEqual([]);
+      expect(treeHash(fx.repo)).toBe(before);
+    } finally {
+      rmSync(via);
+    }
+  });
+
+  it("when interrupted, stops the agent (and on Windows what it started) before deleting the copy", async () => {
+    const fx = materialise("demo-monorepo", { example: true });
+    const tmp = tempDir("probe-tmp");
+    const pids = path.join(tempDir("pids"), "pids.json");
+    const claudeHome = tempDir("claude-home");
+    const adapter = claudeAdapter({
+      bin: process.execPath,
+      prefixArgs: [FAKE_CLAUDE],
+      claudeHome,
+      env: {
+        ...process.env,
+        FAKE_CLAUDE_HOME: claudeHome,
+        FAKE_CLAUDE_BEHAVIOUR: "hang",
+        FAKE_CLAUDE_IGNORE_SIGTERM: "1",
+        FAKE_CLAUDE_PIDS: pids,
+      },
+    });
+    // Stands in for the process: its signals, and an exit that only records the status.
+    const exits: number[] = [];
+    const host = Object.assign(new EventEmitter(), { exit: (code: number) => void exits.push(code) });
+    const running = runProbe({
+      adapter,
+      repoRoot: fx.repo,
+      launchDir: fx.repo,
+      mode: "recall",
+      trials: 1,
+      timeoutMs: 60_000,
+      saveDir: path.join(tempDir("probe-save"), "run"),
+      claudeHome: fx.claudeHome,
+      ctxreachVersion: "0",
+      tmpRoot: tmp,
+      host: host as unknown as ProbeOptions["host"],
+    }).catch((err: unknown) => err);
+    await until(() => existsSync(pids));
+    const { agent, child } = JSON.parse(readFileSync(pids, "utf8")) as { agent: number; child: number };
+    try {
+      expect(alive(agent)).toBe(true);
+
+      host.emit("SIGTERM", "SIGTERM");
+      expect(exits).toEqual([143]);
+      // The copy is gone at once, although the agent had its working directory in it.
+      expect(readdirSync(tmp)).toEqual([]);
+      // Stopped now, not when the fake gives up after 10 seconds.
+      await until(() => !alive(agent) && (process.platform !== "win32" || !alive(child)), 5000);
+    } finally {
+      // Whatever failed above, leave no process running: it would hold the temporary directories.
+      for (const pid of [agent, child]) if (alive(pid)) process.kill(pid, "SIGKILL");
+      // Elsewhere than Windows, the fake's own child can stay a zombie until whoever adopted it reaps it.
+      await until(() => !alive(agent) && (process.platform !== "win32" || !alive(child)), 5000);
+      await running;
+    }
+  }, 20_000);
 
   it("removes the copy when the agent fails", async () => {
     const fx = materialise("demo-monorepo", { example: true });

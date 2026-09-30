@@ -104,6 +104,18 @@ describe("finding the claude executable", () => {
   it("returns nothing when there is no claude", () => {
     expect(findClaude({ PATH: tempDir("empty-bin") })).toBeUndefined();
   });
+
+  it("ignores relative PATH entries, which name a different directory wherever ctxreach runs", () => {
+    const dir = tempDir("relative-bin");
+    const name = process.platform === "win32" ? "claude.exe" : "claude";
+    writeFileSync(path.join(dir, name), "");
+    const relative = path.relative(process.cwd(), dir);
+    expect(path.isAbsolute(relative)).toBe(false);
+    expect(findClaude({ PATH: relative })).toBeUndefined();
+    expect(findClaude({ PATH: [".", "", relative].join(path.delimiter) })).toBeUndefined();
+    // The same directory, given absolutely, is searched.
+    expect(findClaude({ PATH: dir })).toBe(path.join(dir, name));
+  });
 });
 
 describe("running the agent (with a fake claude executable)", () => {
@@ -192,6 +204,53 @@ describe("running the agent (with a fake claude executable)", () => {
     } finally {
       removeSandbox(box);
     }
+  });
+
+  describe("which claude executable runs", () => {
+    // Relative to the directory the tests run in; from inside a sandbox's copy it names nothing.
+    const nodeFromHere = path.relative(process.cwd(), process.execPath);
+
+    it.skipIf(path.isAbsolute(nodeFromHere))(
+      "takes a relative --claude-bin from the directory ctxreach runs in, not from the copy",
+      async () => {
+        const fx = materialise("claude-local-shadows-agents");
+        const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+        try {
+          const claudeHome = tempDir("claude-home");
+          const agent = claudeAdapter({
+            bin: nodeFromHere,
+            prefixArgs: [FAKE],
+            claudeHome,
+            env: { ...process.env, FAKE_CLAUDE_HOME: claudeHome },
+          });
+          const out = await agent.run(request(box.repo, { sandboxNonce: box.nonce }));
+          expect(out).toMatchObject({ exitCode: 0, timedOut: false });
+        } finally {
+          removeSandbox(box);
+        }
+      },
+    );
+
+    it("refuses a claude executable inside the copy, reached directly or through a link", async () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+      const via = path.join(tempDir("via"), "copy");
+      symlinkSync(box.repo, via, process.platform === "win32" ? "junction" : "dir");
+      try {
+        const name = process.platform === "win32" ? "claude.exe" : "claude";
+        writeFileSync(path.join(box.repo, name), "");
+        for (const bin of [path.join(box.repo, name), path.join(via, name)]) {
+          const claudeHome = tempDir("claude-home");
+          const agent = claudeAdapter({ bin, claudeHome, env: { ...process.env, FAKE_CLAUDE_HOME: claudeHome } });
+          await expect(agent.run(request(box.repo, { sandboxNonce: box.nonce }))).rejects.toThrow(
+            /inside the temporary copy of the repository/,
+          );
+        }
+      } finally {
+        rmSync(via);
+        removeSandbox(box);
+      }
+    });
   });
 
   describe("a directory made to look like a sandbox", () => {

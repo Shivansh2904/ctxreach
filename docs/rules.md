@@ -183,6 +183,14 @@ the agent starts as a top-level session. Variables a person sets, such as
 `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CONFIG_DIR`, are kept. `CLAUDE_CODE_SIMPLE`
 (bare mode) and `CLAUDE_CODE_SAFE_MODE` are reported as warnings.
 
+The `claude` executable is found in an absolute `PATH` directory, or given
+with `--claude-bin`, which is resolved from the directory ctxreach runs in:
+the agent's working directory is the copy, where a relative path would name
+the repository's own file. An executable inside the copy is refused. When
+ctxreach is interrupted (Ctrl+C or SIGTERM), it stops the agent first (on
+Windows with `taskkill /T /F`, so whatever the agent started stops too), then
+deletes the copy.
+
 Observed on 2.1.280: even with `--no-session-persistence`, Claude Code creates
 an empty folder `~/.claude/projects/<the copy's path>/memory`. The probe
 removes it after each trial if it holds no file, and reports it otherwise.

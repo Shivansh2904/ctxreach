@@ -156,6 +156,8 @@ export interface RunRequest {
    * carry it: a marker proves where a directory is, this proves it was stripped.
    */
   sandboxNonce: string;
+  /** Aborted when ctxreach is stopped: the adapter must stop the agent, and anything it started, at once. */
+  signal?: AbortSignal;
 }
 
 /** Settings in the environment that change what the agent loads, as far as ctxreach can tell. */

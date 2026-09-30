@@ -9,7 +9,7 @@ import { existsSync, lstatSync, mkdirSync, readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { map } from "../map/map.js";
-import { displayPath, isInside } from "../util/fs.js";
+import { displayPath, isInside, isInsideReal, nearestExisting } from "../util/fs.js";
 import { plantDecoy, plantFile, TokenSource, type RandomSource } from "./canary.js";
 import { readRecording, RECORDING_SCHEMA, writeManifest, type Manifest, type Recording } from "./recording.js";
 import { createSandbox, removeSandbox, type Sandbox } from "./sandbox.js";
@@ -55,6 +55,8 @@ export interface ProbeOptions {
   now?: () => Date;
   random?: RandomSource;
   progress?: (line: string) => void;
+  /** Where the signals and the exit come from (default: `process`); tests pass a stand-in. */
+  host?: Pick<NodeJS.Process, "once" | "removeListener" | "exit">;
 }
 
 function relPosix(from: string, to: string): string {
@@ -66,8 +68,11 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
   const repoRoot = path.resolve(options.repoRoot);
   const launchDir = path.resolve(options.launchDir);
   const saveDir = path.resolve(options.saveDir);
-  if (!isInside(launchDir, repoRoot)) throw new SafetyError(`${launchDir} is outside the repository ${repoRoot}`);
-  if (isInside(saveDir, repoRoot))
+  // As spelled (the copy is laid out from these paths) and as directories,
+  // links resolved: --save through a junction into the repository is inside it.
+  if (!isInside(launchDir, repoRoot) || !isInsideReal(launchDir, repoRoot))
+    throw new SafetyError(`${launchDir} is outside the repository ${repoRoot}`);
+  if (isInside(saveDir, repoRoot) || isInsideReal(nearestExisting(saveDir), repoRoot))
     throw new SafetyError(`refusing to record inside the repository being probed (${saveDir}); pass --save elsewhere`);
   if (existsSync(saveDir) && readdirSync(saveDir).length > 0)
     throw new SafetyError(`${saveDir} is not empty; pass --save with a new or empty directory`);
@@ -78,19 +83,24 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
   const launchRel = relPosix(repoRoot, launchDir);
 
   let sandbox: Sandbox | undefined;
+  // Aborted on the way out: the adapter stops a running agent (and, on
+  // Windows, everything it started) before its copy is deleted.
+  const stopAgent = new AbortController();
   const cleanUp = () => {
+    stopAgent.abort();
     if (sandbox) removeSandbox(sandbox);
     sandbox = undefined;
   };
   // Node emits no "exit" when Ctrl+C or a kill ends the process, so remove
   // the copy on those signals too, then exit as the signal would have.
+  const host = options.host ?? process;
   const onSignal = (signal: NodeJS.Signals) => {
     cleanUp();
-    process.exit(signal === "SIGINT" ? 130 : 143);
+    host.exit(signal === "SIGINT" ? 130 : 143);
   };
-  process.once("exit", cleanUp);
-  process.once("SIGINT", onSignal);
-  process.once("SIGTERM", onSignal);
+  host.once("exit", cleanUp);
+  host.once("SIGINT", onSignal);
+  host.once("SIGTERM", onSignal);
   try {
     sandbox = createSandbox(repoRoot, {
       launchDir: launchRel,
@@ -203,6 +213,7 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
         transcriptPath: path.join(saveDir, transcript),
         redactions,
         sandboxNonce: box.nonce,
+        signal: stopAgent.signal,
       });
       manifest.trials.push({ trial, transcript, ...outcome });
       // Saved after every trial, so an interrupted run can still be replayed.
@@ -210,9 +221,9 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
     }
   } finally {
     cleanUp();
-    process.removeListener("exit", cleanUp);
-    process.removeListener("SIGINT", onSignal);
-    process.removeListener("SIGTERM", onSignal);
+    host.removeListener("exit", cleanUp);
+    host.removeListener("SIGINT", onSignal);
+    host.removeListener("SIGTERM", onSignal);
   }
   return readRecording(saveDir);
 }

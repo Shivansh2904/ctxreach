@@ -274,8 +274,44 @@ export const PLANTS = [
   {
     name: "records-inside-the-repository",
     file: "src/probe/probe.ts",
-    find: "if (isInside(saveDir, repoRoot))",
+    find: "if (isInside(saveDir, repoRoot) || isInsideReal(nearestExisting(saveDir), repoRoot))",
     replace: "if (false)",
+  },
+  {
+    name: "records-through-a-link-into-the-repository",
+    file: "src/probe/probe.ts",
+    find: " || isInsideReal(nearestExisting(saveDir), repoRoot))",
+    replace: ")",
+  },
+  {
+    name: "interrupt-leaves-agent-running",
+    file: "src/probe/probe.ts",
+    find: "stopAgent.abort();",
+    replace: "",
+  },
+  {
+    name: "agent-not-stopped-on-abort",
+    file: "src/agents/claude/adapter.ts",
+    find: 'request.signal?.addEventListener("abort", stop, { once: true });',
+    replace: "",
+  },
+  {
+    name: "claude-bin-not-resolved",
+    file: "src/agents/claude/adapter.ts",
+    find: "path.resolve(cwd, options.bin)",
+    replace: "options.bin",
+  },
+  {
+    name: "claude-bin-inside-copy-allowed",
+    file: "src/agents/claude/adapter.ts",
+    find: "assertOutsideCopy(exe, box.base);",
+    replace: "",
+  },
+  {
+    name: "relative-path-entries-searched",
+    file: "src/agents/claude/adapter.ts",
+    find: ".filter((dir) => path.isAbsolute(dir))",
+    replace: ".filter(Boolean)",
   },
   {
     name: "no-decoy-planted",

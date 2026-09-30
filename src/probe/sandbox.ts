@@ -574,5 +574,6 @@ export function removeSandbox(sandbox: { base: string }): void {
     if (!(err instanceof SafetyError)) throw err;
     throw new SafetyError(`refusing to delete ${sandbox.base}: ${err.message}`);
   }
-  rmSync(sandbox.base, { recursive: true, force: true });
+  // Retried: on Windows, a process that was just stopped can hold its working directory for a moment.
+  rmSync(sandbox.base, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
