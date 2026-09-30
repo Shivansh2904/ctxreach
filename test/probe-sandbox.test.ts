@@ -351,6 +351,27 @@ function gitDirNamed(dir: string, name: string): string {
   return path.join(dir, name);
 }
 
+describe("the host's git config", () => {
+  it("is not read when ctxreach gives the copy its .git", () => {
+    const home = tempDir("host-home");
+    writeFileSync(path.join(home, ".gitconfig"), "[init]\n\tdefaultBranch = from-host-config\n");
+    vi.stubEnv("HOME", home);
+    vi.stubEnv("USERPROFILE", home);
+    vi.stubEnv("XDG_CONFIG_HOME", home);
+    try {
+      const fx = materialise("claude-local-shadows-agents", { git: false });
+      const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+      try {
+        expect(readFileSync(path.join(box.repo, ".git", "HEAD"), "utf8")).not.toContain("from-host-config");
+      } finally {
+        removeSandbox(box);
+      }
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+
 describe("the repository's own git, whatever its name's case", () => {
   it("leaves out a .GIT directory, so git never runs its fsmonitor command", () => {
     const fx = materialise("claude-local-shadows-agents", { git: false });

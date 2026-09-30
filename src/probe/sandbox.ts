@@ -345,9 +345,16 @@ function findGit(): string {
   throw new Error("could not find git on PATH (in an absolute directory); probe needs it to give the copy a .git");
 }
 
-/** The environment for git: variables such as GIT_DIR would point it somewhere else. */
-function gitEnv(): NodeJS.ProcessEnv {
-  return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.toUpperCase().startsWith("GIT_")));
+/**
+ * The environment for git: variables such as GIT_DIR would point it somewhere
+ * else, and the host's global and system config are not read either, so a
+ * setting on this machine cannot change or run anything in the copy.
+ */
+export function gitEnv(): NodeJS.ProcessEnv {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.toUpperCase().startsWith("GIT_")));
+  // Git for Windows cannot open os.devNull ("\\.\nul"); it reads "NUL" as empty.
+  const empty = process.platform === "win32" ? "NUL" : os.devNull;
+  return { ...env, GIT_CONFIG_GLOBAL: empty, GIT_CONFIG_SYSTEM: empty, GIT_CONFIG_NOSYSTEM: "1" };
 }
 
 function gitInit(repo: string): void {
