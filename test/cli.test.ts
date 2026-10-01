@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { createCli } from "../src/program.js";
 import { MapJson } from "../src/report/json.js";
@@ -199,5 +200,32 @@ describe("ctxreach map", () => {
 
   it("rejects an unknown agent", async () => {
     await expect(ctxreach("map", "--agents", "codex,gemini")).rejects.toThrow(/unknown agent "gemini"/);
+  });
+});
+
+describe("ctxreach verify (registered by createCli)", () => {
+  const RECORDED = path.join(path.dirname(fileURLToPath(import.meta.url)), "recorded", "verify");
+
+  it("replays a Codex render through the CLI: exit 0 on agreement, JSON with schema ctxreach.verify/v1", async () => {
+    const dir = path.join(RECORDED, "codex-root-starves-nested-packages-api");
+    const out = await ctxreach("verify", "--agent", "codex", "--replay", dir, "--json");
+    expect(out.stderr).toBe("");
+    expect(out.status).toBe(0);
+    const json = JSON.parse(out.stdout) as { schema: string; agent: string };
+    expect(json).toMatchObject({ schema: "ctxreach.verify/v1", agent: "codex" });
+  });
+
+  it("exits 1 on the planted-fault recording, and 2 when the recording is of another agent", async () => {
+    const planted = await ctxreach(
+      "verify",
+      "--agent",
+      "codex",
+      "--replay",
+      path.join(RECORDED, "codex-planted-over-cap-root"),
+    );
+    expect(planted.status).toBe(1);
+    const wrong = await ctxreach("verify", "--agent", "claude", "--replay", path.join(RECORDED, "codex-over-cap-root"));
+    expect(wrong.status).toBe(2);
+    expect(wrong.stderr).toMatch(/is a codex recording; pass --agent codex/);
   });
 });

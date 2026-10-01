@@ -2,6 +2,73 @@
 
 ## Unreleased
 
+### Added since 2026-09-30
+
+- `ctxreach verify --agent codex|claude`: checks `map` against each agent's
+  own machinery, at no cost and with no login, in the probe's temporary
+  copy. Codex: `codex debug prompt-input` with a throwaway `CODEX_HOME`,
+  two renders that must be identical, and the `AGENTS.md` block compared
+  with `map` byte for byte per chain file (EXACT or OFF BY n); the model is
+  not run. Claude Code (2.1.281 or later): `claude -p` against a loopback
+  recorder that answers 400, a dummy key, an empty config directory (or a
+  scratch home with `--home`), `--model` pinned and asserted from
+  `system/init`; nothing is billed. A must-appear token, a decoy and the
+  session asserts void a run (exit 3). Recordings keep only what ctxreach
+  scores, never the agents' own prompt text, and `--replay` scores them
+  again; JSON output has schema `ctxreach.verify/v1`. Details in
+  `docs/oracle.md`. The oracle API is exported from the package entry.
+- Recorded `verify` runs of 2026-09-30 in `test/recorded/verify/`: Codex
+  0.159.2, 22 of 22 fixture launches byte-exact with `map`; three Claude
+  Code 2.1.285 captures agreeing in every cell (4/4, 2/2, 4/4); and the
+  pilot renders and captures.
+- `scripts/conformance.mjs` (the planted-fault pass first, then every
+  fixture named after an agent, into `results.json`) and
+  `scripts/plant-oracle-faults.mjs`.
+- `test/oracle-vendor-text.test.ts`: fails if any recording, source, test,
+  script or document holds a phrase of Codex's or Claude Code's own prompt.
+- `map` for Claude Code:
+  - `claude.home-ancestor` (warn): a `CLAUDE.md`, `.claude/CLAUDE.md` or
+    `CLAUDE.local.md` above the repository switches `AGENTS.md` off,
+    `~/.claude/CLAUDE.md` included for a repository under the home
+    directory; the exemption for that file is gone, and rule `claude.user`
+    is corrected. The message carries the rule's evidence status from
+    `docs/evidence.json`.
+  - `claude.external-import-headless` (warn): an import from outside the
+    launch directory is predicted not loaded unless `~/.claude.json`
+    records an approval for the project (`map` reads that one key);
+    `claude.external-import` (info) now means an approved one. This is the
+    disagreement the two recorded probe runs from `packages/api` showed.
+  - `claude.link-as-text` (warn): a `CLAUDE.md`-family file whose whole
+    text is one relative path, a symlink git checked out as a plain file.
+  - An `AGENTS.md` whose text equals an instruction file already loaded is
+    loaded once (`claude.modes`).
+  - An `AGENTS.md` that a `CLAUDE.md` imports is no longer reported as
+    shadowed, and a `CLAUDE.md` that imports one no longer raises
+    `claude.words-not-import`.
+  - The resolver can model an ancestor directory's `.claude/rules/`
+    (`ancestorRules`), off by default: `map` and `probe` still list those
+    rules as not modelled.
+- `map` for Codex: `codex.home-is-root` (warn) when `$CODEX_HOME` is a
+  directory on the chain, so the file there arrives twice.
+- `scripts/plant-faults.mjs` also plants 15 faults in rules that raise no
+  finding of their own, and in the evidence label.
+- A GitHub Action (`action.yml`, a committed single-file bundle in
+  `action/dist/`, `scripts/bundle-action.mjs --check`): annotations at the
+  line where instructions stop arriving, a job summary per launch
+  directory, `fail-on`. Workflows for its selftest, bundle freshness, a
+  nightly conformance run and Pages. Not released; `docs/action.md`.
+- `npm` builds `dist/` on install from git (`prepare`).
+- An evidence registry, `docs/evidence.json`, with `docs/evidence.md`
+  generated from it and `test/evidence.test.ts`: every rule id and finding
+  code has an entry, every observed or contradicted entry replays to its
+  fraction, and the README names no rule whose status is not `observed`.
+- The study: `study/PREREG.md` (the pre-registration, not yet tagged), the
+  census pipeline with checks K1 to K7, the behavioural lab cells, the
+  pilot artefacts reduced to what ctxreach scores, and drafts of four
+  upstream reports. K1's known answers cover every fixture.
+
+### Before 2026-09-30
+
 - `ctxreach map` for Codex: the root-to-launch-directory chain, one file per
   directory, the shared root-first byte budget with the cut point and the
   sections lost, project config and trust, and files below the launch

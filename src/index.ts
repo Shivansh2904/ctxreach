@@ -16,3 +16,33 @@ export { readRecording, type Recording, type Manifest } from "./probe/recording.
 export { scoreRecording, type ProbeResult, type CellScore, type TrialScore } from "./probe/score.js";
 export { claudeAdapter, type ClaudeAdapterOptions } from "./agents/claude/adapter.js";
 export { probeJson, renderProbe, ProbeJson } from "./report/probe.js";
+export { runVerify, scoreVerify, agrees, DEFAULT_TRIALS, type VerifyOptions } from "./oracle/verify.js";
+export {
+  readVerifyRecording,
+  VERIFY_SCHEMA,
+  type VerifyRecording,
+  type VerifyManifest,
+  type VerifyTrial,
+} from "./oracle/recording.js";
+export type { VerifyResult, OracleScore, OracleCell, OracleTrialScore } from "./oracle/score.js";
+export { renderVerify, verifyJson, VerifyJson } from "./report/verify.js";
+export { startCapture, type CaptureServer, type CaptureRecord, type CaptureOptions } from "./oracle/capture.js";
+export {
+  renderCodex,
+  parseRender,
+  promptInputRenderer,
+  type Renderer,
+  type RenderRequest,
+  type RenderOutcome,
+  type ParsedRender,
+} from "./oracle/codex-render.js";
+export { reduceCaptureBody, parseCaptureBody, type CaptureBody } from "./oracle/claude-capture.js";
+export {
+  OracleError,
+  RenderShapeError,
+  type OracleAgent,
+  type Instrument,
+  type Segment,
+  type SegmentVerdict,
+} from "./oracle/types.js";
+export { registerVerify, type VerifyCommandOptions } from "./cli/commands/verify.js";

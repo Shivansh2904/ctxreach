@@ -4,6 +4,7 @@ import path from "node:path";
 import { Command, InvalidArgumentError, Option } from "commander";
 import pkg from "../package.json" with { type: "json" };
 import { claudeAdapter } from "./agents/claude/adapter.js";
+import { registerVerify } from "./cli/commands/verify.js";
 import { CLAUDE_MODES } from "./agents/claude/settings.js";
 import type { AgentId } from "./agents/types.js";
 import { findRepoRoot, map } from "./map/map.js";
@@ -248,6 +249,14 @@ export function createCli(io: Io, options: CliOptions = {}): Cli {
         throw err;
       }
     });
+
+  registerVerify(program, {
+    io,
+    setStatus: (status) => {
+      cli.status = status;
+    },
+    version: pkg.version,
+  });
 
   return cli;
 }

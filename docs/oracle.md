@@ -312,6 +312,9 @@ by its tokens.
     pass (`map` given 30,000 bytes) disagrees by 2,768 bytes; unplanted, a
     whitespace-only override takes its slot (0 of 6 bytes) and a cut inside
     a three-byte character delivers U+FFFD (32,770 decoded bytes for 32,768).
+    The two `codex-home-is-root` fixtures were added after these renders and
+    have no recording; the stand-in drives all 16 codex fixtures (26
+    launches) in `test/oracle-verify-codex.test.ts`.
   - Claude Code 2.1.285 on Windows, one capture each: `CLAUDE.local.md`
     delivered and `AGENTS.md` not (4 of 4 cells); with no `CLAUDE.md`-family
     file, `AGENTS.md` delivered whole (2 of 2); from `packages/api`, the root
