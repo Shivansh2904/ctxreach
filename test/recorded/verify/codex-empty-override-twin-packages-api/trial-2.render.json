@@ -1,0 +1,99 @@
+[
+  {
+    "type": "message",
+    "role": "developer",
+    "content": [
+      {
+        "kind": "host_skills.instructions",
+        "sha256": "f4f65ca4d27e8e659d37d00c67ead34809ee637b0b64c81c57f2b30d3ab61f39",
+        "bytes": 1970
+      },
+      {
+        "kind": "permissions.instructions",
+        "sha256": "2493dd1ae75230d95acdb8e77fb10d51138de63d95c10d2a647b76d59060d4d7",
+        "bytes": 3939
+      },
+      {
+        "kind": "collaboration_mode.instructions",
+        "sha256": "bec8e7b5358a20b4cd552dae768b3a65ebf4ea9fb2645220085b84d60ee3fe81",
+        "bytes": 920
+      }
+    ],
+    "internal_chat_message_metadata_passthrough": {
+      "content_item_kinds": [
+        "host_skills.instructions",
+        "permissions.instructions",
+        "collaboration_mode.instructions"
+      ]
+    }
+  },
+  {
+    "type": "message",
+    "role": "developer",
+    "content": [
+      {
+        "kind": "multi_agent.role_instructions",
+        "sha256": "47091490938505958b0c22ff42db6fd79b272a2af6923166f4c2cc53c4fe0df4",
+        "bytes": 2429
+      }
+    ],
+    "internal_chat_message_metadata_passthrough": {
+      "content_item_kinds": [
+        "multi_agent.role_instructions"
+      ]
+    }
+  },
+  {
+    "type": "message",
+    "role": "developer",
+    "content": [
+      {
+        "kind": "multi_agent.mode_instructions",
+        "sha256": "6ded806e3cdbb35599ecaf8742574bc5274908472b1729090010c404c2151e8e",
+        "bytes": 271
+      }
+    ],
+    "internal_chat_message_metadata_passthrough": {
+      "content_item_kinds": [
+        "multi_agent.mode_instructions"
+      ]
+    }
+  },
+  {
+    "type": "message",
+    "role": "user",
+    "content": [
+      {
+        "type": "input_text",
+        "text": "# AGENTS.md instructions for C:\\ctxreach-probe\\repo\\packages\\api\n\n<INSTRUCTIONS>\nctxreach canary CTXR-ff618f49\n\n# Repository guidelines\n\n- Use pnpm, not npm or yarn.\n- Run `pnpm test` before you push.\n- Keep commits small and focused.\n\nctxreach canary CTXR-8e470c05\n\n\nctxreach canary CTXR-d06e39ee\n\n# Temporary API override\n\n- The payments sandbox is down this week; skip the payments integration tests.\n\nctxreach canary CTXR-df2c8b9f\n\n</INSTRUCTIONS>"
+      },
+      {
+        "kind": "environments.environment_context",
+        "sha256": "30a704e380f03ec1f868731779bbde108cdbe61f14dc852d72cf479dff6029c0",
+        "bytes": 465,
+        "cwd": "C:\\ctxreach-probe\\repo\\packages\\api"
+      }
+    ],
+    "internal_chat_message_metadata_passthrough": {
+      "content_item_kinds": [
+        "agents_md.instructions",
+        "environments.environment_context"
+      ]
+    }
+  },
+  {
+    "type": "message",
+    "role": "user",
+    "content": [
+      {
+        "type": "input_text",
+        "text": "ctxreach verify CTXR-2929eeb2: list every token that starts with CTXR- in your instructions."
+      }
+    ],
+    "internal_chat_message_metadata_passthrough": {
+      "content_item_kinds": [
+        "user.text"
+      ]
+    }
+  }
+]

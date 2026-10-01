@@ -1,0 +1,123 @@
+{
+  "schema": "ctxreach.verify-recording/v1",
+  "ctxreach": "0.0.0",
+  "agent": "codex",
+  "instrument": "render",
+  "cliVersion": "0.159.2",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-30T21:58:33.076Z",
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": "packages/api",
+  "sourceName": "repo",
+  "trialsPlanned": 1,
+  "args": [
+    "debug",
+    "prompt-input",
+    "-c",
+    "features.hooks=false"
+  ],
+  "prompt": "ctxreach verify CTXR-d30b9c51: list every token that starts with CTXR- in your instructions.",
+  "controlToken": "CTXR-d30b9c51",
+  "canaries": [
+    {
+      "token": "CTXR-833239bb",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "head",
+      "offset": 16,
+      "decoy": true
+    },
+    {
+      "token": "CTXR-ff329c30",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "tail",
+      "offset": 117,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "AGENTS.md",
+      "delivery": "launch",
+      "why": "123 bytes",
+      "rule": "codex.walk"
+    },
+    {
+      "file": "packages/api/AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "shadowed by AGENTS.override.md",
+      "rule": "codex.empty-skip"
+    },
+    {
+      "file": "packages/api/AGENTS.override.md",
+      "delivery": "not-loaded",
+      "why": "empty",
+      "rule": "codex.empty-skip"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": [
+      ".git"
+    ],
+    "links": []
+  },
+  "notes": [
+    "The copy is under the home directory.",
+    "~/.claude/CLAUDE.md does not exist on this machine."
+  ],
+  "planted": false,
+  "codex": {
+    "codexHome": "C:\\ctxreach-probe\\codex-home",
+    "seeded": {
+      "from": "C:\\Users\\user\\AppData\\Local\\Temp\\ctxreach-codex-empty-override-tCvphc\\home\\.codex",
+      "keys": [],
+      "globalFiles": [],
+      "trust": "unknown",
+      "trustFrom": "not set"
+    },
+    "projectConfigs": [],
+    "hooksFlag": "accepted",
+    "overrides": [
+      "features.hooks=false"
+    ],
+    "chain": [
+      {
+        "file": "AGENTS.md",
+        "bytes": 123,
+        "keptBytes": 123,
+        "status": "loaded",
+        "text": "# Repository guidelines\n\n- Use pnpm, not npm or yarn.\n- Run `pnpm test` before you push.\n- Keep commits small and focused.\n",
+        "head": "# Repository guidelines\n\n- Use pnpm, not npm or yarn.\n- Run `pnp"
+      },
+      {
+        "file": "packages/api/AGENTS.override.md",
+        "bytes": 6,
+        "keptBytes": 0,
+        "status": "empty",
+        "text": "",
+        "head": "\n  \n\t\n"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "files": [
+        "trial-1.render.json"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 1178,
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\ctxreach-probe\\\\codex-home\"))\n",
+      "warnings": [
+        "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\ctxreach-probe\\\\codex-home\"))"
+      ]
+    }
+  ]
+}
