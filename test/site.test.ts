@@ -31,7 +31,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import vm from "node:vm";
 import { afterAll, describe, expect, it } from "vitest";
-import { createCli } from "../src/program.js";
+import { map } from "../src/map/map.js";
+import { renderTerminal } from "../src/report/terminal.js";
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT = process.env.CTXR_SITE_ROOT ? path.resolve(process.env.CTXR_SITE_ROOT) : REPO;
@@ -58,6 +59,8 @@ interface Core {
 }
 
 const indexHtml = () => readFileSync(path.join(ROOT, "site", "index.html"), "utf8");
+/** The page shell's style sheets, which also style everything the core renders into it. */
+const shellCss = () => [...indexHtml().matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]!).join("\n");
 
 function loadCore(): Core {
   const m = /<script id="ctxr-core">([\s\S]*?)<\/script>/.exec(indexHtml());
@@ -170,20 +173,104 @@ const decode = (s: string) =>
     .replace(/&amp;/g, "&");
 
 const VOID = new Set(["br", "meta", "link", "img", "hr", "input", "source", "wbr"]);
-const TEXT_ATTRS = ["title", "alt", "aria-label", "placeholder", "value"];
+/**
+ * Attributes a reader never sees: addresses, names for code and the trace
+ * itself. Every other attribute is checked like text (title, alt, aria-*,
+ * data-*, value, ...), and so is any attribute the CSS prints with attr().
+ */
+const NOT_SHOWN = new Set([
+  "href",
+  "src",
+  "id",
+  "class",
+  "style",
+  "data-src",
+  "data-fmt",
+  "colspan",
+  "rowspan",
+  "scope",
+  "lang",
+  "charset",
+  "rel",
+  "type",
+  "role",
+  "name",
+  "property",
+  "content",
+  "http-equiv",
+  "for",
+  "headers",
+  "target",
+  "aria-labelledby",
+  "aria-describedby",
+  "aria-controls",
+  "aria-live",
+  "aria-hidden",
+]);
+const SHOWN_META = /^(?:description|keywords|author|application-name|og:.*|twitter:.*)$/;
+
+/** Every attribute of a start tag, whatever its quoting. */
+export function attributes(tag: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const body = tag.replace(/^<[^\s/>]+/, "").replace(/\/?>$/, "");
+  for (const a of body.matchAll(/([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g))
+    attrs[a[1]!.toLowerCase()] = decode(a[2] ?? a[3] ?? a[4] ?? "");
+  return attrs;
+}
+
+const cssUnescape = (s: string) =>
+  s
+    .replace(/\\([0-9a-fA-F]{1,6})\s?/g, (_m, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/\\\n/g, "")
+    .replace(/\\(.)/g, "$1");
+
+/**
+ * What CSS can print on the page: the strings in `content`, `quotes` and
+ * `list-style(-type)` values (escapes decoded), the attributes `attr()` prints,
+ * and whether `counter()` or `counters()` prints a number of its own.
+ */
+export function cssPrinted(css: string): { strings: string[]; attrs: string[]; counters: string[] } {
+  const out = { strings: [] as string[], attrs: [] as string[], counters: [] as string[] };
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const value = /(?:"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|[^;}"'])*/.source;
+  const decl = new RegExp(`(?:^|[{;\\s])(content|quotes|list-style-type|list-style)\\s*:(${value})`, "gi");
+  for (const d of clean.matchAll(decl)) {
+    for (const s of d[2]!.matchAll(/"((?:\\[\s\S]|[^"\\])*)"|'((?:\\[\s\S]|[^'\\])*)'/g))
+      out.strings.push(cssUnescape(s[1] ?? s[2] ?? ""));
+    for (const a of d[2]!.matchAll(/\battr\(\s*([^\s,)]+)/gi)) out.attrs.push(a[1]!.toLowerCase());
+  }
+  for (const c of clean.matchAll(/\bcounters?\([^)]*\)/gi)) out.counters.push(c[0]);
+  return out;
+}
 
 /**
  * Walk HTML (as this page writes it) and report every problem: digits outside
- * a traced span or in a text-bearing attribute, and traced spans whose text
- * is not the formatted value at their source.
+ * a traced span, in an attribute a reader can see, or printed by CSS
+ * (generated content, attr(), counters), and traced spans whose text is not
+ * the formatted value at their source. `css` adds the style sheets that will
+ * apply to this HTML (the page shell's, for HTML the core renders into it).
  */
-export function traceHtml(html: string, files: Files): { problems: string[]; traced: number } {
+export function traceHtml(html: string, files: Files, css = ""): { problems: string[]; traced: number } {
   const problems: string[] = [];
   let traced = 0;
   const stack: { tag: string; src?: string; fmt?: string; text: string }[] = [];
   const inSkipped = () => stack.some((e) => e.tag === "script" || e.tag === "style");
+  const sheets = [css, ...[...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]!)];
+  const printedAttrs = new Set<string>();
+  const checkCss = (where: string, text: string) => {
+    const printed = cssPrinted(text);
+    for (const s of printed.strings)
+      for (const d of untracedDigits(s)) problems.push(`untraced number in ${where} generated content: ${d}`);
+    for (const c of printed.counters) problems.push(`untraced number in ${where}: ${c} prints a count of its own`);
+    for (const a of printed.attrs) printedAttrs.add(a);
+  };
+  for (const sheet of sheets) checkCss("CSS", sheet);
   // Script and style bodies are not rendered text, and their own "<" would confuse the walk.
   html = html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, "");
+  for (const t of html.matchAll(/<[a-zA-Z][^>]*>/g)) {
+    const style = attributes(t[0]).style;
+    if (style !== undefined) checkCss("a style attribute's", style);
+  }
   for (const m of html.matchAll(/<!--[\s\S]*?-->|<[^>]+>|[^<]+/g)) {
     const tok = m[0];
     if (tok.startsWith("<!--")) continue;
@@ -210,17 +297,12 @@ export function traceHtml(html: string, files: Files): { problems: string[]; tra
       const tm = /^<([a-zA-Z0-9]+)/.exec(tok);
       if (!tm) continue;
       const tag = tm[1]!.toLowerCase();
-      const attrs: Record<string, string> = {};
-      for (const a of tok.matchAll(/([a-zA-Z-:]+)="([^"]*)"/g)) attrs[a[1]!.toLowerCase()] = decode(a[2]!);
+      const attrs = attributes(tok);
       if (!inSkipped()) {
-        for (const name of TEXT_ATTRS)
-          if (attrs[name] !== undefined)
-            for (const d of untracedDigits(attrs[name]!)) problems.push(`untraced number in ${tag}[${name}]: ${d}`);
-        if (
-          tag === "meta" &&
-          attrs.content !== undefined &&
-          (attrs.name === "description" || attrs.property?.startsWith("og:"))
-        )
+        for (const [name, value] of Object.entries(attrs))
+          if (!NOT_SHOWN.has(name) || printedAttrs.has(name))
+            for (const d of untracedDigits(value)) problems.push(`untraced number in ${tag}[${name}]: ${d}`);
+        if (tag === "meta" && attrs.content !== undefined && SHOWN_META.test(attrs.name ?? attrs.property ?? ""))
           for (const d of untracedDigits(attrs.content)) problems.push(`untraced number in meta content: ${d}`);
       }
       if (stack.some((e) => e.src !== undefined) && !inSkipped())
@@ -236,6 +318,47 @@ export function traceHtml(html: string, files: Files): { problems: string[]; tra
     else for (const d of untracedDigits(text)) problems.push(`untraced number: ${d}`);
   }
   return { problems, traced };
+}
+
+/** An address on another site: any http(s), ws(s) or ftp URL, or a protocol-relative one. */
+const OFFSITE = /^\s*(?:(?:https?|wss?|ftp):)?\/\//i;
+/** Attributes the browser fetches on its own, without a click. */
+const FETCHED = new Set(["src", "srcset", "imagesrcset", "poster", "data", "background", "lowsrc", "dynsrc"]);
+const FETCHED_HREF = new Set(["link", "image", "use", "feimage", "script", "base"]);
+
+/**
+ * Everything in HTML that would make the browser ask another site for
+ * something as the page loads: src, srcset and their kin, link, base and SVG
+ * hrefs, CSS url() and @import (in style elements and style attributes) and
+ * a meta refresh. A plain link (<a href>) is not fetched until it is clicked.
+ */
+export function externalRequests(html: string): string[] {
+  const found: string[] = [];
+  const css = (where: string, text: string) => {
+    for (const m of text.matchAll(/url\(\s*(["']?)([^"')]*)\1\s*\)|@import\s+(["'])([^"']*)\3/gi)) {
+      const url = m[2] ?? m[4] ?? "";
+      if (OFFSITE.test(url)) found.push(`${where}: ${url}`);
+    }
+  };
+  for (const m of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) css("style", m[1]!);
+  const tags = html.replace(/<(script|style)\b([^>]*)>[\s\S]*?<\/\1>/gi, "<$1$2>");
+  for (const t of tags.matchAll(/<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*>/g)) {
+    const tag = t[1]!.toLowerCase();
+    const attrs = attributes(t[0]);
+    for (const [name, value] of Object.entries(attrs)) {
+      const urls = /srcset$/.test(name) ? value.split(",").map((s) => s.trim().split(/\s+/)[0]!) : [value];
+      const fetched = FETCHED.has(name) || ((name === "href" || name === "xlink:href") && FETCHED_HREF.has(tag));
+      if (fetched) for (const u of urls) if (OFFSITE.test(u)) found.push(`${tag}[${name}]: ${u}`);
+    }
+    if (attrs.style !== undefined) css(`${tag}[style]`, attrs.style);
+    if (
+      tag === "meta" &&
+      /refresh/i.test(attrs["http-equiv"] ?? "") &&
+      /url\s*=\s*['"]?\s*(?:[a-z]+:)?\/\//i.test(attrs.content ?? "")
+    )
+      found.push(`meta refresh: ${attrs.content}`);
+  }
+  return found;
 }
 
 /** The same check for traced Markdown (writeup.mjs --traced): markers are ⟦src|fmt⟧text⟦/⟧. */
@@ -276,7 +399,7 @@ function idsInOrder(html: string): string[] {
 }
 
 describe("the results page shell", () => {
-  it("has no number typed into it outside its scripts and styles", () => {
+  it("has no number typed into it: not in its text, its attributes or what its CSS prints", () => {
     const { problems } = traceHtml(indexHtml(), {});
     expect(problems).toEqual([]);
   });
@@ -286,6 +409,7 @@ describe("the results page shell", () => {
     expect(html).not.toMatch(/<script[^>]+src=/i);
     expect(html).not.toMatch(/<link[^>]+rel="?stylesheet/i);
     expect(html).not.toMatch(/@import|url\(\s*["']?https?:/i);
+    expect(externalRequests(html)).toEqual([]);
     const boot = /<script id="ctxr-boot">([\s\S]*?)<\/script>/.exec(html)![1]!;
     expect([...boot.matchAll(/fetch\(([^,)]+)/g)].map((m) => m[1]!.trim())).toEqual(['"data/" + name']);
   });
@@ -309,7 +433,7 @@ describe("the results page, rendered from the sample data", () => {
   const { html, state } = core.renderSite({ files });
 
   it("prints every number from a data field, in the format it names", () => {
-    const { problems, traced } = traceHtml(html, files);
+    const { problems, traced } = traceHtml(html, files, shellCss());
     expect(problems).toEqual([]);
     // The check read real spans: the sample has hundreds of figures.
     expect(traced).toBeGreaterThan(300);
@@ -329,6 +453,17 @@ describe("the results page, rendered from the sample data", () => {
     expect(traceHtml(altered, files).problems.some((p) => p.includes("results.json#/outcomes/0"))).toBe(true);
     const moved = html.replace(span[0], span[0].replace("outcomes/0", "outcomes/1"));
     expect(traceHtml(moved, files).problems.length).toBeGreaterThan(0);
+    // Numbers that never sit in the text: CSS generated content (escapes too), attr(), counters, any attribute.
+    // (On a page of its own, so that only the planted number can be caught.)
+    const caught = (extra: string, css = "") =>
+      traceHtml(`<section><p class="lede">No figure here.</p>${extra}</section>`, {}, css).problems;
+    expect(caught('<style>.lede::after { content: " (n = 1,100)"; }</style>')).not.toEqual([]);
+    expect(caught("", String.raw`.lede::after { content: "\31 2 runs"; }`)).not.toEqual([]);
+    expect(caught("", "li::marker { content: counter(list-item); }")).not.toEqual([]);
+    expect(caught('<a href="runs/12">x</a>')).toEqual([]);
+    expect(caught('<a href="runs/12">x</a>', "a::after { content: attr(href); }")).not.toEqual([]);
+    expect(caught("<p data-note='in 12 runs'>x</p>")).not.toEqual([]);
+    expect(caught('<p style="list-style-type: &quot;12 &quot;">x</p>')).not.toEqual([]);
   });
 
   it("says the data is a sample, at the top, when any file is sample, a dry run or unlabelled", () => {
@@ -343,16 +478,43 @@ describe("the results page, rendered from the sample data", () => {
       ["results.json", (r: Record<string, unknown>) => delete r.label],
       ["cells-results.json", (r: Record<string, unknown>) => (r.dryRun = true)],
       ["provenance.json", (r: Record<string, unknown>) => (r.label = "sample")],
-    ] as const) {
+      ...Object.keys(study)
+        .filter((k) => k.startsWith("conformance/"))
+        .flatMap((k) => [
+          [k, (r: Record<string, unknown>) => ((r.records as Record<string, unknown>[])[0]!.version = "0.0.0-sample")],
+          [k, (r: Record<string, unknown>) => ((r.records as Record<string, unknown>[])[0]!.version = "1.2.3-fake")],
+        ]),
+    ] as [string, (r: Record<string, unknown>) => unknown][]) {
       const one = clone(study) as Record<string, Record<string, unknown>>;
       mutate(one[file]!);
       const out = core.renderSite({ files: one });
       expect(out.html, file).toContain("SAMPLE DATA, NOT RESULTS.");
-      expect(traceHtml(out.html, one).problems).toEqual([]);
+      expect(traceHtml(out.html, one, shellCss()).problems).toEqual([]);
     }
     const pilot = clone(study) as Record<string, Record<string, unknown>>;
     pilot["results.json"]!.label = "pilot";
     expect(core.renderSite({ files: pilot }).html).toContain("PILOT DATA.");
+  });
+
+  it("asks no other site for anything as it loads: no image, frame, script, stylesheet or font", () => {
+    for (const [what, data] of [
+      ["sample", files],
+      ["study-labelled", asStudy(files)],
+      ["no data", {}],
+    ] as const)
+      expect(externalRequests(core.renderSite({ files: data }).html), what).toEqual([]);
+    // The check itself: each of these would be a request to another site.
+    for (const planted of [
+      '<img alt="" src="https://example.com/p.gif">',
+      '<img alt="" srcset="a.png 1x, //example.com/b.png 2x">',
+      "<iframe src='https://example.com/'></iframe>",
+      '<link rel="preload" href="https://example.com/f.woff2">',
+      '<p style="background: url(https://example.com/bg.png)">x</p>',
+      '<style>@import "https://example.com/x.css";</style>',
+      '<svg><use href="https://example.com/s.svg#i"/></svg>',
+    ])
+      expect(externalRequests(html + planted), planted).not.toEqual([]);
+    expect(externalRequests('<a href="https://example.com/">a link is not fetched</a>')).toEqual([]);
   });
 
   it("puts the instrument checks before every result they support", () => {
@@ -441,7 +603,7 @@ describe("the results page with no data yet", () => {
   it("shows no number, no banner, and says the study has not run", () => {
     const { html, state } = core.renderSite({ files: {} });
     expect(state.none).toBe(true);
-    expect(traceHtml(html, {}).problems).toEqual([]);
+    expect(traceHtml(html, {}, shellCss()).problems).toEqual([]);
     expect(html).not.toContain("data-banner");
     expect(html).toContain("No study results are published yet");
     expect(html).toContain("k/n (x%, [lo, hi])");
@@ -535,6 +697,11 @@ describe("the write-up and the other templates", () => {
     const digits = (s: string) => [...s.matchAll(/\d+/g)].map((m) => m[0]).sort();
     expect(digits(decode(body.replace(/<[^>]+>/g, " ")))).toEqual(digits(plain));
     expect(html).toContain("SAMPLE DATA, NOT RESULTS.");
+    // Outside <main> a reader sees only the <title>: the write-up's own first heading, with nothing added.
+    const h1 = /^# (.*)$/m.exec(plain)![1]!.replace(/[`*]/g, "");
+    expect(decode(/<title>([\s\S]*?)<\/title>/.exec(html)![1]!)).toBe(h1);
+    const rest = html.replace(/<main>[\s\S]*<\/main>/, "").replace(/<title>[\s\S]*?<\/title>/, "");
+    expect(traceHtml(rest, {}).problems).toEqual([]);
   });
 
   for (const rel of ["site/writeup.template.md", "talk/slides.md", "site/readme-first-screen.md"]) {
@@ -667,17 +834,32 @@ describe("the README demo cast", () => {
     const { outputOfCast } = await import(pathToFileURL(path.join(ROOT, "scripts", "make-cast.mjs")).href);
     // eslint-disable-next-line no-control-regex
     const strip = (s: string) => s.replace(/\u001b\[[0-9;]*m/g, "").replace(/\r\n/g, "\n");
-    const home = tmp("cast");
+    // The copy is <scratch>/home/demo. <scratch> holds instruction files of its own, standing in for
+    // whatever sits above the temp folder on the machine running this (a ~/.claude/CLAUDE.md above
+    // %TEMP%, say). map is told where its upward walk stops and which homes to read, so nothing above
+    // the copy can change its answer; the planted files make sure of it on every run.
+    const scratch = tmp("cast");
+    for (const rel of ["CLAUDE.md", "AGENTS.md", ".claude/CLAUDE.md"]) {
+      const file = path.join(scratch, ...rel.split("/"));
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, "Planted above the demo copy: map must not read this.\n");
+    }
+    const home = path.join(scratch, "home");
     cpSync(path.join(ROOT, "examples", "demo-monorepo"), path.join(home, "demo"), { recursive: true });
     mkdirSync(path.join(home, "demo", ".git"));
-    const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE, CODEX_HOME: process.env.CODEX_HOME };
-    let stdout = "";
+    // HOME and USERPROFILE only decide how paths print (the cast shows ~/demo); nothing is read through them.
+    const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+    let stdout: string;
     try {
       process.env.HOME = home;
       process.env.USERPROFILE = home;
-      delete process.env.CODEX_HOME;
-      const cli = createCli({ stdout: (t) => (stdout += t), stderr: () => {} }, { exitOverride: true });
-      await cli.program.parseAsync(["node", "ctxreach", "map", "--from", path.join(home, "demo", "packages", "api")]);
+      stdout = renderTerminal(
+        map({
+          launchDir: path.join(home, "demo", "packages", "api"),
+          codex: { home: path.join(home, ".codex") },
+          claude: { home: path.join(home, ".claude"), homeDir: home, ceiling: home },
+        }),
+      );
     } finally {
       for (const [k, v] of Object.entries(saved))
         if (v === undefined) delete process.env[k];
