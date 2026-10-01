@@ -269,6 +269,25 @@ Claude Code 2.1.285 sent; the phrases are held as hashes of their words
 2026-09-30 and the recordings made from the fixtures; its README lists
 them.
 
+## Conformance
+
+`scripts/conformance.mjs` runs `verify` over every fixture named after an
+agent, from the root and from `packages/api`, and writes `results.json`
+(`{fixture, launchDir, agent, version, os, date, instrument, predicted,
+observed, verdict, cells, keptBytes, controls}` per launch). Before the
+battery, a planted-fault pass gives `map` a wrong budget (Codex) or a
+wrong Project instructions mode (Claude Code) and must exit 1; a battery
+whose planted pass agrees is an instrument fault and the script stops
+with status 2. Any disagreement in the battery exits 1.
+
+`scripts/plant-oracle-faults.mjs` breaks one part of the oracle at a
+time (the cut ignored, the wrong join, the user's Codex home used, trust
+not mirrored, the decoy or the must-appear token unchecked, a 9-character
+token pattern, the recorder bound to any host, credential headers kept,
+the model pin dropped, the plugin assert removed, the identical-trials
+check off, a render or a capture saved whole or reduced wrongly, and
+more) and checks that a test fails each time.
+
 ## Planting moves bytes
 
 A planted file is 62 bytes longer than the file in the repository (a
