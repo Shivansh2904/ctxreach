@@ -11,7 +11,7 @@ import { findRepoRoot, map } from "./map/map.js";
 import { runProbe } from "./probe/probe.js";
 import { readRecording, RecordingError } from "./probe/recording.js";
 import { scoreRecording } from "./probe/score.js";
-import { SafetyError, type AgentAdapter, type ProbeMode } from "./probe/types.js";
+import { SafetyError, type AgentAdapter, type Isolation, type ProbeMode } from "./probe/types.js";
 import { toJson } from "./report/json.js";
 import { probeJson, renderProbe } from "./report/probe.js";
 import { renderTerminal } from "./report/terminal.js";
@@ -52,6 +52,12 @@ function parseVersion(value: string): string {
   return value;
 }
 
+function parseModel(value: string): string {
+  const model = value.trim();
+  if (model === "") throw new InvalidArgumentError("must name a model, such as claude-opus-5-5 or opus");
+  return model;
+}
+
 /** A directory option names something `map` cannot use. */
 class UsageError extends Error {}
 
@@ -82,15 +88,36 @@ export interface Cli {
   status: number;
 }
 
+/** What `probe`'s flags ask of the agent's adapter. */
+export interface ProbeAdapterOptions {
+  /** `--claude-bin`. */
+  bin?: string;
+  /** `--model`: the model to pin. */
+  model?: string;
+  /** `--isolation`: `machine` (default) or the EXPERIMENTAL `clean`. */
+  isolation: Isolation;
+  /** False with `--no-hook`. */
+  hook: boolean;
+  /** `--claude-home`, resolved: the same user directory `map` reads, so the model pin reads the same `settings.json`. */
+  claudeHome?: string;
+}
+
 /** Build the command-line program. Output goes through `io` so tests can capture it. */
 export interface CliOptions {
   exitOverride?: boolean;
   /** Build the adapter for an agent (tests pass a fake; the default drives the real CLI). */
-  adapter?: (agent: AgentId, options: { bin?: string }) => AgentAdapter | undefined;
+  adapter?: (agent: AgentId, options: ProbeAdapterOptions) => AgentAdapter | undefined;
 }
 
-function defaultAdapter(agent: AgentId, options: { bin?: string }): AgentAdapter | undefined {
-  if (agent === "claude") return claudeAdapter(options.bin !== undefined ? { bin: options.bin } : {});
+export function defaultAdapter(agent: AgentId, options: ProbeAdapterOptions): AgentAdapter | undefined {
+  if (agent === "claude")
+    return claudeAdapter({
+      ...(options.bin !== undefined ? { bin: options.bin } : {}),
+      ...(options.model !== undefined ? { model: options.model } : {}),
+      ...(options.claudeHome !== undefined ? { claudeHome: options.claudeHome } : {}),
+      isolation: options.isolation,
+      hook: options.hook,
+    });
   return undefined;
 }
 
@@ -190,14 +217,37 @@ export function createCli(io: Io, options: CliOptions = {}): Cli {
     .option("--replay <dir>", "score a saved run instead of running the agent")
     .option("--save <dir>", "where to save the run (default: a new directory under the system temp directory)")
     .option("--timeout <seconds>", "time limit for each run", parseCount(3600), 300)
-    .option("--json", "print JSON (schema ctxreach.probe/v1) instead of a table")
+    .option("--json", "print JSON (schema ctxreach.probe/v2) instead of a table")
     .option("--no-color", "print without colours (also honours NO_COLOR)")
     .option("--claude-bin <path>", "the claude executable (default: found on PATH)")
-    .option("--claude-home <dir>", "Claude Code user directory map reads for its prediction (default: ~/.claude)")
+    .option(
+      "--claude-home <dir>",
+      "Claude Code user directory map reads for its prediction, and whose settings.json may name the model (default: ~/.claude)",
+    )
+    .option(
+      "--model <id>",
+      "the model to pin, checked against every session (default: $ANTHROPIC_MODEL, then model in the user's settings.json)",
+      parseModel,
+    )
+    .addOption(
+      new Option(
+        "--isolation <isolation>",
+        "machine: your own settings, plugins and ~/.claude/CLAUDE.md apply; clean: EXPERIMENTAL, drops the user's settings and the files above the copy (needs a model pin)",
+      )
+        .choices(["machine", "clean"])
+        .default("machine"),
+    )
+    .option("--no-hook", "do not install the InstructionsLoaded hook, the second instrument beside the tokens")
     .action(async (opts) => {
       const agent = opts.agent as AgentId;
       const build = options.adapter ?? defaultAdapter;
-      const adapter = build(agent, opts.claudeBin !== undefined ? { bin: opts.claudeBin } : {});
+      const adapter = build(agent, {
+        ...(opts.claudeBin !== undefined ? { bin: opts.claudeBin } : {}),
+        ...(opts.model !== undefined ? { model: opts.model } : {}),
+        ...(opts.claudeHome !== undefined ? { claudeHome: path.resolve(opts.claudeHome) } : {}),
+        isolation: opts.isolation as Isolation,
+        hook: opts.hook !== false,
+      });
       try {
         if (!adapter) throw new UsageError(`probe has no ${agent} adapter yet; only --agent claude is supported`);
         let dir: string;

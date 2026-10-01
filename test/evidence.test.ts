@@ -52,8 +52,9 @@ interface Replay {
 function replayCanary(dir: string): Replay {
   const r = scoreRecording(readRecording(dir), claudeAdapter());
   return {
+    // The decoy and the positive control are instrument checks, never evidence for a rule.
     cells: r.cells
-      .filter((c) => !c.decoy)
+      .filter((c) => !c.decoy && !c.control)
       .map((c) => ({
         rule: c.predicted.rule,
         delivery: c.predicted.delivery,

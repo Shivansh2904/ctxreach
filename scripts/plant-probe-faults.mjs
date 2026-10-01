@@ -698,6 +698,55 @@ export const PLANTS = [
     find: "...sessionRows(result),",
     replace: "",
   },
+  // The probe command's flags, from commander to the adapter (src/program.ts).
+  {
+    name: "cli-drops-model",
+    file: "src/program.ts",
+    find: "...(opts.model !== undefined ? { model: opts.model } : {}),",
+    replace: "",
+  },
+  {
+    name: "cli-drops-claude-home-for-adapter",
+    file: "src/program.ts",
+    find: "...(opts.claudeHome !== undefined ? { claudeHome: path.resolve(opts.claudeHome) } : {}),\n        isolation:",
+    replace: "isolation:",
+  },
+  {
+    name: "cli-ignores-isolation",
+    file: "src/program.ts",
+    find: "isolation: opts.isolation as Isolation,",
+    replace: 'isolation: "machine",',
+  },
+  {
+    name: "cli-ignores-no-hook",
+    file: "src/program.ts",
+    find: "hook: opts.hook !== false,",
+    replace: "hook: true,",
+  },
+  {
+    name: "default-adapter-drops-model",
+    file: "src/program.ts",
+    find: "...(options.model !== undefined ? { model: options.model } : {}),",
+    replace: "",
+  },
+  {
+    name: "default-adapter-drops-claude-home",
+    file: "src/program.ts",
+    find: "...(options.claudeHome !== undefined ? { claudeHome: options.claudeHome } : {}),",
+    replace: "",
+  },
+  {
+    name: "default-adapter-drops-isolation",
+    file: "src/program.ts",
+    find: "isolation: options.isolation,",
+    replace: "",
+  },
+  {
+    name: "default-adapter-drops-hook",
+    file: "src/program.ts",
+    find: "hook: options.hook,",
+    replace: "",
+  },
 ];
 
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join("/");
