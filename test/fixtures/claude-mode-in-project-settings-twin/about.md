@@ -1,1 +1,3 @@
 Clean twin of claude-mode-in-project-settings: the same setting in the user's ~/.claude/settings.json takes effect, so Claude reads both files. ctxreach must report nothing.
+
+Scope: the expected report above is for the test suite's run of this fixture. The census check K1 (study/census/known-answer.mjs) serves only repo/, with empty homes, and launches from the root and every type-2 and type-3 directory for both agents. There, the default mode applies and CLAUDE.md switches AGENTS.md off: map raises claude.agents-shadowed, and O1-file is an event. study/census/known-answers.json holds the census answer.

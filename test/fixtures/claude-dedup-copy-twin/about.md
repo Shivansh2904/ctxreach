@@ -1,1 +1,3 @@
 Clean twin of claude-dedup-copy: CLAUDE.md is AGENTS.md plus one line, so the texts differ and, with claude-md-and-agents-md, both files load. ctxreach must report nothing.
+
+Scope: the expected report above is for the test suite's run of this fixture. The census check K1 (study/census/known-answer.mjs) serves only repo/, with empty homes, and launches from the root and every type-2 and type-3 directory for both agents. There, the default mode applies and CLAUDE.md switches AGENTS.md off: map raises claude.agents-shadowed, and O1-file is an event (the text still arrives through CLAUDE.md). study/census/known-answers.json holds the census answer.

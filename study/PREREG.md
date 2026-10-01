@@ -175,8 +175,10 @@ counted).
   system. The measurement then applies the symlink rule: a link and its
   target are one file (a symlinked `CLAUDE.md` pointing at `AGENTS.md`
   delivers `AGENTS.md` once), and `map`'s warnings that exist only because
-  the link was copied are dropped (outcomes O5 and O6 keep `map`'s own codes
-  beside the corrected ones).
+  the link was copied are dropped. Each row keeps `map`'s own codes beside
+  the corrected ones (`pairs[].warn`, `o5.rootWarnMap`), and O5 and O6 are
+  also reported as `map` printed them (`O5-any-root-warning-map`,
+  `O5-root-map:<code>` and `O6-map` in `results.json`).
 - Nothing from a repository is executed. The census refuses to run under a
   folder with an instruction file above it, checks that the empty homes stay
   empty, and deletes each reconstruction after measuring it. What is
@@ -232,19 +234,27 @@ repository (imports are expanded at launch).
 
 | Id | Metric (as `study/census/detectors.mjs` computes it) |
 |---|---|
-| **O1-content** (Claude headline) | Root launch. A = the root `AGENTS.md`'s lines after trimming and collapsing whitespace, at least 20 characters (code points), deduplicated; text inside code fences counts. R = the lines of A that appear, normalised the same way, in any file Claude receives at root launch. Event: R/\|A\| < 0.5. A repository with \|A\| = 0 is ineligible and counted. A byte-copy `CLAUDE.md` gives R = \|A\|. |
+| **O1-content** (Claude headline) | Root launch. A = the root `AGENTS.md`'s lines after trimming and collapsing whitespace, at least 20 characters (code points), deduplicated; text inside code fences counts. R = the lines of A that appear, normalised the same way, in any file Claude receives at root launch. Event: R/\|A\| < 0.5. A repository with \|A\| = 0 is ineligible, and counted apart from the other reasons a repository is left out (no root `AGENTS.md`, root launch not measured): every repository-level outcome in `results.json` counts the repositories it leaves out by reason (`ineligibleWhy`), and for O1-content the reason for \|A\| = 0 is "no line of 20 or more characters". A byte-copy `CLAUDE.md` gives R = \|A\|. |
 | O1-content-shingle (sensitivity) | As O1-content, but a line of A counts as received when at least 0.8 of its 8-word shingles appear among the shingles of the received text (a line under 8 words: when it appears as a substring). |
 | **O1-file** | Root launch: the root `AGENTS.md` is not received by Claude (shadowed by a `CLAUDE.md`-family file that neither imports nor links it). |
 | **O2** (headless import) | At least one type-2 launch directory from which a headless session receives none of the root `AGENTS.md` (for example an import that resolves outside the launch directory, with no approval recorded). Also reported: over types 1-3, and among repositories with at least one type-2 directory. |
 | **P1** (Codex headline) | A (repository, launch directory) pair of types 1 and 2 where `map` reports `codex.cut`, `codex.no-budget` or `codex.empty-override` (Codex 0.159.2 rules, 32,768-byte budget). Reported per pair (P1-pairs) and per repository with at least one such pair (P1-repos); also with type 3. Pair intervals ignore clustering within a repository; the repository-level figure is the one with a valid interval. |
 | O4 | A nested `AGENTS.md` (not at the root, not `.claude/AGENTS.md`) that neither agent preloads at root launch. |
-| O5 | At least one `map` warning at root launch, by code, after the symlink rule; also as `map` printed them, and among repositories without links. |
-| O6 | At root launch, a `CLAUDE.md` names `AGENTS.md` in words without importing it (`claude.words-not-import`, after the symlink rule). |
-| O7 | Instruction files that are symlinks (tree mode `120000`), broken links, and a root `CLAUDE.md`-family link to `AGENTS.md` (the Windows link-as-text risk). |
-| O8 | The root `AGENTS.md`'s CJK share (Han, kana, Hangul among non-space characters); event at 0.1 or more; also the characters Codex's 32,768 bytes hold. |
+| O5 | At least one `map` warning at root launch, after the symlink rule (`O5-any-root-warning`); also as `map` printed them (`O5-any-root-warning-map`), and among repositories with no instruction file that is a symlink (`O5-any-root-warning-no-links`). By code: one row for every `warn` code in the Findings table of `docs/rules.md`, 0/n included, plus any other code that occurs, both after the symlink rule (`O5-root:<code>`) and as printed (`O5-root-map:<code>`). Denominator: every measured repository. |
+| O6 | At root launch, `map` raises `claude.words-not-import`, after the symlink rule: some `AGENTS.md` is switched off (`claude.agents-shadowed`), and a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` that loads at launch or on read (nested ones included) contains the text `AGENTS.md` (case-sensitive, anywhere in the file, so also inside a longer name) and imports no file named `AGENTS.md` (an `@AGENTS.md` inside a code span or fenced block is not an import). A file whose whole trimmed text is one relative path to an existing file is not an O6 event: `map` raises `claude.link-as-text` for it instead (rule `claude.symlink`), and it is counted under O5 as `O5-root:claude.link-as-text`. Also as `map` printed it, before the symlink rule (`O6-map`). Denominator: every repository whose root launch was measured. |
+| O7 | Repositories with at least one instruction file that is a symlink (tree mode `120000`; `O7`), with at least one such link that is broken (`O7-broken`), and with a root `CLAUDE.md`-family link to `AGENTS.md` (`O7-root-link-to-agents`: the risk that a Windows checkout writes it as a text file; the census writes links as copies, so `claude.link-as-text` never fires for these). Denominator: every measured repository. |
+| O8 | The root `AGENTS.md`'s CJK share (Han, kana, Hangul among non-space characters); event at 0.1 or more. Denominator: every repository with a non-empty root `AGENTS.md`. Also, over the same repositories, those whose root `AGENTS.md` is longer than Codex's 32,768-byte budget (`O8-over-budget`); and, among those, the characters (code points; a character the cut splits counts as one) that the budget's 32,768 bytes hold of the file, as minimum, median and maximum, apart for O8 events and the rest (`O8-held-chars` in the `summaries` of `results.json`, a figure that is not a proportion). |
 
-Codex's share of the root `AGENTS.md` is reported beside O1-content (100%
-whenever the chain is under 32 KiB).
+Codex's share of the root `AGENTS.md` is reported beside O1-content, over
+O1-content's repositories, in bytes: the bytes of the root `AGENTS.md` that
+Codex keeps at root launch (the kept bytes of its entry on the root
+launch's chain; 0 when it is not on the chain, as when an
+`AGENTS.override.md` at the root takes its slot) over the file's bytes. The
+unit is bytes, not O1-content's lines, because a row keeps Codex's byte
+counts and never the text. Two proportions: Codex keeps under half of the
+file (`O1-codex-under-half`, O1-content's threshold) and under all of it
+(`O1-codex-under-all`). The share is 100% whenever the root `AGENTS.md` is
+at most 32,768 bytes and no root `AGENTS.override.md` takes its slot.
 
 **Hypotheses**, set from the pilot (so these are confirmatory estimates
 with a different instrument, not blind tests, and are labelled that way):
@@ -257,8 +267,8 @@ with a different instrument, not blind tests, and are labelled that way):
 | H3-pairs | S-main, P1-pairs | 1% to 5% | as H1b |
 | **H3-repos** (primary) | S-main, P1-repos | 1% to 8% | as H1b |
 
-O4 to O8, the type-3 variants and O2 over types 1-3 are secondary and have
-no decision rule.
+O4 to O8, Codex's share of the root `AGENTS.md`, the type-3 variants and O2
+over types 1-3 are secondary and have no decision rule.
 
 ## 8. Instrument checks
 
@@ -277,6 +287,42 @@ is reported as found.
 | K8 planted pass | Before every conformance battery, a wrong budget (`--codex-max-bytes 30000`), a wrong mode or a reversed order run | must DISAGREE; a battery whose planted pass agrees is an instrument fault |
 | K9 positive control | A must-appear token in a `.claude/rules/` file at the launch directory of every Claude trial, and a decoy no rule loads | a missing control voids the trial; decoy 0/N |
 | K10 session asserts | `system/init.plugins` contains `agents-md@builtin`; `system/init.model` equals the pin; the rendered `cwd` equals the launch directory; `CODEX_HOME` inside the sandbox | a failed assert voids the trial |
+
+**What K1 covers.** K1's 55 answers cover 49 distinct inputs. K1 serves a
+fixture's `repo/` folder (and its `tree.json`, if any) with empty homes,
+as the census serves a repository, so two fixtures that differ only outside
+`repo/` are one input. Six pairs are byte-identical under these
+conditions: the trap/twin pairs `claude-home-ancestor`,
+`claude-external-headless`, `codex-home-is-root` and
+`claude-package-imports-root`, whose twins differ from their traps only in
+`home/` and `about.md`; `codex-over-cap` and `codex-project-config-twin`; and
+`codex-override-wins` and `codex-empty-override-twin`. K1 launches only
+from the launch directories of section 6, so `claude-ancestor-rules`, its
+twin and `claude-import-outside-launch` are measured at the root only: the
+launch from `packages/api` that their `about.md` describes is never made,
+because `packages/api` holds no instruction file and no package manifest
+there. With empty homes no fixture exercises a rule that needs a file in a
+home (`claude.home-ancestor`, `codex.home-is-root`, `codex.global`, or a
+Project instructions mode other than the default in `claude.modes`), nor an
+ancestor's rules (`claude.rules`, which `map` does not model); the census
+runs the same way and cannot reach them either.
+
+31 answer fields are pinned in 0 of the 55 answers, so a fault that changes
+only one of them still passes K1. Of these, the ones that feed a figure in
+`results.json`: `k3.eligible`, `o1content.why`, `o1contentShingle.why`,
+`o1file.why`, `o2.t2Dirs`, `o2.why`, `o4.eligible`, `o5.linkAffected`,
+`o6.eligible`, `o7.broken`, `o7.rootLinkToAgents`, `o8.bytes`,
+`o8.effectiveChars`, `o8.why`, `p1.pairs`, `p1.pairsT3`,
+`p1.repoEventT123` and `p1.t3EventDirs`. The ones that feed none:
+`k3.importsText`, `o1contentShingle.a`, `o1contentShingle.r`,
+`o1contentShingle.share`, `o1file.cause`, `o1file.shadowers`,
+`o1file.via`, `o2.causes`, `o4.nested`, `o4.notPreloaded`, `o5.anyWarn`,
+`o8.chars` and `o8.cjkShare`. Fields pinned in 1 to 4 answers:
+`o2.eventT123` (2), `o2.t3EventDirs` (2) and `o5.rootWarnMap` (1), which
+`O5-any-root-warning-map`, `O5-root-map:<code>` and `O6-map` read. Codex's
+share of the root `AGENTS.md` (`O1-codex-under-half`,
+`O1-codex-under-all`) reads the root launch's Codex chain from the row
+(`pairs`), which K1 does not compare at all.
 
 ## 9. Behavioural cells
 

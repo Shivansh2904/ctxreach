@@ -784,6 +784,63 @@ describe("K1: known-answer fixtures through the census pipeline", () => {
     );
   });
 
+  it("PREREG.md states K1's distinct inputs and its unpinned answer fields as the fixtures and answers give them", async () => {
+    const text = readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8").replace(/\s+/g, " ");
+    const answers = k1.loadAnswers();
+    const fixtures = k1.allFixtures() as { name: string; repoDir: string }[];
+    // Distinct inputs: what K1 serves of a fixture (its repo/ files and declared links), byte for byte.
+    const groups = new Map<string, string[]>();
+    for (const f of fixtures) {
+      const repo = local.localRepo(f.name, f.repoDir);
+      const key = JSON.stringify(
+        repo.entries.map((e: { path: string; mode: string; sha: string }) => [e.path, e.mode, e.sha]),
+      );
+      groups.set(key, [...(groups.get(key) ?? []), f.name]);
+    }
+    const stated = /K1's (\d+) answers cover (\d+) distinct inputs/.exec(text);
+    expect(stated?.slice(1).map(Number)).toEqual([Object.keys(answers.fixtures).length, groups.size]);
+    const para = text.slice(text.indexOf("**What K1 covers.**"), text.indexOf("Answer fields pinned in 0"));
+    // Each identical group is named; a trap/twin pair by its trap's name.
+    for (const g of groups.values())
+      for (const name of g.length > 1 ? g : []) {
+        const trap = name.replace(/-twin$/, "");
+        expect(para, name).toContain(`\`${g.includes(trap) ? trap : name}\``);
+      }
+
+    // Every leaf field the detectors produce over K1's rows, against every field an answer pins.
+    const leaves = (v: unknown, at: string, out: Map<string, number>) => {
+      if (v !== null && typeof v === "object" && !Array.isArray(v))
+        for (const [k, x] of Object.entries(v)) leaves(x, `${at}.${k}`, out);
+      else out.set(at, (out.get(at) ?? 0) + 1);
+      return out;
+    };
+    const res = await k1.runKnownAnswers({ mapRunner: inProcessMapRunner() });
+    expect(res.k).toBe(res.n);
+    const produced = new Map<string, number>();
+    const pinned = new Map<string, number>();
+    for (const r of res.results as { name: string; row: { outcomes: Record<string, unknown> } }[]) {
+      for (const k of k1.DETECTOR_KEYS as string[]) {
+        for (const f of leaves(r.row.outcomes[k], k, new Map()).keys()) produced.set(f, (produced.get(f) ?? 0) + 1);
+        if (k in answers.fixtures[r.name])
+          for (const f of leaves(answers.fixtures[r.name][k], k, new Map()).keys())
+            pinned.set(f, (pinned.get(f) ?? 0) + 1);
+      }
+    }
+    const isField = (t: string) => (k1.DETECTOR_KEYS as string[]).includes(t.split(".")[0]!) && t.includes(".");
+    const between = (from: string, to: string) =>
+      [...text.slice(text.indexOf(from), text.indexOf(to)).matchAll(/`([^`]+)`/g)].map((m) => m[1]!).filter(isField);
+    const zero = [...produced.keys()].filter((f) => !pinned.has(f)).sort();
+    const count = /(\d+) answer fields are pinned in 0 of the (\d+) answers/.exec(text);
+    expect(count?.slice(1).map(Number)).toEqual([zero.length, res.n]);
+    const feeds = between("answer fields are pinned in 0 of the", "The ones that feed none:");
+    const none = between("The ones that feed none:", "Fields pinned in 1 to 4 answers");
+    expect(feeds.filter((f) => none.includes(f))).toEqual([]);
+    expect([...feeds, ...none].sort()).toEqual(zero);
+    const few = [...text.matchAll(/`([a-z0-9]+\.[A-Za-z0-9]+)` \((\d)\)/g)].map((m) => [m[1], Number(m[2])]);
+    const fewActual = [...pinned].filter(([, n]) => n >= 1 && n <= 4).sort();
+    expect(few.sort()).toEqual(fewActual);
+  }, 120_000);
+
   it("fails a row whose answer is wrong (the comparison can fail)", () => {
     expect(k1.compare({ a: 1, b: [1, 2] }, { a: 1, b: [2, 1], c: 3 })).toEqual([]);
     expect(k1.compare({ a: 1 }, { a: 2 })).toEqual(["a: expected 1, got 2"]);
@@ -1543,6 +1600,168 @@ describe("the census run, analysis and K3", () => {
     const res = analyze.analyze({ rowSets: [{ file: "rows.jsonl", sha256: "x", rows: [...rows, capped] }] });
     expect(res.frames["S-main"].type2Capped).toMatchObject({ k: 1, n: 5, cap: 20 });
   }, 60_000);
+
+  describe("every statistic PREREG.md promises is in results.json", () => {
+    type Outcome = { id: string; frame: string; variant: string; k: number; n: number; ineligible: number };
+    /** A measured row holding only what analyze reads: every detector at its no-event value unless overridden. */
+    function row(i: number, outcomes: Record<string, unknown> = {}, rootChain?: unknown[]) {
+      return {
+        frame: "S-main",
+        index: i,
+        repo: `owner${i}/repo`,
+        owner: `owner${i}`,
+        status: "measured",
+        faults: [],
+        blobs: { rootAgents: `blob-${i}` },
+        launch: { t2: [], t2Total: 0, t3: [], t3Total: 0 },
+        pairs: [
+          {
+            dir: ".",
+            type: 1,
+            codex: { chain: rootChain ?? [{ path: "AGENTS.md", bytes: 100, kept: 100, status: "loaded" }] },
+          },
+        ],
+        outcomes: {
+          o1content: { eligible: true, a: 4, r: 4, share: 1, event: false },
+          o1contentShingle: { eligible: true, a: 4, r: 4, share: 1, event: false },
+          o1file: { eligible: true, event: false, via: "map" },
+          o2: { eligible: true, t2Dirs: 0, event: false, eventDirs: [], eventT123: false, t3EventDirs: [] },
+          p1: { pairs: 1, eventDirs: [], repoEvent: false, pairsT3: 0, t3EventDirs: [], repoEventT123: false },
+          o4: { eligible: true, nested: 0, notPreloaded: 0, event: false },
+          o5: { rootWarn: [], rootWarnMap: [], anyWarn: [], linkAffected: false },
+          o6: { eligible: true, event: false },
+          o7: { links: 0, broken: 0, event: false, rootLinkToAgents: false },
+          o8: { eligible: true, cjkShare: 0, event: false, bytes: 100, chars: 100, effectiveChars: 100 },
+          k3: { eligible: true, rootClaude: false, event: false },
+          ...outcomes,
+        },
+      };
+    }
+    function run(rows: unknown[]) {
+      const res = analyze.analyze({ rowSets: [{ file: "rows.jsonl", sha256: "x", rows }] });
+      const get = (id: string, variant = "raw") =>
+        (res.outcomes as Outcome[]).find((o) => o.id === id && o.frame === "S-main" && o.variant === variant);
+      return { res, get };
+    }
+
+    it("reports Codex's share of the root AGENTS.md beside O1-content, in bytes, over O1-content's repositories", () => {
+      const { get } = run([
+        row(0, {}, [{ path: "AGENTS.md", bytes: 40960, kept: 32768, status: "cut" }]),
+        row(1, {}, [{ path: "AGENTS.md", bytes: 100000, kept: 32768, status: "cut" }]),
+        // A root AGENTS.override.md takes the root's slot: Codex keeps none of the root AGENTS.md.
+        row(2, {}, [{ path: "AGENTS.override.md", bytes: 50, kept: 50, status: "loaded" }]),
+        row(3),
+        row(4, { o1content: { eligible: false, why: "no line of 20 or more characters", a: 0 } }),
+      ]);
+      expect(get("O1-codex-under-half")).toMatchObject({ k: 2, n: 4, ineligible: 1 });
+      expect(get("O1-codex-under-all")).toMatchObject({ k: 3, n: 4, ineligible: 1 });
+      expect(get("O1-codex-under-half")!.n).toBe(get("O1-content")!.n);
+    });
+
+    it("counts each outcome's ineligible repositories by reason, so |A| = 0 is counted apart", () => {
+      const { res, get } = run([
+        row(0),
+        row(1, {
+          o1content: { eligible: false, why: "no root AGENTS.md" },
+          o2: { eligible: false, why: "no root AGENTS.md" },
+        }),
+        row(2, { o1content: { eligible: false, why: "no line of 20 or more characters", a: 0 } }),
+        row(3, { o2: { eligible: true, t2Dirs: 2, event: true, eventDirs: ["a"], eventT123: true, t3EventDirs: [] } }),
+      ]);
+      expect(get("O1-content")).toMatchObject({
+        k: 0,
+        n: 2,
+        ineligible: 2,
+        ineligibleWhy: { "no root AGENTS.md": 1, "no line of 20 or more characters": 1 },
+      });
+      expect(get("O2-given-type2")).toMatchObject({
+        k: 1,
+        n: 1,
+        ineligibleWhy: { "no root AGENTS.md": 1, "no type-2 launch directory": 2 },
+      });
+      for (const o of res.outcomes as (Outcome & { unit: string; ineligibleWhy?: Record<string, number> })[]) {
+        if (o.unit !== "repository") continue;
+        const sum = Object.values(o.ineligibleWhy ?? {}).reduce((a, b) => a + b, 0);
+        expect([o.id, o.variant, sum]).toEqual([o.id, o.variant, o.ineligible]);
+      }
+    });
+
+    it("reports O5 and O6 as map printed them, beside the figures after the symlink rule", () => {
+      const { get } = run([
+        // map warned on the reconstruction's copy of a link; the symlink rule removes both warnings.
+        row(0, {
+          o5: {
+            rootWarn: [],
+            rootWarnMap: ["claude.agents-shadowed", "claude.words-not-import"],
+            anyWarn: [],
+            linkAffected: true,
+          },
+        }),
+        row(1, { o5: { rootWarn: ["codex.nested"], rootWarnMap: ["codex.nested"], anyWarn: [], linkAffected: false } }),
+        row(2),
+        row(3, { o6: { eligible: false, why: "root launch not measured" } }),
+      ]);
+      expect(get("O5-any-root-warning")).toMatchObject({ k: 1, n: 4 });
+      expect(get("O5-any-root-warning-map")).toMatchObject({ k: 2, n: 4 });
+      expect(get("O5-root:claude.words-not-import")).toMatchObject({ k: 0, n: 4 });
+      expect(get("O5-root-map:claude.words-not-import")).toMatchObject({ k: 1, n: 4 });
+      expect(get("O5-root-map:codex.nested")).toMatchObject({ k: 1, n: 4 });
+      expect(get("O6")).toMatchObject({ k: 0, n: 3 });
+      expect(get("O6-map")).toMatchObject({ k: 1, n: 3, ineligibleWhy: { "root launch not measured": 1 } });
+    });
+
+    it("prints an O5 row for every warn code in docs/rules.md, 0/n included, in both forms", () => {
+      const doc = readFileSync(path.join(ROOT, "docs", "rules.md"), "utf8");
+      const documented = [...doc.matchAll(/^\| `((?:codex|claude)\.[a-z-]+)` \| warn \|/gm)].map((m) => m[1]);
+      expect([...analyze.WARN_CODES].sort()).toEqual(documented.sort());
+      const { get } = run([
+        row(0),
+        row(1, { o5: { rootWarn: ["codex.later"], rootWarnMap: ["codex.later"], anyWarn: [], linkAffected: false } }),
+      ]);
+      for (const variant of ["raw", "dedup", "ownercap"])
+        for (const code of analyze.WARN_CODES as string[]) {
+          expect(get(`O5-root:${code}`, variant), `${variant} ${code}`).toMatchObject({ k: 0, n: 2 });
+          expect(get(`O5-root-map:${code}`, variant), `${variant} ${code}`).toMatchObject({ k: 0, n: 2 });
+        }
+      // A code the list does not know is still reported.
+      expect(get("O5-root:codex.later")).toMatchObject({ k: 1, n: 2 });
+      expect(get("O5-root:claude.link-as-text")).toMatchObject({ k: 0, n: 2 });
+    });
+
+    it("reports repositories with a broken instruction-file link (O7)", () => {
+      const { get } = run([
+        row(0, { o7: { links: 2, broken: 1, event: true, rootLinkToAgents: false } }),
+        row(1, { o7: { links: 1, broken: 0, event: true, rootLinkToAgents: true } }),
+        row(2),
+      ]);
+      expect(get("O7")).toMatchObject({ k: 2, n: 3 });
+      expect(get("O7-broken")).toMatchObject({ k: 1, n: 3 });
+      expect(get("O7-root-link-to-agents")).toMatchObject({ k: 1, n: 3 });
+    });
+
+    it("reports, for root AGENTS.md files over Codex's budget, the characters its 32,768 bytes hold, by O8 event", () => {
+      const o8 = (event: boolean, bytes: number, effectiveChars: number) => ({
+        o8: { eligible: true, cjkShare: event ? 0.9 : 0, event, bytes, chars: effectiveChars, effectiveChars },
+      });
+      const { res, get } = run([
+        row(0, o8(true, 40000, 10923)),
+        row(1, o8(true, 50000, 11000)),
+        row(2, o8(true, 300, 100)),
+        row(3, o8(false, 40960, 32768)),
+        row(4, { o8: { eligible: false, why: "no root AGENTS.md" } }),
+      ]);
+      expect(get("O8")).toMatchObject({ k: 3, n: 4 });
+      expect(get("O8-over-budget")).toMatchObject({ k: 3, n: 4, ineligibleWhy: { "no root AGENTS.md": 1 } });
+      const held = (res.summaries as { id: string; frame: string; variant: string }[]).find(
+        (s) => s.id === "O8-held-chars" && s.frame === "S-main" && s.variant === "raw",
+      );
+      expect(held).toMatchObject({
+        budget: 32768,
+        cjk: { n: 2, min: 10923, median: 10961.5, max: 11000 },
+        other: { n: 1, min: 32768, median: 32768, max: 32768 },
+      });
+    });
+  });
 
   it("takes a study run's seed from the prereg tag, which also seeds the type-2 and type-3 draws", async () => {
     const { args, logs } = await census();

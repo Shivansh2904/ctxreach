@@ -1,1 +1,3 @@
 Clean twin of codex-project-config: the same 64 KiB budget is set in the user's ~/.codex/config.toml, which applies without trust. The 40 KiB file loads in full and ctxreach must report nothing.
+
+Scope: the expected report above is for the test suite's run of this fixture. The census check K1 (study/census/known-answer.mjs) serves only repo/, with empty homes, and launches from the root and every type-2 and type-3 directory for both agents. There, the default 32,768-byte budget applies and the 40 KiB root AGENTS.md is cut: map raises codex.cut, and P1 is an event. study/census/known-answers.json holds the census answer.

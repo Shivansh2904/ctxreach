@@ -207,15 +207,24 @@ export const DETECTORS = {
     };
   },
 
-  /** O6: at root launch, a CLAUDE.md names AGENTS.md in words without importing it (after the symlink rule). */
+  /**
+   * O6: at root launch, map raises claude.words-not-import, after the symlink
+   * rule (study/PREREG.md, O6). A CLAUDE.md-family file whose whole text is a
+   * path raises claude.link-as-text instead, and is counted under O5.
+   */
   o6(ctx) {
     const root = rootPair(ctx);
-    if (!root) return { eligible: false };
+    if (!root) return { eligible: false, why: "root launch not measured" };
     if (planted(ctx.plants, "detector:o6")) return { eligible: true, event: false };
     return { eligible: true, event: warnCodes(ctx, root).includes("claude.words-not-import") };
   },
 
-  /** O7: instruction files that are symlinks (tree mode 120000), and the Windows link-as-text risk at the root. */
+  /**
+   * O7: instruction files that are symlinks (tree mode 120000), broken ones,
+   * and a root CLAUDE.md-family link to AGENTS.md (which a Windows checkout
+   * without core.symlinks writes as a text file; the census writes links as
+   * copies, so claude.link-as-text never fires for these).
+   */
   o7(ctx) {
     const ls = ctx.recon.files.filter((f) => f.mode === "120000" && f.role === "instruction");
     if (planted(ctx.plants, "detector:o7")) return { links: 0, broken: 0, event: false, rootLinkToAgents: false };
@@ -231,9 +240,9 @@ export const DETECTORS = {
   /** O8: CJK share of the root AGENTS.md and the characters Codex's default budget holds. */
   o8(ctx) {
     const agents = rootAgents(ctx.recon);
-    if (!agents || !agents.written) return { eligible: false };
+    if (!agents || !agents.written) return { eligible: false, why: "no root AGENTS.md" };
     const bytes = ctx.readBytes("AGENTS.md");
-    if (bytes.length === 0) return { eligible: false };
+    if (bytes.length === 0) return { eligible: false, why: "empty root AGENTS.md" };
     const text = bytes.toString("utf8");
     const share = cjkShare(text);
     const effectiveChars = charsInBytes(bytes, CODEX_BUDGET);

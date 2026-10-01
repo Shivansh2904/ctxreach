@@ -17,7 +17,7 @@ prints its count of non-GET attempts at the end (check K7).
 | `codex-check.mjs` | Check K4: `codex debug prompt-input` against `map`'s predicted bytes, twice per pair, throwaway `CODEX_HOME` |
 | `pipeline.mjs` | One unit end to end, then deletes the reconstruction; K1 uses the same function |
 | `run-census.mjs` | Runs a sample, serial and resumable, with the seed from the `prereg-v1` tag; `map` in process from the built library, checked against the spawned CLI on every 25th unit (a difference is a fault on the row); api.github.com through `gh api`; refuses under an instruction file, on low disk, with another build than `--expect-dist`, or when `gh api rate_limit` does not answer |
-| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, and the registered verdicts |
+| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, each outcome's left-out repositories by reason, the figures that are not proportions (`summaries`), and the registered verdicts |
 | `known-answer.mjs` | Check K1: every fixture with a hand-derived answer (`known-answers.json`) through the pipeline, network replaced by local files, `map` in process as in the census (`--spawn` for the CLI) |
 | `plant-census-faults.mjs` | Check K2: each detector and pipeline step switched off in turn; K1 must fail each time |
 | `consistency.mjs` | Check K3: the regex version of O1-file in the sample against the frame's own proportion |
@@ -35,7 +35,10 @@ before K1 was run on them. `census-o2-external-import`, listed until then
 as a known `map` defect, passes since the map-rules fix merged, and
 `knownDefects` is empty. `census-o7-symlink-twin`'s answer follows the
 rule that a `CLAUDE.md` holding only a path raises `claude.link-as-text`
-instead of `claude.words-not-import` (its note says what changed).
+instead of `claude.words-not-import` (its note says what changed). The 55
+answers cover 49 distinct inputs: six pairs of fixtures are byte-identical
+once only `repo/` is served (PREREG.md section 8, "What K1 covers", which
+also lists the answer fields no answer pins).
 
 ## Order in the main session
 
