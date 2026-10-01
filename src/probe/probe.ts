@@ -10,10 +10,18 @@ import os from "node:os";
 import path from "node:path";
 import { map } from "../map/map.js";
 import { displayPath, isInside, isInsideReal, nearestExisting } from "../util/fs.js";
-import { plantDecoy, plantFile, TokenSource, type RandomSource } from "./canary.js";
+import { CONTROL_RULE, plantControl, plantDecoy, plantFile, TokenSource, type RandomSource } from "./canary.js";
+import { copyLocation } from "./instruments.js";
 import { readRecording, RECORDING_SCHEMA, writeManifest, type Manifest, type Recording } from "./recording.js";
 import { createSandbox, removeSandbox, type Sandbox } from "./sandbox.js";
-import { SafetyError, type AgentAdapter, type Canary, type ProbeMode, type Redaction } from "./types.js";
+import {
+  SafetyError,
+  type AgentAdapter,
+  type Canary,
+  type ProbeMode,
+  type Redaction,
+  type SessionSetup,
+} from "./types.js";
 
 export const RECALL_PROMPT =
   "Do not use any tools. List every token that starts with CTXR- followed by eight hexadecimal characters and that appears anywhere in your instructions or context (system prompt, project instructions, memory files, rules). Print each token exactly as written, one per line, and nothing else. If there are none, print NONE.";
@@ -57,6 +65,10 @@ export interface ProbeOptions {
   progress?: (line: string) => void;
   /** Where the signals and the exit come from (default: `process`); tests pass a stand-in. */
   host?: Pick<NodeJS.Process, "once" | "removeListener" | "exit">;
+  /** The home directory, for the copy's location report (default: `os.homedir()`); tests pass a stand-in. */
+  homeDir?: string;
+  /** No directory above this one is searched for instruction files in the location report (tests only). */
+  ancestorCeiling?: string;
 }
 
 function relPosix(from: string, to: string): string {
@@ -78,8 +90,13 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
     throw new SafetyError(`${saveDir} is not empty; pass --save with a new or empty directory`);
   const say = options.progress ?? (() => undefined);
 
-  const cliVersion = await adapter.version();
   const environment = adapter.environment();
+  // A session that cannot see instruction files measures nothing (rule claude.bare).
+  if (environment.killSwitches?.length)
+    throw new SafetyError(
+      `${environment.killSwitches.join(", ")} ${environment.killSwitches.length > 1 ? "are" : "is"} set, which turns instruction files off, so a probe would measure nothing; unset ${environment.killSwitches.length > 1 ? "them" : "it"} and run again`,
+    );
+  const cliVersion = await adapter.version();
   const launchRel = relPosix(repoRoot, launchDir);
 
   let sandbox: Sandbox | undefined;
@@ -143,20 +160,28 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
       canaries.push(...plantFile(box.repo, rel, tokens));
     }
     canaries.push(...plantDecoy(box.repo, launchRel, tokens));
+    // The positive control: a rule at the launch directory that must be repeated.
+    canaries.push(...plantControl(box.repo, launchRel, tokens));
+    const controlRel = launchRel === "." ? CONTROL_RULE : `${launchRel}/${CONTROL_RULE}`;
 
     // Predict again on the planted copy, so byte offsets match what the agent reads.
     const after = predict();
     const predicted: Manifest["predicted"] = [];
     const outside: Manifest["outside"] = [];
+    let control: Manifest["control"];
     const ph = placeholders();
+    const home = options.homeDir ?? os.homedir();
     const redactions: Redaction[] = [
       { from: box.base, to: ph.base },
-      { from: os.homedir(), to: ph.home },
+      { from: home, to: ph.home },
     ];
     for (const row of after.matrix) {
       const cell = row.cells[adapter.id];
       if (!cell) continue;
-      if (isInside(row.path, box.repo)) {
+      if (isInside(row.path, box.repo) && relPosix(box.repo, row.path) === controlRel) {
+        // Scored as an instrument check, not as one of map's predictions.
+        control = { file: controlRel, delivery: cell.delivery, why: cell.why, rule: cell.rule };
+      } else if (isInside(row.path, box.repo)) {
         predicted.push({
           file: relPosix(box.repo, row.path),
           delivery: cell.delivery,
@@ -172,6 +197,16 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
         outside.push({ file: displayPath(shown, box.repo), delivery: cell.delivery, why: cell.why });
       }
     }
+
+    const claudeMode = after.claude?.mode;
+    const session: SessionSetup = adapter.session?.({
+      mode: options.mode,
+      sandboxBase: box.base,
+      repo: box.repo,
+      ...(claudeMode !== undefined ? { claudeMode } : {}),
+      redactions,
+    }) ?? { args: adapter.args(options.mode), model: null, hook: false, isolation: "machine", setEnv: [], notes: [] };
+    const location = copyLocation({ repo: box.repo, home, redactions, ceiling: options.ancestorCeiling });
 
     const prompt =
       options.mode === "recall" ? RECALL_PROMPT : taskPrompt(options.task ?? DEFAULT_TASK, adapter.readTools);
@@ -189,7 +224,7 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
       repo: path.join(ph.base, "repo"),
       launchDir: launchRel,
       sourceName: path.basename(repoRoot),
-      args: adapter.args(options.mode),
+      args: session.args,
       prompt,
       canaries,
       predicted,
@@ -198,6 +233,15 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
       sandbox: { stripped: box.stripped, skipped: box.skipped, links: box.links },
       environment,
       ...(after.claude ? { claudeMode: after.claude.mode } : {}),
+      // map does not list the control file where it models no rules (e.g. Codex): then it is not applicable.
+      control: control ?? {
+        file: controlRel,
+        delivery: "not-loaded",
+        why: "map lists no such file for this agent",
+        rule: "none",
+      },
+      location,
+      session,
       trials: [],
     };
     writeManifest(saveDir, manifest);
@@ -214,6 +258,8 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
         redactions,
         sandboxNonce: box.nonce,
         signal: stopAgent.signal,
+        ...(session.hook ? { hookLogPath: path.join(saveDir, `trial-${trial}.hooks.jsonl`) } : {}),
+        ...(claudeMode !== undefined ? { claudeMode } : {}),
       });
       manifest.trials.push({ trial, transcript, ...outcome });
       // Saved after every trial, so an interrupted run can still be replayed.

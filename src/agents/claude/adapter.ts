@@ -6,13 +6,36 @@
  * documentation.
  */
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, readdirSync, rmdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, rmdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertReadyToRun, sandboxOf, SANDBOX_PREFIX } from "../../probe/sandbox.js";
-import type { AgentAdapter, AgentEnvironment, ProbeMode, RunOutcome, RunRequest, ToolUse } from "../../probe/types.js";
+import type {
+  AgentAdapter,
+  AgentEnvironment,
+  Isolation,
+  ProbeMode,
+  Redaction,
+  RunOutcome,
+  RunRequest,
+  SessionContext,
+  SessionSetup,
+  ToolUse,
+} from "../../probe/types.js";
 import { SafetyError } from "../../probe/types.js";
 import { memoryDirOf, parseClaudeTranscript, redactClaudeTranscript, redactString } from "./events.js";
 import { isFullyQualified, isInsideReal, sameReal } from "../../util/fs.js";
+import {
+  hookFiles,
+  hookSettings,
+  HOOK_SCRIPT_TEXT,
+  reduceHookLog,
+  sessionIdOf,
+  settleLog,
+  takeLiveLog,
+  HOOK_SETTINGS,
+  type HookFiles,
+} from "./hook.js";
+import { assertRunnable, CLEAN_ARGS, CLEAN_ENV, cleanSettings, killSwitchesIn, resolveModelPin } from "./isolation.js";
 import { defaultClaudeHome } from "./settings.js";
 
 export const CLAUDE_READ_TOOLS = ["Read", "Glob", "Grep"] as const;
@@ -31,9 +54,10 @@ export const CLAUDE_READ_TOOLS = ["Read", "Glob", "Grep"] as const;
  * `dontAsk` mode, reads inside the working directory need no approval, and a
  * blanket `Read` rule would also allow reads anywhere else.
  *
- * Never `--bare`, which skips CLAUDE.md. Never `--setting-sources`,
- * `--settings` or `--safe-mode`: they change which settings, and so possibly
- * which instruction files, apply.
+ * Never `--bare`, `--safe-mode` or `--restricted`, which skip CLAUDE.md.
+ * These are the flags every session starts from; the adapter's `session`
+ * adds `--model` (the pin), `--settings` (the InstructionsLoaded hook) and,
+ * with the experimental clean isolation only, `--setting-sources`.
  */
 export function claudeArgs(mode: ProbeMode): string[] {
   const common = [
@@ -113,11 +137,50 @@ export interface ClaudeAdapterOptions {
   /** Arguments placed before ctxreach's own, for a wrapper such as `node script.mjs` (used by the tests). */
   prefixArgs?: string[];
   env?: NodeJS.ProcessEnv;
-  /** Claude Code's user directory, where it may leave an empty project folder (default ~/.claude). */
+  /**
+   * Claude Code's user directory, where it may leave an empty project folder,
+   * and whose `settings.json` may name the model (default ~/.claude).
+   */
   claudeHome?: string;
+  /**
+   * The model to pass with `--model` (default: `ANTHROPIC_MODEL`, then
+   * `model` in `<claudeHome>/settings.json`; with neither, none is passed and
+   * the report says so). Every session's `system/init` model must match it.
+   */
+  model?: string;
+  /** Install the InstructionsLoaded hook (default true). */
+  hook?: boolean;
+  /** `machine` (default), or `clean`, which is EXPERIMENTAL (see isolation.ts). */
+  isolation?: Isolation;
+  /** How long the hook log must stay unchanged once the agent exits, and the most to wait for it, in ms. */
+  hookSettle?: { quietMs: number; maxMs: number };
+  /** The Node executable the hook runs with (default: the one running ctxreach). */
+  node?: string;
 }
 
 const STDERR_KEEP = 4000;
+
+function redactJson(v: unknown, redactions: readonly Redaction[]): unknown {
+  if (typeof v === "string") return redactString(v, redactions);
+  if (Array.isArray(v)) return v.map((x) => redactJson(x, redactions));
+  if (v && typeof v === "object")
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactJson(x, redactions)]));
+  return v;
+}
+
+/** One probe's sessions, worked out from the adapter's options and the sandbox. */
+interface SessionPlan {
+  /** Arguments after the executable (and any prefix), not redacted. */
+  args: string[];
+  env: NodeJS.ProcessEnv;
+  setEnv: string[];
+  model: { pin: string; from: string } | null;
+  isolation: Isolation;
+  /** The `--settings` layer, and where it is written; absent when none is passed. */
+  settings?: { file: string; value: Record<string, unknown> };
+  /** The hook's files, when the hook is on. */
+  hook?: HookFiles;
+}
 
 /**
  * Remove the empty per-project folder Claude Code creates for a sandbox, and
@@ -199,6 +262,7 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
   const cwd = process.cwd();
   let bin: string | undefined = options.bin !== undefined ? path.resolve(cwd, options.bin) : undefined;
   const prefix = options.prefixArgs ?? [];
+  const settle = options.hookSettle ?? { quietMs: 300, maxMs: 3000 };
   const binary = (): string => {
     if (bin === undefined) {
       const found = findClaude(baseEnv);
@@ -207,6 +271,45 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
     if (!bin) throw new Error("could not find the claude executable on PATH; pass --claude-bin");
     return bin;
   };
+
+  /**
+   * The sessions' set-up for a sandbox: the same inputs give the same plan,
+   * so what `session` records is what `run` passes (and score checks that
+   * each trial's arguments equal the recorded ones).
+   */
+  const plan = (mode: ProbeMode, base: string, repo: string, claudeMode: string | undefined): SessionPlan => {
+    const isolation = options.isolation ?? "machine";
+    const model = resolveModelPin({ model: options.model, env: baseEnv, claudeHome }) ?? null;
+    if (isolation === "clean" && !model)
+      throw new SafetyError(
+        "--isolation clean needs a model to pin (pass --model): without the user's settings, Claude Code would pick its own",
+      );
+    const hook = options.hook === false ? undefined : hookFiles(base);
+    const value: Record<string, unknown> = {
+      ...(isolation === "clean" ? cleanSettings({ copyRoot: repo, claudeMode }) : {}),
+      ...(hook ? hookSettings(hook, options.node) : {}),
+    };
+    const settings = Object.keys(value).length ? { file: path.join(base, HOOK_SETTINGS), value } : undefined;
+    const args = [
+      ...claudeArgs(mode),
+      ...(model ? ["--model", model.pin] : []),
+      ...(settings ? ["--settings", settings.file] : []),
+      ...(isolation === "clean" ? CLEAN_ARGS : []),
+    ];
+    return {
+      args,
+      env: isolation === "clean" ? { ...env, ...CLEAN_ENV } : env,
+      setEnv: isolation === "clean" ? Object.keys(CLEAN_ENV) : [],
+      model,
+      isolation,
+      ...(settings ? { settings } : {}),
+      ...(hook ? { hook } : {}),
+    };
+  };
+
+  /** Refuse a session that could not see instruction files, or whose hook would be off. */
+  const refuse = (p: SessionPlan): void =>
+    assertRunnable({ env: baseEnv, args: [...prefix, ...p.args], settings: p.settings?.value });
 
   return {
     id: "claude",
@@ -230,12 +333,35 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
 
     environment(): AgentEnvironment {
       const notes: string[] = [];
+      const killSwitches = killSwitchesIn(baseEnv);
       const bare = truthy(baseEnv.CLAUDE_CODE_SIMPLE);
       if (bare) notes.push("CLAUDE_CODE_SIMPLE is set, which turns on bare mode: Claude Code skips CLAUDE.md.");
       if (truthy(baseEnv.CLAUDE_CODE_SAFE_MODE))
         notes.push("CLAUDE_CODE_SAFE_MODE is set, which turns off CLAUDE.md and other customisations.");
+      if (truthy(baseEnv.CLAUDE_CODE_DISABLE_CLAUDE_MDS))
+        notes.push("CLAUDE_CODE_DISABLE_CLAUDE_MDS is set, which turns off every CLAUDE.md file.");
+      if (truthy(baseEnv.CLAUDE_CODE_DISABLE_ATTACHMENTS))
+        notes.push(
+          "CLAUDE_CODE_DISABLE_ATTACHMENTS is set, which turns off attachments, the way instruction files reach the model.",
+        );
       if (baseEnv.CLAUDE_CONFIG_DIR) notes.push("CLAUDE_CONFIG_DIR is set; the agent uses that user directory.");
-      return { bare: bare || truthy(baseEnv.CLAUDE_CODE_SAFE_MODE), removedEnv: removed, notes };
+      return { bare: killSwitches.length > 0, killSwitches, removedEnv: removed, notes };
+    },
+
+    session(context: SessionContext): SessionSetup {
+      const p = plan(context.mode, context.sandboxBase, context.repo, context.claudeMode);
+      refuse(p);
+      return {
+        args: p.args.map((a) => redactString(a, context.redactions)),
+        model: p.model,
+        hook: p.hook !== undefined,
+        isolation: p.isolation,
+        ...(p.settings
+          ? { settings: redactJson(p.settings.value, context.redactions) as Record<string, unknown> }
+          : {}),
+        setEnv: p.setEnv,
+        notes: [],
+      };
     },
 
     async run(request: RunRequest): Promise<RunOutcome> {
@@ -245,11 +371,19 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
       assertReadyToRun(box, request.sandboxNonce, request.workdir);
       const exe = binary();
       assertOutsideCopy(exe, box.base);
+      const p = plan(request.mode, box.base, box.repo, request.claudeMode);
+      refuse(p);
+      // Written next to the copy, never in it, and deleted with the sandbox.
+      if (p.settings) writeFileSync(p.settings.file, JSON.stringify(p.settings.value, null, 2) + "\n");
+      if (p.hook) {
+        writeFileSync(p.hook.script, HOOK_SCRIPT_TEXT);
+        rmSync(p.hook.log, { force: true });
+      }
       if (request.signal?.aborted) throw new Error("the probe was stopped before the agent started");
       const started = Date.now();
-      const child = spawn(exe, [...prefix, ...claudeArgs(request.mode)], {
+      const child = spawn(exe, [...prefix, ...p.args], {
         cwd: request.workdir,
-        env,
+        env: p.env,
         stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       });
@@ -277,9 +411,25 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
         clearTimeout(timer);
         request.signal?.removeEventListener("abort", stop);
       });
+      const durationMs = Date.now() - started;
 
-      const leftovers = cleanUpMemoryDir(memoryDirOf(stdout), claudeHome).map((p) =>
-        redactString(p, request.redactions),
+      // The hook runs asynchronously: its last events can land after the
+      // agent exits, so the log is read once it has stopped growing.
+      let hooks: RunOutcome["hooks"];
+      if (p.hook && request.hookLogPath !== undefined) {
+        await settleLog(p.hook.log, settle.quietMs, settle.maxMs);
+        const reduced = reduceHookLog(takeLiveLog(p.hook.log), {
+          sessionId: sessionIdOf(stdout),
+          redactions: request.redactions,
+        });
+        writeFileSync(request.hookLogPath, reduced.text);
+        hooks = { log: path.basename(request.hookLogPath), events: reduced.events, invalid: reduced.invalid };
+      } else if (p.hook) {
+        takeLiveLog(p.hook.log);
+      }
+
+      const leftovers = cleanUpMemoryDir(memoryDirOf(stdout), claudeHome).map((x) =>
+        redactString(x, request.redactions),
       );
       writeFileSync(request.transcriptPath, redactClaudeTranscript(stdout, request.redactions));
       return {
@@ -287,8 +437,10 @@ export function claudeAdapter(options: ClaudeAdapterOptions = {}): AgentAdapter 
         timedOut,
         // Saved in the manifest, so redacted like the transcript.
         stderr: redactString(stderr.slice(0, STDERR_KEEP), request.redactions),
-        durationMs: Date.now() - started,
+        durationMs,
         leftovers,
+        args: p.args.map((a) => redactString(a, request.redactions)),
+        ...(hooks ? { hooks } : {}),
       };
     },
 

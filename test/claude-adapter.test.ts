@@ -152,7 +152,10 @@ describe("running the agent (with a fake claude executable)", () => {
       expect(report.prompt).toBe("list the tokens");
       expect(report.parentSession).toBe("unset");
       expect(report.userVar).toBe("1");
-      expect(report.args).toEqual(claudeArgs("recall"));
+      // The probe's flags, then the session's own (the hook's --settings; test/claude-hook.test.ts has the rest).
+      expect((report.args as string[]).slice(0, claudeArgs("recall").length)).toEqual(claudeArgs("recall"));
+      expect(report.args).toContain("--settings");
+      expect(out.args?.slice(0, claudeArgs("recall").length)).toEqual(claudeArgs("recall"));
       expect(t.cwd?.replace(/\//g, "\\")).toBe("C:\\ctxreach-probe\\repo");
       expect(t.toolsOffered).toEqual([]);
       expect(text).not.toContain("private-command");

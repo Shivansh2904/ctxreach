@@ -1,0 +1,35 @@
+ctxreach probe  Claude Code 2.1.280, task mode, launch dir .  (nested-claude)
+  run     2026-09-28T19:31:09.443Z on win32 10.0.26200 (x64), model claude-fable-5-1
+  trials  3 of 3 recorded: 3 usable, 0 contaminated, 0 failed, 0 faulty
+
+  file                       token  map predicts                   observed (of 3 usable)            verdict
+  .claude/rules/api-only.md  head   on read of a matching file     on read 3/3, read in its dir 3/3  CONFIRMED
+  .claude/rules/api-only.md  tail   on read of a matching file     on read 3/3, read in its dir 3/3  CONFIRMED
+  .claude/rules/style.md     head   launch                         preloaded 3/3                     CONFIRMED
+  .claude/rules/style.md     tail   launch                         preloaded 3/3                     CONFIRMED
+  AGENTS.md                  head   no: switched off by CLAUDE.md  not seen 3/3                      CONFIRMED
+  AGENTS.md                  tail   no: switched off by CLAUDE.md  not seen 3/3                      CONFIRMED
+  CLAUDE.md                  head   launch                         preloaded 3/3                     CONFIRMED
+  CLAUDE.md                  tail   launch                         preloaded 3/3                     CONFIRMED
+  docs/testing.md            head   launch (import)                preloaded 3/3                     CONFIRMED
+  docs/testing.md            tail   launch (import)                preloaded 3/3                     CONFIRMED
+  packages/api/CLAUDE.md     head   on read                        on read 3/3, read in its dir 3/3  CONFIRMED
+  packages/api/CLAUDE.md     tail   on read                        on read 3/3, read in its dir 3/3  CONFIRMED
+  packages/web/AGENTS.md     head   no: switched off by CLAUDE.md  not seen 3/3                      CONFIRMED
+  packages/web/AGENTS.md     tail   no: switched off by CLAUDE.md  not seen 3/3                      CONFIRMED
+  ctxreach-decoy.md (decoy)  head   decoy: no rule loads it        not seen 3/3                      control: ok
+  ctxreach-decoy.md (decoy)  tail   decoy: no rule loads it        not seen 3/3                      control: ok
+
+Instrument
+  decoy repeated without being read: 0/3 usable trials (must be 0)
+  stream events not understood: 0 of 21 (tolerated, counted)
+
+Agreement with map: 14 of 14 decided cells agree (CONFIRMED 14); 14 cells in all.
+
+Notes
+  Removed from the agent's environment (set by the Claude Code session that ran ctxreach): 26 variables.
+
+An echo proves the text was delivered to the model. It does not prove the model follows it.
+These results hold only for Claude Code 2.1.280 on win32 10.0.26200, on 2026-09-28, with this repository and prompt.
+Each fraction counts usable trials only; contaminated, failed and faulty trials are listed separately.
+Recording: test/recorded/nested-task  (re-score with: ctxreach probe --replay <dir>)

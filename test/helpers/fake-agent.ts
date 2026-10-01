@@ -2,8 +2,10 @@ import { existsSync, lstatSync, readdirSync, readFileSync, writeFileSync } from 
 import path from "node:path";
 import { CLAUDE_READ_TOOLS, claudeArgs } from "../../src/agents/claude/adapter.js";
 import { parseClaudeTranscript, redactClaudeTranscript } from "../../src/agents/claude/events.js";
+import { reduceHookLog } from "../../src/agents/claude/hook.js";
+import { CONTROL_RULE } from "../../src/probe/canary.js";
 import { sandboxOf, STRIP } from "../../src/probe/sandbox.js";
-import type { AgentAdapter, ProbeMode, RunRequest, ToolUse } from "../../src/probe/types.js";
+import type { AgentAdapter, ProbeMode, RunRequest, SessionSetup, ToolUse } from "../../src/probe/types.js";
 
 export interface FakeRun {
   workdir: string;
@@ -32,6 +34,30 @@ export interface FakeBehaviour {
   extraTokens?: string[];
   /** Stop without a result event. */
   unfinished?: boolean;
+  /** Do not repeat the positive control (default: it is repeated, as a working session does). */
+  skipControl?: boolean;
+  /** Reported model (default: the pin, else fake-model). */
+  model?: string;
+  /** Reported plugins (default: agents-md@builtin and telemetry@builtin). */
+  plugins?: string[];
+  /** Files (relative to the copy) the hook reports as loaded; only when the run has the hook. */
+  hookFires?: string[];
+  /** Absolute paths outside the copy the hook reports as loaded. */
+  hookOutside?: string[];
+  /** Report each hook event with another session's id. */
+  hookOtherSession?: boolean;
+  /** Write no hook log, although the run has the hook. */
+  dropHookLog?: boolean;
+  /** Arguments to report the agent was started with (default: the recorded ones). */
+  args?: string[];
+}
+
+/** How the fake's sessions are set up (see `AgentAdapter.session`); without it, the fake has no `session`. */
+export interface FakeSetup {
+  model?: { pin: string; from: string } | null;
+  hook?: boolean;
+  isolation?: "machine" | "clean";
+  settings?: Record<string, unknown>;
 }
 
 const TOKEN = /CTXR-[0-9a-f]{8}/g;
@@ -59,9 +85,22 @@ function tokensIn(file: string): string[] {
  * shape the real CLI produces, so the probe pipeline, the real parser and
  * the redaction all run without an agent.
  */
-export function fakeAgent(behaviour: (run: FakeRun) => FakeBehaviour): AgentAdapter & { runs: FakeRun[] } {
+export function fakeAgent(
+  behaviour: (run: FakeRun) => FakeBehaviour,
+  setup?: FakeSetup,
+): AgentAdapter & { runs: FakeRun[] } {
   const runs: FakeRun[] = [];
+  const sessionOf = (mode: ProbeMode): SessionSetup => ({
+    args: [...claudeArgs(mode), ...(setup?.model ? ["--model", setup.model.pin] : [])],
+    model: setup?.model ?? null,
+    hook: setup?.hook ?? false,
+    isolation: setup?.isolation ?? "machine",
+    ...(setup?.settings ? { settings: setup.settings } : {}),
+    setEnv: [],
+    notes: [],
+  });
   return {
+    ...(setup ? { session: (context: { mode: ProbeMode }) => sessionOf(context.mode) } : {}),
     id: "claude",
     title: "Fake Claude",
     readTools: CLAUDE_READ_TOOLS,
@@ -98,9 +137,15 @@ export function fakeAgent(behaviour: (run: FakeRun) => FakeBehaviour): AgentAdap
           subtype: "init",
           cwd: b.cwd ?? request.workdir,
           tools: b.toolsOffered ?? (request.mode === "recall" ? [] : [...CLAUDE_READ_TOOLS]),
-          model: "fake-model",
+          model: b.model ?? setup?.model?.pin ?? "fake-model",
           claude_code_version: b.version ?? "9.9.9",
+          session_id: "fake-session",
           slash_commands: ["personal-command"],
+          plugins: (b.plugins ?? ["agents-md@builtin", "telemetry@builtin"]).map((source) => ({
+            name: source.split("@")[0],
+            path: source.split("@")[1] ?? "",
+            source,
+          })),
           memory_paths: { auto: path.join(box.base, "memory") },
         },
       ];
@@ -113,7 +158,10 @@ export function fakeAgent(behaviour: (run: FakeRun) => FakeBehaviour): AgentAdap
         const content = existsSync(at(rel)) ? readFileSync(at(rel), "utf8") : "";
         lines.push({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: id, content }] } });
       });
+      // A working session repeats the positive control, a rule at the launch directory.
+      const control = path.join(request.workdir, ...CONTROL_RULE.split("/"));
       const said = [
+        ...(b.skipControl ? [] : tokensIn(control)),
         ...b.preloads.flatMap((rel) => tokensIn(at(rel))),
         ...(b.reads ?? []).flatMap((rel) => tokensIn(at(rel))),
         ...(b.extraTokens ?? []),
@@ -124,7 +172,40 @@ export function fakeAgent(behaviour: (run: FakeRun) => FakeBehaviour): AgentAdap
       if (!b.unfinished) lines.push({ type: "result", subtype: "success", is_error: false, result: text });
       const raw = lines.map((l) => JSON.stringify(l)).join("\n") + "\n";
       writeFileSync(request.transcriptPath, redactClaudeTranscript(raw, request.redactions));
-      return { exitCode: 0, timedOut: false, stderr: "", durationMs: 1, leftovers: [] };
+      let hooks;
+      if (request.hookLogPath !== undefined && !b.dropHookLog) {
+        // The events Claude Code sends the hook, reduced the way the real adapter reduces them.
+        const event = (file: string) =>
+          JSON.stringify({
+            session_id: b.hookOtherSession ? "another-session" : "fake-session",
+            transcript_path: path.join(box.base, "t.jsonl"),
+            cwd: request.workdir,
+            hook_event_name: "InstructionsLoaded",
+            file_path: file,
+            memory_type: "Project",
+            load_reason: "session_start",
+          });
+        const fires = [
+          ...(existsSync(control) && !b.skipControl ? [control] : []),
+          ...(b.hookFires ?? []).map(at),
+          ...(b.hookOutside ?? []),
+        ];
+        const reduced = reduceHookLog(fires.map(event).join("\n"), {
+          sessionId: "fake-session",
+          redactions: request.redactions,
+        });
+        writeFileSync(request.hookLogPath, reduced.text);
+        hooks = { log: path.basename(request.hookLogPath), events: reduced.events, invalid: reduced.invalid };
+      }
+      return {
+        exitCode: 0,
+        timedOut: false,
+        stderr: "",
+        durationMs: 1,
+        leftovers: [],
+        ...(setup ? { args: b.args ?? sessionOf(request.mode).args } : {}),
+        ...(hooks ? { hooks } : {}),
+      };
     },
     parse: parseClaudeTranscript,
     fileReads(call: ToolUse) {

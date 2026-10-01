@@ -7,7 +7,7 @@
  * HTML comments from instruction files.
  */
 import { randomBytes } from "node:crypto";
-import { lstatSync, readFileSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { canonicalPath, isInside } from "../util/fs.js";
 import { SafetyError, type Canary } from "./types.js";
@@ -97,4 +97,33 @@ export function plantDecoy(repo: string, relDir: string, tokens: TokenSource): C
   const body = "# Contributor notes\n\n- Keep functions short.\n- Prefer early returns.\n";
   writeFileSync(file, body, { flag: "wx" });
   return plantFile(repo, rel, tokens).map((c) => ({ ...c, decoy: true }));
+}
+
+/**
+ * The positive control: a rule file without `paths`, relative to the launch
+ * directory. Claude Code loads `.claude/rules/` files without `paths` at
+ * launch (docs: memory, "Organize rules with .claude/rules/"), and rules do
+ * not count towards switching AGENTS.md off, so planting one changes no
+ * other file's delivery. Every session must repeat its tokens: a session
+ * that does not cannot be trusted to repeat anything (bare mode, CLAUDE.md
+ * turned off, a model that does not list what it was given).
+ */
+export const CONTROL_RULE = ".claude/rules/ctxreach-control.md";
+
+/** Write the positive control at `relDir` of the copy and plant it. Refuses to overwrite a file of that name. */
+export function plantControl(repo: string, relDir: string, tokens: TokenSource): Canary[] {
+  const rel = relDir === "." ? CONTROL_RULE : `${relDir}/${CONTROL_RULE}`;
+  const file = path.join(repo, ...rel.split("/"));
+  if (!isInside(canonicalPath(path.dirname(path.dirname(path.dirname(file)))), canonicalPath(repo)))
+    throw new SafetyError(`refusing to write the positive control outside the temporary copy (${file})`);
+  mkdirSync(path.dirname(file), { recursive: true });
+  const body = "# Review notes\n\n- Keep commit messages under 72 characters.\n";
+  try {
+    writeFileSync(file, body, { flag: "wx" });
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST")
+      throw new SafetyError(`the repository already has ${rel}; ctxreach plants its positive control there`);
+    throw err;
+  }
+  return plantFile(repo, rel, tokens).map((c) => ({ ...c, control: true }));
 }

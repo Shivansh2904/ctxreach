@@ -7,7 +7,7 @@ import { parseClaudeTranscript } from "../src/agents/claude/events.js";
 import { readRecording } from "../src/probe/recording.js";
 import { scoreRecording, type ProbeResult } from "../src/probe/score.js";
 import { createCli } from "../src/program.js";
-import { observedText } from "../src/report/probe.js";
+import { observedText, probeJson, renderProbe } from "../src/report/probe.js";
 import { tempDir } from "./helpers/fixture.js";
 
 // Colours on, on every system (on Windows they are on anyway), so that only
@@ -80,7 +80,8 @@ describe("replaying the recorded real runs", () => {
       ...both("packages/web/AGENTS.md", "not seen 3/3", "CONFIRMED"),
       ...both("packages/api/ctxreach-decoy.md", "not seen 3/3", "control"),
     ]);
-    expect(r.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 3 } });
+    expect(r.instrument).toMatchObject({ fault: false, reasons: [], decoy: { echoed: 0, usable: 3 } });
+    expect(r.instrument.control.status).toBe("absent");
     expect(r.agreement).toMatchObject({ agree: 8, decided: 8, cells: 8 });
   });
 
@@ -187,7 +188,7 @@ describe("replaying the recorded real runs", () => {
       const r = scoreRecording(readRecording(dir), claudeAdapter());
       expect(r.trials.map((t) => t.status)).toEqual(["usable", "failed", "usable"]);
       expect(r.trials[1]?.reasons[0]).toBe("the agent stopped before its session started (no system/init event)");
-      expect(r.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
+      expect(r.instrument).toMatchObject({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
       expect(r.cells.every((c) => c.usable === 2)).toBe(true);
     }
   });
@@ -216,5 +217,67 @@ describe("replaying the recorded real runs", () => {
       "ctxreach probe  Claude Code 2.1.280, recall mode, launch dir packages/api  (demo-monorepo)",
     );
     expect(stdout).toContain("Agreement with map: 8 of 8 decided cells agree (CONFIRMED 8); 8 cells in all.");
+  });
+});
+
+// What `ctxreach probe --replay test/recorded/<name>` (--no-color, and --json)
+// printed for each recording before the positive control, the hook, the model
+// pin and the location report existed (main at 47e60a0, saved in
+// test/recorded/before-f5/). A replay today must say the same, line for line,
+// with only these lines added: the control marked absent, and the partial-echo
+// count, which the old recordings can be scored for.
+const RECORDINGS = [
+  "agents-recall",
+  "agents-task",
+  "ancestor-imports-recall",
+  "demo-api-recall",
+  "demo-root-task",
+  "nested-api-recall",
+  "nested-recall",
+  "nested-task",
+];
+const BEFORE = path.join(RECORDED, "before-f5");
+
+describe("replaying the eight recordings made before the positive control", () => {
+  it.each(RECORDINGS)("%s: the same report, with the control marked absent and the partial echoes counted", (name) => {
+    const r = replay(name);
+    r.recordingDir = `test/recorded/${name}`;
+    const now = renderProbe(r, { color: false }).split("\n");
+    const before = readFileSync(path.join(BEFORE, `${name}.txt`), "utf8").split("\n");
+    // Every line printed before is printed now, in the same order...
+    const added: string[] = [];
+    let i = 0;
+    for (const line of now) {
+      if (i < before.length && line === before[i]) i++;
+      else added.push(line);
+    }
+    expect(before.slice(i)).toEqual([]);
+    // ...and the only lines added are these two.
+    expect(added).toEqual([
+      "  positive control: absent (recorded before F5; so were the hook, the model pin and the copy's location)",
+      expect.stringMatching(/^ {2}partial echoes \(one of a file's two tokens repeated\): 0\/\d+ file-trials$/),
+    ]);
+    expect(r.instrument.fault).toBe(false);
+    expect(r.instrument.partial.k).toBe(0);
+  });
+
+  it.each(RECORDINGS)("%s: the same JSON, apart from the schema name and the fields v2 adds", (name) => {
+    const now = probeJson(replay(name)) as Record<string, unknown>;
+    expect(now.schema).toBe("ctxreach.probe/v2");
+    expect(now.session).toBeNull();
+    expect(now.location).toBeNull();
+    const instrument = now.instrument as Record<string, unknown>;
+    expect(instrument.control).toMatchObject({ status: "absent", fraction: "0/0" });
+    expect(instrument.hook).toBeNull();
+    // Take away what v2 adds; what is left is v1, value for value.
+    const v1 = {
+      ...now,
+      schema: "ctxreach.probe/v1",
+      cells: (now.cells as Record<string, unknown>[]).map(({ control, ...c }) => (expect(control).toBe(false), c)),
+      instrument: { fault: instrument.fault, reasons: instrument.reasons, decoy: instrument.decoy },
+    } as Record<string, unknown>;
+    delete v1.session;
+    delete v1.location;
+    expect(v1).toEqual(JSON.parse(readFileSync(path.join(BEFORE, `${name}.json`), "utf8")));
   });
 });

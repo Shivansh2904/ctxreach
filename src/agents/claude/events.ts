@@ -21,6 +21,12 @@ const Init = z.looseObject({
   tools: z.array(z.string()),
   model: z.string(),
   claude_code_version: z.string().optional(),
+  // Each plugin as Claude Code lists it; 2.1.280 gives `{name, path, source}`.
+  plugins: z
+    .array(z.looseObject({ name: z.string().optional(), path: z.string().optional(), source: z.string().optional() }))
+    .optional(),
+  // Written by redactClaudeTranscript in place of the non-built-in plugins.
+  other_plugins: z.looseObject({ count: z.number().int().nonnegative() }).optional(),
 });
 
 const TextBlock = z.looseObject({ type: z.literal("text"), text: z.string() });
@@ -142,6 +148,9 @@ export function parseClaudeTranscript(text: string): Transcript {
           out.model = init.model;
           out.toolsOffered = init.tools;
           if (init.claude_code_version !== undefined) out.cliVersion = init.claude_code_version;
+          if (init.plugins !== undefined)
+            out.plugins = init.plugins.map((p) => p.source ?? `${p.name ?? "?"}@${p.path ?? "?"}`);
+          if (init.other_plugins !== undefined) out.otherPlugins = init.other_plugins.count;
         }
         return;
       }
