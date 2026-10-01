@@ -1,6 +1,47 @@
 # Changelog
 
-## Unreleased
+## Unreleased (0.1.0)
+
+### Added on 2026-10-01
+
+- Version 0.1.0 in `package.json`, so `dist/cli.js --version` tells a build
+  of these sources from one of the earlier 0.0.0 ones (`study/prereg.mjs`
+  compares it with the tag's `package.json`).
+- `probe`, recording format v2, JSON schema `ctxreach.probe/v2`:
+  - A positive control: `.claude/rules/ctxreach-control.md`, a rule without
+    `paths` at the launch directory of the copy, whose two tokens every
+    usable trial must repeat; a missed control is an instrument fault
+    (exit 3). Its cells are shown and never counted in the agreement.
+  - An `InstructionsLoaded` hook, passed with `--settings` from the
+    sandbox's own directory, crossed with the tokens file by file; its log
+    is saved per trial. `--no-hook` turns it off.
+  - `--model` pins the model (else `ANTHROPIC_MODEL`, else `model` in the
+    `settings.json` of `--claude-home`), and each session must report it,
+    the recorded arguments and, from 2.1.277, the built-in `agents-md`
+    plugin.
+  - Refused: `CLAUDE_CODE_SIMPLE`, `CLAUDE_CODE_SAFE_MODE`,
+    `CLAUDE_CODE_DISABLE_CLAUDE_MDS` and `CLAUDE_CODE_DISABLE_ATTACHMENTS`
+    set, and `--bare`, `--safe-mode` or `--restricted` in the arguments
+    (exit 2).
+  - Where the copy was is reported (inside the home directory or not,
+    `~/.claude/CLAUDE.md`, instruction files above the copy), and partial
+    echoes are counted.
+  - `--isolation clean`, EXPERIMENTAL: drops the user's settings and the
+    instruction files above the copy; four of its parts are unverified.
+  - v1 recordings still replay: the eight in `test/recorded/` print two
+    more lines than before and nothing else changes
+    (`test/recorded/before-f5/`). `scripts/plant-probe-faults.mjs` has 117
+    plants.
+- `docs/probe.md`: the probe section of the README, moved there and brought
+  up to format v2; the README keeps a summary.
+- A results site, `site/index.html`, rendered from `site/data/` once the
+  study has run (`scripts/site-data.mjs`); the write-up generator
+  `scripts/writeup.mjs`; `scripts/plant-site-faults.mjs`. SAMPLE data for
+  its tests and previews is in `test/site-sample/`, made by the study's own
+  analysis from invented rows, and never in `site/data/`.
+- The README demo as an asciicast and an SVG recorded from real `map`
+  output (`scripts/make-cast.mjs`, `docs/demo.cast`, `docs/demo.svg`).
+- Talk and workshop material in `talk/` and `workshop/`.
 
 ### Added since 2026-09-30
 

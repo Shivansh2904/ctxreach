@@ -1,6 +1,6 @@
 {
   "name": "ctxreach",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shows which instruction files (AGENTS.md, CLAUDE.md and friends) reach which coding agent, from which directory, up to which byte.",
   "license": "MIT",
   "author": "Shivansh Mishra",

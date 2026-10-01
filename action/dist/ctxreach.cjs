@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 
 // package.json
-var version = "0.0.0";
+var version = "0.1.0";
 
 // src/report/annotations.ts
 var import_node_fs10 = require("node:fs");
