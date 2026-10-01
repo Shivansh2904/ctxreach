@@ -1,0 +1,1934 @@
+{
+  "schema": "ctxreach.study-known-answers/v1",
+  "about": "Check K1 (study/PREREG.md). Expected census outcomes for every fixture, derived by hand from docs/rules.md and the fixture files, never copied from the pipeline's output. Census semantics: a fresh machine (empty user homes, default settings; a fixture's home/ is ignored), Claude Code 2.1.285 modelled, launch directories of types 1-3. Every detector key must be present for every fixture. A knownDefects entry names a field whose rule-correct value differs from what map produces today; K1 still counts that fixture as failing.",
+  "claudeVersion": "2.1.285",
+  "fixtures": {
+    "claude-import-in-code-block": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "claude.words-not-import"]
+      },
+      "o6": {
+        "event": true
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "The Sourcegraph-style regex sees @AGENTS.md (inside a fence) and calls it an import; map does not. K3's regex and O1-file differ here by design."
+    },
+    "claude-import-in-code-block-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    },
+    "claude-import-outside-launch": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": false
+      },
+      "o1contentShingle": {
+        "eligible": false
+      },
+      "o1file": {
+        "eligible": false
+      },
+      "o2": {
+        "eligible": false
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "packages/api holds no instruction file, so the census never launches there; from the root the import is inside."
+    },
+    "claude-import-outside-launch-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": false
+      },
+      "o1contentShingle": {
+        "eligible": false
+      },
+      "o1file": {
+        "eligible": false
+      },
+      "o2": {
+        "eligible": false
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "claude-import-too-deep": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": false
+      },
+      "o1contentShingle": {
+        "eligible": false
+      },
+      "o1file": {
+        "eligible": false
+      },
+      "o2": {
+        "eligible": false
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.import-too-deep"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "Needs the reconstruction to fetch import targets five hops deep."
+    },
+    "claude-import-too-deep-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": false
+      },
+      "o1contentShingle": {
+        "eligible": false
+      },
+      "o1file": {
+        "eligible": false
+      },
+      "o2": {
+        "eligible": false
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "claude-local-shadows-agents": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "CLAUDE.local.md shadows AGENTS.md, but the regex version of O1-file (root CLAUDE.md only) cannot see it."
+    },
+    "claude-local-shadows-agents-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "claude-mode-in-project-settings": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "claude.mode-in-project-settings"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "claude-mode-in-project-settings-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "The twin's user settings are in home/, which the census ignores (a fresh machine has default settings), so for the census it is the trap without the project settings file."
+    },
+    "claude-root-shadows-package": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": false
+      },
+      "o1contentShingle": {
+        "eligible": false
+      },
+      "o1file": {
+        "eligible": false
+      },
+      "o2": {
+        "eligible": false
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "claude-root-shadows-package-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "claude-words-not-import": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "claude.words-not-import"]
+      },
+      "o6": {
+        "event": true
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "claude-words-not-import-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    },
+    "codex-empty-override": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["packages/api"],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-empty-override-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-nested-below-cwd": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-nested-below-cwd-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-over-cap": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["."],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["codex.cut"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-over-cap-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-override-wins": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-override-wins-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-project-config": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["."],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["codex.cut", "codex.project-config-ignored"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-project-config-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["."],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["codex.cut"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The twin's 64 KiB budget is in home/, which the census ignores, so the 40 KiB root file is cut as in the trap."
+    },
+    "codex-root-starves-nested": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["packages/api"],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-root-starves-nested-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-utf8-cut": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["."],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["codex.cut", "codex.mid-codepoint"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "codex-utf8-cut-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "event": false,
+        "share": 1
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": ["."],
+        "repoEvent": true
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["codex.cut"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The twin's cut lands on a character boundary, but the file is still over 32 KiB, so it is still cut (a P1 event)."
+    },
+    "census-o2-external-import": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "At root launch packages/api/AGENTS.md reaches Claude on read, through packages/api/CLAUDE.md's import, and both CLAUDE.md files import their AGENTS.md; so by the rules neither claude.agents-shadowed nor claude.words-not-import applies. See knownDefects."
+    },
+    "census-o2-package-claude": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    },
+    "census-o2-external-import-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "census-o7-symlink": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": [],
+        "rootWarnMap": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": true,
+        "links": 1
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "map sees the copy and warns claude.agents-shadowed (rootWarnMap); on a checkout that keeps the link no warning applies (rule claude.symlink), so the measurement's rootWarn is empty and O1-file is not an event."
+    },
+    "census-o7-symlink-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "claude.words-not-import"]
+      },
+      "o6": {
+        "event": true
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "census-o8-cjk": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": true
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "census-o8-cjk-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "census-copy-claude": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "census-copy-claude-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 1,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      }
+    },
+    "census-type3-import": {
+      "launch": {
+        "t2": [],
+        "t3": ["packages/web"]
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": [],
+        "eventT123": true,
+        "t3EventDirs": ["packages/web"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    },
+    "census-type3-import-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": [],
+        "eventT123": false,
+        "t3EventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    }
+  },
+  "knownDefects": {
+    "census-o2-external-import": {
+      "fields": ["o5.rootWarn", "o6.event"],
+      "found": "2026-09-30, first K1 run (37/38), confirmed with map --json on the fixture",
+      "what": "map (resolve.ts, rules claude.words and claude.agents-default) reports claude.words-not-import on CLAUDE.md and packages/api/CLAUDE.md, whose whole content is the line @AGENTS.md and whose import map itself marks delivered, and claude.agents-shadowed on packages/api/AGENTS.md, which the same map output shows arriving on read through that import. The words check fires whenever any AGENTS.md is lost, without checking whether this CLAUDE.md imports one; the shadow check ignores a second entry for the same file.",
+      "effect": "O5 and O6 are overstated in repositories where every package CLAUDE.md imports its AGENTS.md (the S-imp stratum's typical shape).",
+      "owner": "lane L1 (src/agents/claude/resolve.ts); remove this entry when the fix lands and K1 passes",
+      "awaiting": "the map-rules fix (lane L1)",
+      "awaitingNote": "not merged yet: K1 stays 38/39, and prereg.mjs stamp refuses, until it is; the answer and the check are not relaxed meanwhile"
+    }
+  }
+}
