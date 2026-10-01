@@ -1,8 +1,10 @@
 # Checking a prediction: `ctxreach probe`
 
-<!-- Moved from README.md (the section of the same name), unchanged but for its
-heading levels and links, so the README can stay short. Lane L3 owns the
-content; lane L6 owned the move. -->
+<!-- Moved from README.md (the section of the same name) so the README can
+stay short, then brought up to recording format v2: the positive control, the
+InstructionsLoaded hook, the model pin, the refused settings and the
+experimental clean isolation. How each works, with its sources, is in
+docs/rules.md, section "Probe". -->
 
 `map` predicts from documentation. `probe` checks the prediction against the
 agent itself:
@@ -16,21 +18,28 @@ agent itself:
    outside the repository, to nothing, or into a loop is left out and
    listed in the report.
 2. It plants a random token (`CTXR-` and 8 hex digits) on the first and last
-   line of every instruction file `map` knows about in the copy, and in a
-   decoy file that no documented rule loads.
+   line of every instruction file `map` knows about in the copy, in a decoy
+   file that no documented rule loads, and in a positive control: a rule
+   without `paths`, `.claude/rules/ctxreach-control.md` at the launch
+   directory, which Claude Code loads at launch.
 3. It asks `map` what the agent should receive, launched from the same
    directory in the copy, for the version of the agent that is installed.
-4. It runs the agent headless in the copy, once per trial, and saves each
-   transcript. It then deletes the copy.
-5. It works out, for each token, how it reached the agent, and compares that
-   with the prediction.
+4. It runs the agent headless in the copy, once per trial, with an
+   `InstructionsLoaded` hook installed through `--settings` (unless
+   `--no-hook`), and saves each transcript and hook log. It then deletes the
+   copy.
+5. It works out, for each token, how it reached the agent, compares that
+   with the prediction, and crosses it with what the hook reported.
 
 It only ever runs the agent inside its own temporary copy (a
 `ctxreach-probe-` directory inside the system temp directory, whose marker
 file says this run finished stripping it), checks the copy again right before
 each trial (nothing it strips, no link, and git using the copy's own `.git`),
-and refuses otherwise. It never runs with `--bare`, which skips
-`CLAUDE.md`. The exact flags, and why each is there, are in
+and refuses otherwise. It never runs the agent with `--bare`, `--safe-mode` or
+`--restricted`, and refuses to start while `CLAUDE_CODE_SIMPLE`,
+`CLAUDE_CODE_SAFE_MODE`, `CLAUDE_CODE_DISABLE_CLAUDE_MDS` or
+`CLAUDE_CODE_DISABLE_ATTACHMENTS` is set: each turns instruction files off, so
+a run would measure nothing. The exact flags, and why each is there, are in
 [docs/rules.md](rules.md#probe).
 
 Two modes:
@@ -64,19 +73,42 @@ MODELLED cells are not counted as agreeing or disagreeing.
 The probe also checks itself:
 
 - The decoy must be repeated in 0 of the usable trials, unless the agent
-  read it first. Any other echo of it, and any trial whose session was not
-  the one asked for (other tools, another directory, another version), marks
-  the run as an **instrument fault**, which voids its results, prints no
-  agreement figure (in `--json`, `agreement` is `null`), and exits with
-  status 3. A trial that stops before its session starts (for example, when
-  the agent is not logged in) is counted as failed, not as a fault.
+  read it first, and the positive control must be repeated, both its tokens,
+  in every usable trial (in task mode, a control the model opened itself
+  proves nothing either way, and is reported). A failed control, and any
+  trial whose session was not the one asked for (other tools, another
+  directory, another version, another model than the pin, other arguments,
+  or no built-in `agents-md` plugin from 2.1.277 on), marks the run as an
+  **instrument fault**, which voids its results, prints no agreement figure
+  (in `--json`, `agreement` is `null`), and exits with status 3. A trial that
+  stops before its session starts (for example, when the agent is not logged
+  in) is counted as failed, not as a fault. The control is an instrument
+  check: its cells are shown, never counted in the agreement with `map`.
+- The model is pinned: `--model`, else `ANTHROPIC_MODEL`, else `model` in the
+  user's `settings.json`. With none of them, no `--model` is passed and the
+  report says the model was not pinned.
+- The hook is a second instrument beside the tokens. Each planted file is
+  crossed with it in each usable trial, and the report gives how often each
+  instrument saw what the other did. The hook reporting the decoy, or a
+  missing hook log, is an instrument fault; a hook that stayed silent for the
+  positive control is warned about. `--no-hook` turns it off. Its form (a
+  command with an absolute Node path) has not yet been run against a real
+  Claude Code; if it does not fire, the report warns that it stayed silent
+  for the positive control.
+- It counts partial echoes, a file of which a trial repeated exactly one of
+  the two tokens.
+- It reports, as a condition of the run, whether the copy was inside the home
+  directory, whether `~/.claude/CLAUDE.md` exists, and the instruction files
+  in the directories above the copy, and warns when the first two are both
+  true (`~/.claude/CLAUDE.md` then counts as an ancestor's file).
 - It warns when nothing is predicted to load at launch, since then a broken
   instrument that saw nothing would look like agreement.
 - It counts stream events it does not recognise, instead of failing on them
   or hiding them.
 
 Every result is a fraction of usable trials, stamped with the agent's version,
-the OS and the date.
+the OS and the date. Recordings are format v2; v1 recordings, such as the
+eight in `test/recorded/`, still replay.
 
 ## A real run
 
@@ -91,8 +123,11 @@ node dist/cli.js probe --agent claude --repo examples/demo-monorepo --from examp
 That run's transcripts are in `test/recorded/demo-api-recall`. The report
 below was printed from them with
 `node dist/cli.js probe --replay test/recorded/demo-api-recall --no-color`,
-which runs no agent and prints the same report as the run itself, except that
-the last line shows the recording's path relative to the current directory:
+which runs no agent. It is the report the run itself printed, with two more
+lines under Instrument, for checks added after the run (the positive control,
+which the recording predates along with the hook, the model pin and the
+record of where the copy was, and the partial-echo count); the last line
+shows the recording's path relative to the current directory:
 
 ```text
 ctxreach probe  Claude Code 2.1.280, recall mode, launch dir packages/api  (demo-monorepo)
@@ -113,7 +148,9 @@ ctxreach probe  Claude Code 2.1.280, recall mode, launch dir packages/api  (demo
 
 Instrument
   decoy repeated without being read: 0/3 usable trials (must be 0)
+  positive control: absent (recorded before F5; so were the hook, the model pin and the copy's location)
   stream events not understood: 0 of 12 (tolerated, counted)
+  partial echoes (one of a file's two tokens repeated): 0/3 file-trials
 
 Agreement with map: 8 of 8 decided cells agree (CONFIRMED 8); 8 cells in all.
 
@@ -146,10 +183,19 @@ same reason:
   `packages/api` was loaded in 0/2 trials in each run (`nested-api-recall`,
   `ancestor-imports-recall`). In `ancestor-imports-recall` the same
   `CLAUDE.md`'s import of a file inside `packages/api` was loaded in 2/2.
-  `map` says such an import "needs approval"; the documentation describes
-  the approval dialog, but not what a headless run, which shows no dialog,
-  does. Verdict: MISSED (2 of the 10 decided cells in `nested-api-recall`, 2
-  of the 6 in `ancestor-imports-recall`).
+  When these runs were recorded, `map` said such an import "needs
+  approval"; the documentation describes the approval dialog, but not what
+  a headless run, which shows no dialog, does. Verdict: MISSED (2 of the 10
+  decided cells in `nested-api-recall`, 2 of the 6 in
+  `ancestor-imports-recall`).
+
+  `map` now predicts such an import **not loaded: no approval recorded**.
+  `claude -p`, the Agent SDK and CI show no approval dialog, so an import
+  from outside the launch directory stays out unless `~/.claude.json`
+  already records an approval of external imports for the project (`map`
+  reads that one key and nothing else from the file). A recording keeps the
+  prediction it was scored against, so these two runs still replay as
+  MISSED.
 
 One more thing was seen that `map` does not model, so it is not counted
 either way:
@@ -176,13 +222,14 @@ probe is how a gap like this gets noticed.
 - Results hold only for the stamped version, OS, repository and prompt.
   Agents change their loading rules often; run it again after an upgrade.
 - It supports Claude Code only. Codex needs its own adapter, which does not
-  exist yet (`--agent codex` says so and exits).
+  exist yet (`--agent codex` says so and exits). For Codex, `verify`
+  compares `map` with the prompt Codex itself renders.
 - It runs your installed agent with your login, and each trial is a real,
   billed request. By Claude Code's own estimate, the 20 recorded trials cost
   US$1.03 in all, from US$0.002 to US$0.13 each.
-- It has no second instrument yet: it does not install an
-  `InstructionsLoaded` hook, so the hook's blind spot for `AGENTS.md`
-  (rule `claude.hook-blind`) is not measured.
+- The hook now runs beside the tokens, but none of the recorded runs had it,
+  so the hook's blind spot for `AGENTS.md` (rule `claude.hook-blind`) is not
+  measured.
 - A rule with `paths` is CONFIRMED when it arrives after a read and is never
   preloaded. When it does not arrive in task mode, the cell is UNTESTED, not
   MISSED: `map` does not work out which files match its `paths`, so the probe
@@ -193,17 +240,22 @@ probe is how a gap like this gets noticed.
   file is preloaded comes from a recall run from the same directory; the
   recorded task runs with on-read cells (`nested-task`, `agents-task`) are
   paired with one (`nested-recall`, `agents-recall`).
-- Your own Claude Code configuration still applies. The copy loses the
-  repository's hooks, skills and plugins, but the hooks, plugins and skills
-  in your `~/.claude` (and any managed settings) run in every trial, as in
-  any session, and your own instruction files there reach the agent too
-  (the report lists those `map` finds).
+- Your own Claude Code configuration still applies (`--isolation machine`,
+  the default). The copy loses the repository's hooks, skills and plugins,
+  but the hooks, plugins and skills in your `~/.claude` (and any managed
+  settings) run in every trial, as in any session, and your own instruction
+  files there reach the agent too (the report lists those `map` finds).
+  `--isolation clean` drops your settings and the instruction files above the
+  copy, to show what the repository alone delivers; it is **EXPERIMENTAL**:
+  four of its parts are unverified, every report of a clean run says so, and
+  it needs a model pin.
 - Links are copied as what they point to, so a `CLAUDE.md` that is a link
   to `AGENTS.md` reaches the agent as two separate files, and rule
   `claude.symlink` (the content delivered once) is not measured.
 - The copy lives in the system temp directory, so instruction files in that
-  directory's ancestors would reach the agent too. The report lists any that
-  `map` finds.
+  directory's ancestors would reach the agent too. The report lists any it
+  finds. To run the copy elsewhere, point `TEMP`/`TMP` (`TMPDIR` elsewhere
+  than Windows) outside the home directory.
 - Saved transcripts have the temporary path, your home directory, your
   command, skill, agent and plugin lists and rate-limit details removed.
   Read them before sharing: they still contain the agent's messages and the
@@ -219,12 +271,14 @@ probe is how a gap like this gets noticed.
 | `--trials <n>` | Runs, 1 to 10 (default 3). |
 | `--save <dir>` | Where to record the run (default: a new directory under the system temp directory). Must not be inside the repository. |
 | `--replay <dir>` | Score a saved run instead of running the agent. |
-| `--json` | JSON output, schema `ctxreach.probe/v1`. |
+| `--json` | JSON output, schema `ctxreach.probe/v2`. |
 | `--timeout <s>` | Time limit per run (default 300). |
+| `--model <id>` | The model to pin, a full id or a one-word alias such as `opus`; every session must report it (default: `ANTHROPIC_MODEL`, then `model` in the user's `settings.json`). |
+| `--isolation <isolation>` | `machine` (default): your own settings apply. `clean`: **EXPERIMENTAL**, see above. |
+| `--no-hook` | Do not install the `InstructionsLoaded` hook. |
 | `--claude-bin <path>` | The `claude` executable (default: found in a fully qualified `PATH` directory: absolute, and on Windows with its drive). A relative path is taken from the current directory; one inside the temporary copy is refused. |
-| `--claude-home <dir>` | Claude Code user directory `map` reads for the prediction. |
+| `--claude-home <dir>` | Claude Code user directory `map` reads for the prediction, and whose `settings.json` may name the model. |
 
 Exit status: 0 when at least one trial was usable and the instrument checks
-passed, 1 when no trial was usable, 2 for a usage or safety error, 3 for an
-instrument fault.
-
+passed, 1 when no trial was usable, 2 for a usage or safety error (a refused
+setting included), 3 for an instrument fault.
