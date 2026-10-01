@@ -1,0 +1,951 @@
+{
+  "schema": "ctxreach.conformance/v1",
+  "date": "2026-01-01T00:00:00.000Z",
+  "plantedPass": [
+    {
+      "agent": "claude",
+      "fixture": "claude-local-shadows-agents-twin",
+      "launchDir": ".",
+      "flags": ["--claude-mode", "claude-md"],
+      "status": 1,
+      "disagreed": true
+    }
+  ],
+  "records": [
+    {
+      "fixture": "claude-import-in-code-block",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-import-in-code-block-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-import-outside-launch",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-import-outside-launch",
+      "launchDir": "packages/api",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "fault",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": ["sample fault"]
+    },
+    {
+      "fixture": "claude-import-outside-launch-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["packages/api/AGENTS.md"],
+      "verdict": "disagree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-import-too-deep",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["packages/api/AGENTS.md"],
+      "verdict": "disagree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-import-too-deep-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-local-shadows-agents",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-local-shadows-agents-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-mode-in-project-settings",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-mode-in-project-settings-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-root-shadows-package",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-root-shadows-package",
+      "launchDir": "packages/api",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-root-shadows-package-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-root-shadows-package-twin",
+      "launchDir": "packages/api",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-words-not-import",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "claude-words-not-import-twin",
+      "launchDir": ".",
+      "agent": "claude",
+      "version": "0.0.0-sample",
+      "os": "linux sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "capture",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": null,
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    }
+  ]
+}

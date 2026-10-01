@@ -1,0 +1,1807 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>ctxreach Results</title>
+    <meta
+      name="description"
+      content="Which instruction files reach Codex and Claude Code: a pre-registered census of public repositories and lab cells. Every number on the page is read from data/results.json."
+    />
+    <meta property="og:title" content="Same repo, different instructions" />
+    <meta
+      property="og:description"
+      content="Which instruction files reach Codex and Claude Code, measured on public repositories and in pre-registered lab cells."
+    />
+    <style>
+      /*
+       * Layout: one reading column (about 68 characters) for prose; tables run
+       * wider, each in its own horizontal scroller. Numbers are set as
+       * instrument readouts. The page makes no third-party request: system
+       * font stacks only, and it fetches nothing but its own data/ files.
+       */
+      :root {
+        --paper: #f4f6f3;
+        --sheet: #ffffff;
+        --ink: #18211e;
+        --muted: #56625e;
+        --rule: #d6dcd7;
+        --accent: #1d5a86;
+        --accent-soft: #e4edf4;
+        --ok: #2b7549;
+        --ok-soft: #e1f0e6;
+        --warn: #8f5b0c;
+        --warn-soft: #f6ead4;
+        --bad: #a83232;
+        --bad-soft: #f6e0df;
+        --sample: #a3275f;
+        --sample-soft: #f8e2ec;
+        --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia,
+          serif;
+        --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+        --font-data: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        --measure: 68ch;
+        --step--1: 0.8125rem;
+        --step-0: 1rem;
+        --step-1: 1.1875rem;
+        --step-2: 1.5rem;
+        --step-3: 2.125rem;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --paper: #101614;
+          --sheet: #161d1b;
+          --ink: #e3e9e6;
+          --muted: #9ba8a3;
+          --rule: #2b3532;
+          --accent: #86bbe2;
+          --accent-soft: #19293a;
+          --ok: #77c799;
+          --ok-soft: #16291e;
+          --warn: #e4ac56;
+          --warn-soft: #2d2412;
+          --bad: #f08c86;
+          --bad-soft: #331c1b;
+          --sample: #f27fb6;
+          --sample-soft: #351a28;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --paper: #101614;
+        --sheet: #161d1b;
+        --ink: #e3e9e6;
+        --muted: #9ba8a3;
+        --rule: #2b3532;
+        --accent: #86bbe2;
+        --accent-soft: #19293a;
+        --ok: #77c799;
+        --ok-soft: #16291e;
+        --warn: #e4ac56;
+        --warn-soft: #2d2412;
+        --bad: #f08c86;
+        --bad-soft: #331c1b;
+        --sample: #f27fb6;
+        --sample-soft: #351a28;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding-inline: 16px;
+        padding-block: 0 3rem;
+        background: var(--paper);
+        color: var(--ink);
+        font: var(--step-0) / 1.6 var(--font-body);
+        -webkit-text-size-adjust: 100%;
+      }
+      .wrap {
+        max-width: 72rem;
+        margin-inline: auto;
+        min-width: 0;
+      }
+      a {
+        color: var(--accent);
+        text-underline-offset: 0.18em;
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
+      code,
+      pre,
+      .n {
+        font-family: var(--font-data);
+      }
+      code {
+        font-size: 0.9em;
+        overflow-wrap: anywhere;
+      }
+      .skip {
+        position: absolute;
+        left: -999px;
+      }
+      .skip:focus {
+        left: 16px;
+        top: 8px;
+        background: var(--sheet);
+        padding: 0.4rem 0.6rem;
+      }
+      .masthead {
+        padding-block: 2.5rem 1.5rem;
+        border-bottom: 1px solid var(--rule);
+        display: grid;
+        gap: 0.5rem;
+      }
+      .masthead .tool {
+        font: 600 var(--step--1) / 1.2 var(--font-data);
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 0;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-display);
+        font-weight: 600;
+        line-height: 1.2;
+        text-wrap: balance;
+        margin: 0;
+      }
+      h1 {
+        font-size: var(--step-3);
+      }
+      h2 {
+        font-size: var(--step-2);
+      }
+      h3 {
+        font-size: var(--step-1);
+      }
+      .dek {
+        max-width: var(--measure);
+        margin: 0;
+        color: var(--muted);
+      }
+      main {
+        display: grid;
+        gap: 3rem;
+        padding-block: 2rem;
+      }
+      section {
+        display: grid;
+        gap: 1rem;
+        min-width: 0;
+        scroll-margin-top: 4.5rem;
+      }
+      section > *,
+      article > *,
+      details > * {
+        min-width: 0;
+      }
+      article {
+        display: grid;
+        gap: 0.75rem;
+        min-width: 0;
+      }
+      section > p,
+      section > ul,
+      section > ol,
+      .prose {
+        max-width: var(--measure);
+        margin: 0;
+      }
+      .eyebrow {
+        font: 600 var(--step--1) / 1.2 var(--font-body);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0;
+      }
+      .lede {
+        font-family: var(--font-display);
+        font-size: clamp(1.3rem, 1.6vw + 0.95rem, 2rem);
+        line-height: 1.35;
+        max-width: 40ch;
+        margin: 0;
+        text-wrap: pretty;
+      }
+      .lede .n {
+        font-size: 0.8em;
+      }
+      .n {
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 3px;
+        padding: 0 0.2em;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+      }
+      td .n,
+      th .n,
+      pre .n,
+      .n.t {
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+      .n.t {
+        font-family: inherit;
+      }
+      .note {
+        color: var(--muted);
+        font-size: var(--step--1);
+      }
+      .finding {
+        scroll-margin-top: 4.5rem;
+      }
+      .anchor {
+        color: var(--muted);
+        text-decoration: none;
+        margin-left: 0.35em;
+        font-family: var(--font-data);
+        font-weight: 400;
+        opacity: 0.45;
+      }
+      .finding:hover .anchor,
+      .anchor:focus-visible,
+      :target .anchor {
+        opacity: 1;
+      }
+      :target {
+        background: var(--accent-soft);
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        background: var(--sheet);
+        max-width: 100%;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.9rem;
+      }
+      caption {
+        text-align: left;
+        padding: 0.75rem 0.75rem 0.25rem;
+        color: var(--muted);
+        font-size: var(--step--1);
+      }
+      th,
+      td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--rule);
+        text-align: left;
+        vertical-align: top;
+      }
+      thead th {
+        font-size: var(--step--1);
+        color: var(--muted);
+        font-weight: 600;
+        background: var(--paper);
+      }
+      tbody tr:last-child td,
+      tbody tr:last-child th {
+        border-bottom: none;
+      }
+      tr.group th {
+        background: var(--paper);
+        font-weight: 600;
+      }
+      td.num,
+      .num {
+        font-family: var(--font-data);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      td.cmd {
+        min-width: 16rem;
+      }
+      tbody th[scope="row"] {
+        min-width: 13rem;
+      }
+      .sub {
+        display: block;
+        color: var(--muted);
+        font-size: var(--step--1);
+        font-weight: 400;
+      }
+      .pill {
+        display: inline-block;
+        font: 600 0.7rem/1 var(--font-body);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0.3em 0.55em;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        white-space: nowrap;
+        vertical-align: 0.1em;
+      }
+      .pill-ok {
+        color: var(--ok);
+        background: var(--ok-soft);
+      }
+      .pill-warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+      .pill-bad {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
+      .pill-none {
+        color: var(--muted);
+        background: transparent;
+      }
+      td.agree {
+        background: var(--ok-soft);
+      }
+      td.disagree {
+        background: var(--bad-soft);
+      }
+      td.fault {
+        background: var(--warn-soft);
+      }
+      pre {
+        margin: 0;
+        padding: 0.75rem;
+        overflow-x: auto;
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      dl.facts {
+        display: grid;
+        grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
+        gap: 0.35rem 1rem;
+        margin: 0;
+        max-width: var(--measure);
+      }
+      dl.facts dt {
+        color: var(--muted);
+      }
+      dl.facts dd {
+        margin: 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      details > summary {
+        cursor: pointer;
+        color: var(--accent);
+      }
+      .banner {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        z-index: 2;
+        margin-inline: -16px;
+        padding: 0.45rem 16px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.15rem 1rem;
+        font-size: var(--step--1);
+        line-height: 1.45;
+      }
+      .banner p {
+        margin: 0;
+        max-width: var(--measure);
+      }
+      .banner details p {
+        margin-top: 0.35rem;
+      }
+      html.is-sample section,
+      html.is-sample .finding {
+        scroll-margin-top: 6.5rem;
+      }
+      .banner strong {
+        font-family: var(--font-data);
+        letter-spacing: 0.06em;
+      }
+      .banner-sample {
+        background: var(--sample-soft);
+        border-block: 2px solid var(--sample);
+      }
+      .banner-sample strong {
+        color: var(--sample);
+      }
+      .banner-pilot {
+        background: var(--warn-soft);
+        border-block: 2px solid var(--warn);
+      }
+      .banner-pilot strong {
+        color: var(--warn);
+      }
+      html.is-sample .table-wrap,
+      html.is-sample .lede {
+        background-image: repeating-linear-gradient(-45deg, transparent 0 34px, var(--sample-soft) 34px 35px);
+      }
+      .empty {
+        padding: 1rem;
+        border: 1px dashed var(--rule);
+        border-radius: 6px;
+        color: var(--muted);
+        max-width: var(--measure);
+        margin: 0;
+      }
+      footer {
+        border-top: 1px solid var(--rule);
+        padding-block: 1.5rem;
+        color: var(--muted);
+        font-size: var(--step--1);
+      }
+      footer p {
+        max-width: var(--measure);
+        margin: 0 0 0.5rem;
+      }
+      @media (max-width: 40rem) {
+        th,
+        td {
+          padding: 0.45rem 0.55rem;
+        }
+        dl.facts {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        dl.facts dd {
+          margin-bottom: 0.5rem;
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        html {
+          scroll-behavior: smooth;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#site">Skip to the results</a>
+    <div class="wrap">
+      <header class="masthead">
+        <p class="tool">ctxreach</p>
+        <h1>Same repo, different instructions</h1>
+        <p class="dek">
+          Which instruction files (<code>AGENTS.md</code>, <code>CLAUDE.md</code> and the files they import) reach
+          Codex and Claude Code, measured on public repositories and in pre-registered lab cells. Every number below is
+          read from the files in <code>data/</code> when the page loads.
+        </p>
+      </header>
+      <main id="site" aria-live="polite">
+        <p class="empty">Reading <code>data/results.json</code>.</p>
+      </main>
+      <noscript>
+        <p class="empty">
+          This page draws its tables from <code>data/results.json</code> with a script. Without scripts, read the data
+          files directly: <a href="data/results.json">results.json</a>,
+          <a href="data/cells-results.json">cells-results.json</a>,
+          <a href="data/provenance.json">provenance.json</a>.
+        </p>
+      </noscript>
+      <footer>
+        <p>
+          No number on this page is typed into it. Each one is rendered from a field of a data file, and the element
+          that shows it names the file and the field (<code>data-src</code>). A test in the repository,
+          <code>test/site.test.ts</code>, fails when any number on the page cannot be traced that way.
+        </p>
+        <p>
+          Source, data and recordings:
+          <a href="https://github.com/Shivansh2904/ctxreach">the ctxreach repository</a>.
+        </p>
+      </footer>
+    </div>
+
+    <script id="ctxr-core">
+      // The page's whole logic, as pure functions of the loaded data. The
+      // browser runs it below; scripts/writeup.mjs and test/site.test.ts run
+      // this same script in node:vm. Nothing here reads the DOM or the network.
+      (function (root) {
+        "use strict";
+        const RESULTS = "results.json";
+        const CELLS = "cells-results.json";
+        const PROV = "provenance.json";
+        const CONF_DIR = "conformance/latest/";
+        const CONFORMANCE_FILES = [];
+        for (const [agent, cols] of [
+          ["codex", ["pinned", "latest"]],
+          ["claude", ["latest"]],
+        ])
+          for (const col of cols)
+            for (const os of ["Linux", "Windows", "macOS"])
+              CONFORMANCE_FILES.push(CONF_DIR + "results-" + agent + "-" + col + "-" + os + ".json");
+        const AGREEING = ["confirmed", "discovered"];
+        const DECIDED = ["confirmed", "discovered", "missed", "extra"];
+        const SECTION_ORDER = [
+          "headline",
+          "checks",
+          "matrix",
+          "census",
+          "prereg-vs-found",
+          "method",
+          "credits",
+          "reproduce",
+        ];
+
+        const esc = (s) =>
+          String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        const group = (x) => String(Math.trunc(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        const pct = (x) => (x * 100).toFixed(1) + "%";
+        /** Links from the data: https addresses, or paths relative to the page; nothing else (no javascript: or data:). */
+        const safeHref = (u) =>
+          typeof u === "string" && (/^https:\/\//.test(u) || /^[A-Za-z0-9._~-][A-Za-z0-9._~\/-]*$/.test(u));
+        const slug = (s) =>
+          String(s)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "");
+
+        /** How a value is printed. test/site.test.ts re-implements each from this list, independently. */
+        const FORMATS = {
+          int: (v) => group(v),
+          text: (v) => String(v),
+          date: (v) => String(v).slice(0, 10),
+          datetime: (v) => String(v).slice(0, 10) + " " + String(v).slice(11, 16) + " UTC",
+          pct: (v) => pct(v),
+          frac: (v) => group(v.k) + "/" + group(v.n),
+          wilson: (v) =>
+            v.n === 0
+              ? group(v.k) + "/" + group(v.n) + " (no eligible units)"
+              : group(v.k) + "/" + group(v.n) + " (" + pct(v.p) + ", [" + pct(v.lo) + ", " + pct(v.hi) + "])",
+          arm: (v) =>
+            v.n === 0
+              ? group(v.k) + "/" + group(v.n)
+              : group(v.k) + "/" + group(v.n) + " [" + pct(v.lo) + ", " + pct(v.hi) + "]",
+          absent: (v) => group(v.n - v.k) + "/" + group(v.n),
+          sha12: (v) => String(v).slice(0, 12),
+          len: (v) => group(v.length),
+          agree: (cells) =>
+            group(cells.filter((c) => AGREEING.includes(c.verdict)).length) +
+            "/" +
+            group(cells.filter((c) => DECIDED.includes(c.verdict)).length),
+          bytes: (kb) => {
+            const v = Object.values(kb);
+            return group(v.filter((b) => b.verdict === "EXACT").length) + "/" + group(v.length);
+          },
+        };
+
+        const pointer = (path) =>
+          "/" +
+          path
+            .map((s) =>
+              String(s)
+                .replace(/~/g, "~0")
+                .replace(/\//g, "~1"),
+            )
+            .join("/");
+
+        /** Inline markup for static prose: `code`, [text](url), **strong**; everything else escaped. */
+        function inline(s) {
+          return esc(s)
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+        }
+
+        /**
+         * A rendering context. `n(file, path, fmt)` prints the value at
+         * file#path: in "html" as a span naming its source, in "traced" with
+         * markers the test reads, in "plain" as the bare text.
+         */
+        function context(data, mode) {
+          const files = (data && data.files) || {};
+          const get = (file, path) =>
+            path.reduce((o, k) => (o === undefined || o === null ? undefined : o[k]), files[file]);
+          function n(file, path, fmt) {
+            const v = get(file, path);
+            if (v === undefined || v === null) throw new Error("no value at " + file + "#" + pointer(path));
+            const text =
+              fmt === "key" ? String(path[path.length - 1]) : fmt === "file" ? String(file) : FORMATS[fmt](v);
+            const src = file + "#" + pointer(path);
+            // Words from the data (a title, a sentence) read as prose; values (counts, versions, hashes) as readouts.
+            const cls = fmt === "text" && /\s/.test(text) ? "n t" : "n";
+            if (mode === "html")
+              return (
+                '<span class="' + cls + '" data-src="' + esc(src) + '" data-fmt="' + fmt + '">' + esc(text) + "</span>"
+              );
+            if (mode === "traced") return "⟦" + src + "|" + fmt + "⟧" + text + "⟦/⟧";
+            return text;
+          }
+          const t = (s) => (mode === "html" ? inline(s) : s);
+          return { files, get, n, t, mode, has: (f) => files[f] !== undefined && files[f] !== null };
+        }
+
+        // ---- data helpers --------------------------------------------------
+
+        function outcomeIndex(files, frame, id, variant) {
+          const r = files[RESULTS];
+          if (!r || !Array.isArray(r.outcomes)) return -1;
+          return r.outcomes.findIndex((o) => o.frame === frame && o.id === id && o.variant === (variant || "raw"));
+        }
+        function cellIndex(files, id) {
+          const c = files[CELLS];
+          if (!c || !Array.isArray(c.results)) return -1;
+          return c.results.findIndex((r) => r.cell === id);
+        }
+        /** Path to an arm's observable in cells-results.json, or undefined. */
+        function armPath(files, cell, arm, key) {
+          const i = cellIndex(files, cell);
+          if (i < 0) return undefined;
+          const a = files[CELLS].results[i].arms && files[CELLS].results[i].arms[arm];
+          if (!a || !a.observe || !a.observe[key] || !(a.observe[key].n > 0)) return undefined;
+          return ["results", i, "arms", arm, "observe", key];
+        }
+        /** Loaded conformance files, the pinned column before latest, then by name. */
+        function conformanceFiles(files) {
+          const rank = (f) => (/-pinned-/.test(f) ? 0 : /-latest-/.test(f) ? 1 : 2);
+          return Object.keys(files)
+            .filter((f) => f.indexOf(CONF_DIR) === 0 && files[f] && Array.isArray(files[f].records))
+            .sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0));
+        }
+        function provenance(files) {
+          return files[PROV] || {};
+        }
+
+        /** Whether the loaded data is study data, pilot data, sample (made-up) data, or none. Fails towards a banner. */
+        function dataState(files) {
+          const out = { sample: false, pilot: false, none: true, why: [] };
+          const r = files[RESULTS];
+          const cells = files[CELLS];
+          const prov = files[PROV];
+          if (r) {
+            out.none = false;
+            if (r.label === "pilot") out.pilot = true;
+            else if (r.label !== "study") {
+              out.sample = true;
+              out.why.push(["results.json", ["label"]]);
+            }
+          }
+          if (cells) {
+            out.none = false;
+            if (cells.dryRun !== false) {
+              out.sample = true;
+              out.why.push(["cells-results.json", ["dryRun"]]);
+            }
+          }
+          if (prov) {
+            out.none = false;
+            if (prov.label === "pilot") out.pilot = true;
+            else if (prov.label !== "study") {
+              out.sample = true;
+              out.why.push(["provenance.json", ["label"]]);
+            }
+          }
+          for (const f of conformanceFiles(files)) {
+            out.none = false;
+            if (files[f].records.some((rec) => /sample|fake/i.test(String(rec.version || "")))) {
+              out.sample = true;
+              out.why.push([f, ["records", 0, "version"]]);
+            }
+          }
+          return out;
+        }
+
+        // ---- shared prose: the headline and the template slots --------------
+
+        const VERDICT_WORDS = {
+          confirmed: "confirmed",
+          refuted: "refuted",
+          inconclusive: "inconclusive",
+          "not-confirmed": "not confirmed",
+          insufficient: "insufficient trials",
+          "precondition-failed": "precondition failed, not run as registered",
+          reported: "reported, no rule",
+          hit: "hit",
+          miss: "miss",
+          overlaps: "overlaps the range",
+          "no-data": "no data",
+        };
+        const verdictWord = (v) => VERDICT_WORDS[v] || "unknown verdict";
+        const verdictKind = (v) =>
+          ({ confirmed: "ok", hit: "ok", refuted: "bad", miss: "bad" })[v] ||
+          (v === "inconclusive" || v === "overlaps" || v === "not-confirmed" ? "warn" : "none");
+
+        /** The pre-registered headline sentence (study/PREREG.md section 0), numbers from the data. */
+        function headline(c) {
+          const o1 = outcomeIndex(c.files, "S-main", "O1-content", "raw");
+          const p1 = outcomeIndex(c.files, "S-main", "P1-pairs", "raw");
+          const a1 = armPath(c.files, "B2", "A1", "agents");
+          const a2 = armPath(c.files, "B2", "A2", "agents");
+          const b2 = cellIndex(c.files, "B2");
+          const verdict = b2 >= 0 ? c.files[CELLS].results[b2].verdict : undefined;
+          let s = c.t("Same repo, different instructions. In ");
+          s += o1 >= 0 ? c.n(RESULTS, ["outcomes", o1], "wilson") : c.t("k/n (x%, [lo, hi])");
+          s += c.t(
+            " of public repositories with an AGENTS.md, Claude Code starts with under half of that file's text; in ",
+          );
+          s += p1 >= 0 ? c.n(RESULTS, ["outcomes", p1], "frac") : c.t("j/m");
+          s += c.t(
+            " launch directories Codex cuts or drops a chain file, as rendered by Codex's own `debug prompt-input`. And a personal `~/.claude/CLAUDE.md` switched AGENTS.md off in ",
+          );
+          s += a1 ? c.n(CELLS, a1, "absent") : c.t("a/n");
+          s += c.t(" vs ");
+          s += a2 ? c.n(CELLS, a2, "absent") : c.t("b/n");
+          if (verdict === undefined || verdict === "confirmed")
+            s += c.t(" runs depending only on where the repository lives.");
+          else s += c.t(" runs (cell B2: " + verdictWord(verdict) + ").");
+          return s;
+        }
+
+        /** Named values for templates (scripts/writeup.mjs): each prints from the data, or says it is missing. */
+        function slots(c) {
+          const missing = c.t("(not yet measured)");
+          const out = {};
+          const prov = provenance(c.files);
+          const oc = (frame, id, fmt) => {
+            const i = outcomeIndex(c.files, frame, id, "raw");
+            return i >= 0 ? c.n(RESULTS, ["outcomes", i], fmt || "wilson") : missing;
+          };
+          const hyp = (id) => {
+            const r = c.files[RESULTS];
+            const i = r && Array.isArray(r.hypotheses) ? r.hypotheses.findIndex((h) => h.id === id) : -1;
+            return i >= 0 ? c.t(verdictWord(r.hypotheses[i].verdict)) : missing;
+          };
+          const cellVerdict = (id) => {
+            const i = cellIndex(c.files, id);
+            return i >= 0 ? c.t(verdictWord(c.files[CELLS].results[i].verdict)) : missing;
+          };
+          const arm = (cell, a, key, fmt) => {
+            const p = armPath(c.files, cell, a, key);
+            return p ? c.n(CELLS, p, fmt) : missing;
+          };
+          out.headline = headline(c);
+          out.title =
+            outcomeIndex(c.files, "S-main", "O1-content", "raw") >= 0
+              ? c.t("Same repo, different instructions: in ") +
+                oc("S-main", "O1-content", "frac") +
+                c.t(" public repositories with an AGENTS.md, Claude Code starts with under half of its text")
+              : c.t("Same repo, different instructions");
+          out.o1 = oc("S-main", "O1-content");
+          out.o1file = oc("S-main", "O1-file");
+          out.o2 = oc("S-imp", "O2");
+          out.p1pairs = oc("S-main", "P1-pairs", "frac");
+          out.p1repos = oc("S-main", "P1-repos");
+          out.h1 = hyp("H1");
+          out.h1b = hyp("H1b");
+          out.h2 = hyp("H2");
+          out.h3pairs = hyp("H3-pairs");
+          out.h3repos = hyp("H3-repos");
+          out.b1 = cellVerdict("B1");
+          out.b2 = cellVerdict("B2");
+          out.b3 = cellVerdict("B3");
+          out.b4 = cellVerdict("B4");
+          out.b6 = cellVerdict("B6");
+          out.b2a0 = arm("B2", "A0", "agents", "frac");
+          out.b2a1 = arm("B2", "A1", "agents", "absent");
+          out.b2a2 = arm("B2", "A2", "agents", "absent");
+          out.b7 = arm("B7", "trap", "agents", "frac");
+          const frame = c.get(RESULTS, ["frames", "S-main"]);
+          out.smainMeasured = frame ? c.n(RESULTS, ["frames", "S-main", "measured"], "int") : missing;
+          out.claudeVersion =
+            frame && frame.claudeVersions && frame.claudeVersions.length
+              ? c.n(RESULTS, ["frames", "S-main", "claudeVersions", 0], "text")
+              : missing;
+          const run = Array.isArray(prov.runs) ? prov.runs.findIndex((r) => r && r.codex) : -1;
+          out.codexVersion = run >= 0 ? c.n(PROV, ["runs", run, "codex"], "text") : missing;
+          out.resultsDate = c.has(RESULTS) ? c.n(RESULTS, ["generatedAt"], "date") : missing;
+          const cv = prov.cells && Array.isArray(prov.cells.agentVersions) && prov.cells.agentVersions.length;
+          out.cellsVersion = cv ? c.n(PROV, ["cells", "agentVersions", 0], "text") : missing;
+          out.cellsOs =
+            prov.cells && Array.isArray(prov.cells.os) && prov.cells.os.length
+              ? c.n(PROV, ["cells", "os", 0], "text")
+              : missing;
+          out.cellsDate = c.has(CELLS) ? c.n(CELLS, ["generatedAt"], "date") : missing;
+          const k4 = c.get(RESULTS, ["checks", "K4"]);
+          out.k4 = k4 ? c.n(RESULTS, ["checks", "K4"], "wilson") : missing;
+          out.k5 = prov.checks && prov.checks.K5 ? c.n(PROV, ["checks", "K5"], "frac") : missing;
+          out.k6 = prov.checks && prov.checks.K6 ? c.n(PROV, ["checks", "K6", "pairs"], "frac") : missing;
+          out.preregTag = prov.prereg && prov.prereg.tag ? c.n(PROV, ["prereg", "tag"], "text") : c.t("prereg-v1");
+          out.preregCommit =
+            prov.prereg && prov.prereg.commit ? c.n(PROV, ["prereg", "commit"], "sha12") : missing;
+          out.preregIssue =
+            prov.prereg && prov.prereg.issueCreatedAt ? c.n(PROV, ["prereg", "issueCreatedAt"], "datetime") : missing;
+          out.preregIssueUrl =
+            prov.prereg && prov.prereg.issueUrl ? c.n(PROV, ["prereg", "issueUrl"], "text") : missing;
+          out.demoLabel = prov.demo && prov.demo.label ? c.n(PROV, ["demo", "label"], "text") : missing;
+          out.repo = prov.repo ? c.n(PROV, ["repo"], "text") : c.t("Shivansh2904/ctxreach");
+          out.selfcheck = c.t("npx github:") + out.repo + c.t(" map --from packages/api");
+          out.site = c.t("https://shivansh2904.github.io/ctxreach/");
+          return out;
+        }
+
+        /** Fill a template's {{slot}}s (HTML comments are dropped). An unknown slot throws. */
+        function renderTemplate(template, data, mode) {
+          const c = context(data, mode || "plain");
+          const s = slots(c);
+          const body = String(template)
+            .replace(/<!--[\s\S]*?-->\n?/g, "")
+            .replace(/\{\{\s*([A-Za-z0-9]+)\s*\}\}/g, (_m, name) => {
+              if (!(name in s)) throw new Error("unknown template slot {{" + name + "}}");
+              return s[name];
+            });
+          return { text: body, state: dataState(c.files) };
+        }
+
+        // ---- page sections ---------------------------------------------------
+
+        const anchor = (id) =>
+          '<a class="anchor" href="#' + id + '" aria-label="Permalink to this finding">#</a>';
+        const pill = (kind, word) => '<span class="pill pill-' + kind + '">' + esc(word) + "</span>";
+        const wrapTable = (inner) => '<div class="table-wrap"><table>' + inner + "</table></div>";
+
+        function banner(c, state) {
+          if (state.sample) {
+            const which = state.why
+              .map((w) =>
+                c.get(w[0], w[1]) === undefined || c.get(w[0], w[1]) === null
+                  ? c.n(w[0], [], "file") + " has no " + esc(w[1][w[1].length - 1])
+                  : c.n(w[0], [], "file") + ": " + c.n(w[0], w[1], "key") + " = " + c.n(w[0], w[1], "text"),
+              )
+              .join("; ");
+            return (
+              '<div class="banner banner-sample" role="note" id="data-banner"><p><strong>SAMPLE DATA, NOT RESULTS.</strong> ' +
+              "Every number on this page comes from made-up files that exist to test the page. Nothing here was measured.</p>" +
+              "<details><summary>Which files say so</summary><p>" +
+              which +
+              ".</p></details></div>"
+            );
+          }
+          if (state.pilot)
+            return (
+              '<div class="banner banner-pilot" role="note" id="data-banner"><p><strong>PILOT DATA.</strong> ' +
+              "These numbers come from a pilot run, made before or outside the registered study. They are never pooled with study results and test nothing that was registered.</p></div>"
+            );
+          return "";
+        }
+
+        function sectionHeadline(c, state) {
+          const prov = provenance(c.files);
+          const p = prov.prereg || {};
+          let reg;
+          if (p.tag && p.commit) {
+            reg =
+              "<p>Pre-registered before any sampled repository was fetched: tag " +
+              c.n(PROV, ["prereg", "tag"], "text") +
+              " at commit " +
+              c.n(PROV, ["prereg", "commit"], "sha12") +
+              (p.preregSha256 ? ", PREREG.md SHA-256 " + c.n(PROV, ["prereg", "preregSha256"], "sha12") : "") +
+              (p.issueCreatedAt
+                ? ", timestamped by the " +
+                  (safeHref(p.issueUrl) ? '<a href="' + esc(p.issueUrl) + '">public issue</a>' : "public issue") +
+                  " opened " +
+                  c.n(PROV, ["prereg", "issueCreatedAt"], "datetime")
+                : ", issue timestamp not recorded yet") +
+              '. Read the <a href="https://github.com/Shivansh2904/ctxreach/blob/main/study/PREREG.md">pre-registration</a>.</p>';
+          } else
+            reg =
+              '<p>The <a href="https://github.com/Shivansh2904/ctxreach/blob/main/study/PREREG.md">pre-registration</a> is tagged and timestamped by a public issue before the census fetches anything. Its tag, commit and timestamp appear here once they are recorded in <code>data/provenance.json</code>.</p>';
+          const r = c.files[RESULTS];
+          let caption = "";
+          if (r) {
+            const f = r.frames && r.frames["S-main"];
+            caption =
+              '<p class="note">Census figures: predicted by <code>ctxreach map</code> for Claude Code ' +
+              (f && f.claudeVersions && f.claudeVersions.length
+                ? c.n(RESULTS, ["frames", "S-main", "claudeVersions", 0], "text")
+                : "(version not recorded)") +
+              " on a fresh machine, analysed " +
+              c.n(RESULTS, ["generatedAt"], "date") +
+              ". Lab-cell figures: see the caption of each column in the matrix. Nothing is pooled across frames, agent versions or operating systems.</p>";
+          } else
+            caption =
+              '<p class="note">No study results are published yet. The sentence above is the registered template; its letters are replaced by fractions from <code>data/results.json</code> and <code>data/cells-results.json</code> once the study has run.</p>';
+          return (
+            '<section id="headline" aria-labelledby="headline-h">' +
+            '<p class="eyebrow" id="headline-h">The pre-registered headline</p>' +
+            '<p class="lede finding" id="headline-sentence">' +
+            headline(c) +
+            anchor("headline-sentence") +
+            "</p>" +
+            reg +
+            caption +
+            '<p class="note">The <a href="#checks">instrument checks</a> come first, before the results they support: a figure from an instrument whose check failed is not a result.</p>' +
+            "</section>"
+          );
+        }
+
+        function checkRow(id, name, what, rule, result, status) {
+          const kinds = { pass: "ok", fail: "bad", reported: "warn", "no record": "none" };
+          return (
+            '<tr class="finding" id="' +
+            id +
+            '"><th scope="row">' +
+            esc(name) +
+            anchor(id) +
+            '<span class="sub">' +
+            what +
+            "</span></th><td>" +
+            rule +
+            "</td><td>" +
+            result +
+            "</td><td>" +
+            pill(kinds[status] || "none", status) +
+            "</td></tr>"
+          );
+        }
+
+        function sectionChecks(c) {
+          const prov = provenance(c.files);
+          const checks = prov.checks || {};
+          const r = c.files[RESULTS];
+          const rows = [];
+          const none = '<span class="sub">No record loaded.</span>';
+
+          // K1
+          if (checks.K1) {
+            const k = checks.K1;
+            const defects = Array.isArray(k.knownDefects) ? k.knownDefects : [];
+            rows.push(
+              checkRow(
+                "k1",
+                "K1 known answers",
+                "Every fixture, with an answer derived by hand from the rules, through the census pipeline.",
+                "Every fixture answered as derived, and no known defect listed.",
+                c.n(PROV, ["checks", "K1"], "frac") +
+                  " fixtures" +
+                  defects.map((_d, i) => '<span class="sub">known defect: ' + c.n(PROV, ["checks", "K1", "knownDefects", i], "text") + "</span>").join(""),
+                k.k === k.n && defects.length === 0 && k.n > 0 ? "pass" : "fail",
+              ),
+            );
+          } else
+            rows.push(checkRow("k1", "K1 known answers", "Every fixture, with an answer derived by hand from the rules, through the census pipeline.", "Every fixture answered as derived, and no known defect listed.", none, "no record"));
+          // K2
+          rows.push(
+            checkRow(
+              "k2",
+              "K2 planted faults",
+              "Each outcome detector and pipeline step switched off in turn.",
+              "Every plant makes K1 lose a fixture it passed.",
+              checks.K2 ? c.n(PROV, ["checks", "K2"], "frac") + " plants caught" : none,
+              checks.K2 ? (checks.K2.k === checks.K2.n && checks.K2.n > 0 ? "pass" : "fail") : "no record",
+            ),
+          );
+          // K3
+          const k3 = r && r.checks && r.checks.K3;
+          rows.push(
+            checkRow(
+              "k3",
+              "K3 census consistency",
+              "The regex version of O1-file in the sample, against the whole frame's own proportion.",
+              "The frame's proportion lies inside the sample's interval.",
+              k3 && k3.census && k3.sample
+                ? "frame " +
+                    c.n(RESULTS, ["checks", "K3", "census", "p"], "pct") +
+                    "; sample " +
+                    c.n(RESULTS, ["checks", "K3", "sample"], "wilson")
+                : none,
+              k3 ? (k3.pass ? "pass" : "fail") : "no record",
+            ),
+          );
+          // K4
+          const k4 = r && r.checks && r.checks.K4;
+          rows.push(
+            checkRow(
+              "k4",
+              "K4 map against Codex's renderer",
+              "Each sampled (repository, launch directory) pair: the AGENTS.md block of <code>codex debug prompt-input</code> against map's predicted bytes, rendered twice.",
+              k4
+                ? "Reported; expected at least " +
+                    c.n(RESULTS, ["checks", "K4", "expectedAtLeast"], "pct") +
+                    " byte-exact; every mismatch listed and explained."
+                : "Reported, with every mismatch listed and explained.",
+              k4
+                ? c.n(RESULTS, ["checks", "K4"], "wilson") +
+                    " pairs byte-exact" +
+                    '<span class="sub">mismatches ' +
+                    c.n(RESULTS, ["checks", "K4", "mismatches"], "len") +
+                    ", instrument faults " +
+                    c.n(RESULTS, ["checks", "K4", "faults"], "int") +
+                    " (listed in results.json, no repository named here)</span>"
+                : none,
+              k4 ? (k4.p >= k4.expectedAtLeast ? "pass" : "reported") : "no record",
+            ),
+          );
+          // K5
+          rows.push(
+            checkRow(
+              "k5",
+              "K5 map against Claude Code, live",
+              "Measured repositories by seeded draw within strata, each run twice through the capture endpoint, at no cost.",
+              "Agreement over decided cells, reported.",
+              checks.K5 ? c.n(PROV, ["checks", "K5"], "frac") + " decided cells agree" : none,
+              checks.K5 ? "reported" : "no record",
+            ),
+          );
+          // K6
+          rows.push(
+            checkRow(
+              "k6",
+              "K6 blind second reader",
+              "A fresh reader derives delivery by hand from the rules alone, for pairs drawn by seed; the key is hashed before the reader starts.",
+              "Reported per agent; every disagreement adjudicated in the open.",
+              checks.K6 && checks.K6.pairs
+                ? c.n(PROV, ["checks", "K6", "pairs"], "frac") +
+                    " pairs agree" +
+                    '<span class="sub">Claude Code ' +
+                    c.n(PROV, ["checks", "K6", "claude"], "frac") +
+                    ", Codex " +
+                    c.n(PROV, ["checks", "K6", "codex"], "frac") +
+                    "</span>"
+                : none,
+              checks.K6 ? "reported" : "no record",
+            ),
+          );
+          // K7
+          const runs = Array.isArray(prov.runs) ? prov.runs : [];
+          rows.push(
+            checkRow(
+              "k7",
+              "K7 GET only",
+              "Every network request goes through one client that refuses any other method before sending, and counts the refusals.",
+              "Every run prints no non-GET attempt.",
+              runs.length
+                ? runs
+                    .map(
+                      (run, i) =>
+                        c.n(PROV, ["runs", i, "frame"], "text") +
+                        ": " +
+                        c.n(PROV, ["runs", i, "nonGetAttempts"], "int") +
+                        " non-GET attempts over " +
+                        c.n(PROV, ["runs", i, "requests"], "int") +
+                        " requests",
+                    )
+                    .join("<br>")
+                : none,
+              runs.length ? (runs.every((run) => run.nonGetAttempts === 0) ? "pass" : "fail") : "no record",
+            ),
+          );
+          // K8
+          const conf = conformanceFiles(c.files);
+          const planted = [];
+          for (const f of conf)
+            (c.files[f].plantedPass || []).forEach((p, i) =>
+              planted.push({ f, i, ok: p.disagreed === true }),
+            );
+          rows.push(
+            checkRow(
+              "k8",
+              "K8 planted pass",
+              "Before every conformance battery, map is given a wrong budget or a wrong mode on purpose.",
+              "The planted pass must disagree; one that agrees voids the battery.",
+              planted.length
+                ? planted
+                    .map(
+                      (p) =>
+                        c.n(p.f, ["plantedPass", p.i, "agent"], "text") +
+                        " on " +
+                        c.n(p.f, ["plantedPass", p.i, "fixture"], "text") +
+                        ": " +
+                        (p.ok ? "disagreed, as it must" : "<strong>agreed: instrument fault</strong>"),
+                    )
+                    .join("<br>")
+                : none,
+              planted.length ? (planted.every((p) => p.ok) ? "pass" : "fail") : "no record",
+            ),
+          );
+          // K9, K10 from the lab cells' trials (provenance) and the conformance controls.
+          const cellsProv = prov.cells;
+          const reasons = (cellsProv && cellsProv.voidReasons) || {};
+          const reasonKeys = Object.keys(reasons);
+          const k9keys = reasonKeys.filter((k) => /control|decoy|no observation/i.test(k));
+          const k10keys = reasonKeys.filter((k) => !k9keys.includes(k));
+          const confControls = conf.flatMap((f) =>
+            c.files[f].records.map((rec) => ({
+              ok:
+                !rec.controls ||
+                ((!rec.controls.decoy || rec.controls.decoy.seen === 0) &&
+                  (!rec.controls.control || rec.controls.control.seen === rec.controls.control.usable)),
+            })),
+          );
+          const reasonList = (keys) =>
+            keys.length
+              ? keys
+                  .map(
+                    (k) =>
+                      '<span class="sub">' +
+                      c.n(PROV, ["cells", "voidReasons", k], "key") +
+                      ": " +
+                      c.n(PROV, ["cells", "voidReasons", k], "int") +
+                      "</span>",
+                  )
+                  .join("")
+              : "";
+          rows.push(
+            checkRow(
+              "k9",
+              "K9 positive control and decoy",
+              "A must-appear token at the launch directory of every Claude Code trial, and a decoy file no rule loads.",
+              "A missing control voids the trial; the decoy is never seen.",
+              (cellsProv
+                ? "lab cells: " +
+                  c.n(PROV, ["cells", "void"], "int") +
+                  " void of " +
+                  c.n(PROV, ["cells", "trials"], "int") +
+                  " trials" +
+                  reasonList(k9keys)
+                : "lab cells: no record") +
+                (confControls.length
+                  ? "<br>conformance: " +
+                    (confControls.every((x) => x.ok)
+                      ? "every control seen, no decoy seen"
+                      : "<strong>a control was missed or a decoy seen</strong>")
+                  : ""),
+              cellsProv || confControls.length
+                ? k9keys.length === 0 && confControls.every((x) => x.ok)
+                  ? "pass"
+                  : "reported"
+                : "no record",
+            ),
+          );
+          rows.push(
+            checkRow(
+              "k10",
+              "K10 session asserts",
+              "The built-in agents-md plugin is loaded, the model is the pinned one, the session ran in the launch directory.",
+              "A failed assert voids the trial.",
+              cellsProv
+                ? "lab cells: " +
+                    (k10keys.length ? "trials voided by an assert" : "no trial voided by an assert") +
+                    reasonList(k10keys)
+                : none,
+              cellsProv ? (k10keys.length ? "reported" : "pass") : "no record",
+            ),
+          );
+          return (
+            '<section id="checks" aria-labelledby="checks-h"><h2 id="checks-h">Instrument checks</h2>' +
+            "<p>Each instrument has a check that can fail, and each check was registered with a pass rule before the data existed. They are shown before the results: a result from an instrument that failed its check is reported as found, but it is not evidence.</p>" +
+            wrapTable(
+              '<thead><tr><th scope="col">Check</th><th scope="col">Pass rule</th><th scope="col">Result</th><th scope="col">Status</th></tr></thead><tbody>' +
+                rows.join("") +
+                "</tbody>",
+            ) +
+            "</section>"
+          );
+        }
+
+        const ARM_LABELS = {
+          B1: { trap: "ancestor .claude/CLAUDE.md above the git root", control: "no ancestor file" },
+          B2: {
+            A0: "no home file; copy under the scratch home",
+            A1: "home file present; copy under the scratch home",
+            A2: "home file present; copy outside the home",
+            A3: "as A1, launched from packages/api",
+            A4: "ancestor above the git root, inside the home",
+          },
+          B3: { subdir: "launched in packages/api", root: "launched at the root" },
+          B4: { trap: "CLAUDE.md whose whole text is AGENTS.md" },
+          B6: { trap: "ancestor rule without paths" },
+          B7: { trap: "CLAUDE.md names AGENTS.md in words; task mode" },
+        };
+        const OBS_LABELS = {
+          agents: "root AGENTS.md",
+          home: "~/.claude/CLAUDE.md token",
+          ancestor: "ancestor file token",
+          rootAgents: "root AGENTS.md",
+          packageAgents: "packages/api/AGENTS.md",
+          ancestorRule: "ancestor rule",
+        };
+
+        function recordingFor(c, cell, arm) {
+          const recs = provenance(c.files).recordings;
+          if (!Array.isArray(recs)) return -1;
+          const want = (cell + "-" + arm).toLowerCase();
+          return recs.findIndex((r) => r && String(r.name).toLowerCase() === want);
+        }
+
+        function cellsTable(c) {
+          const cells = c.files[CELLS];
+          if (!cells || !Array.isArray(cells.results) || !cells.results.length)
+            return '<p class="empty">No lab-cell results loaded (<code>data/cells-results.json</code>).</p>';
+          const prov = provenance(c.files);
+          const pc = prov.cells;
+          const head =
+            "Claude Code " +
+            (pc && pc.agentVersions && pc.agentVersions.length
+              ? pc.agentVersions.map((_v, i) => c.n(PROV, ["cells", "agentVersions", i], "text")).join(", ")
+              : "(version not recorded)") +
+            '<span class="sub">' +
+            (pc && pc.os && pc.os.length
+              ? pc.os.map((_v, i) => c.n(PROV, ["cells", "os", i], "text")).join(", ")
+              : "OS not recorded") +
+            "; " +
+            c.n(CELLS, ["generatedAt"], "date") +
+            "</span>";
+          const rows = [];
+          cells.results.forEach((res, i) => {
+            const id = "cell-" + slug(res.cell);
+            rows.push(
+              '<tr class="group finding" id="' +
+                id +
+                '"><th scope="rowgroup" colspan="3">' +
+                c.n(CELLS, ["results", i, "cell"], "text") +
+                " " +
+                pill(verdictKind(res.verdict), verdictWord(res.verdict)) +
+                anchor(id) +
+                '<span class="sub">' +
+                c.n(CELLS, ["results", i, "title"], "text") +
+                "</span>" +
+                '<span class="sub">' +
+                c.n(CELLS, ["results", i, "wording"], "text") +
+                "</span></th></tr>",
+            );
+            for (const arm of Object.keys(res.arms || {})) {
+              const a = res.arms[arm];
+              if (!(a.planned > 0)) continue;
+              const rec = recordingFor(c, res.cell, arm);
+              const replay =
+                rec >= 0 && safeHref(prov.recordings[rec].path)
+                  ? '<a href="' +
+                    esc(prov.recordings[rec].path) +
+                    '">recording</a><br><code>ctxreach ' +
+                    (res.instrument === "echo" ? "probe" : "verify --agent claude") +
+                    " --replay " +
+                    c.n(PROV, ["recordings", rec, "path"], "text") +
+                    "</code>"
+                  : '<span class="sub">no recording published</span>';
+              for (const key of Object.keys(a.observe || {})) {
+                const rid = id + "-" + slug(arm) + "-" + slug(key);
+                rows.push(
+                  '<tr class="finding" id="' +
+                    rid +
+                    '"><th scope="row">' +
+                    c.n(CELLS, ["results", i, "arms", arm], "key") +
+                    " · " +
+                    esc(OBS_LABELS[key] || key) +
+                    anchor(rid) +
+                    '<span class="sub">' +
+                    esc((ARM_LABELS[res.cell] || {})[arm] || "") +
+                    (a.void > 0 ? "; void trials " + c.n(CELLS, ["results", i, "arms", arm, "void"], "int") : "") +
+                    '</span></th><td class="num">' +
+                    c.n(CELLS, ["results", i, "arms", arm, "observe", key], "arm") +
+                    '</td><td class="cmd">' +
+                    replay +
+                    "</td></tr>",
+                );
+              }
+            }
+          });
+          return wrapTable(
+            "<caption>Lab cells: how many usable trials carried each file's token, with Wilson bounds. Capture cells: delivered to the model endpoint (custom base URL, gateway path). Echo cells: repeated by the model in a first-party session.</caption>" +
+              '<thead><tr><th scope="col">Cell, arm and file</th><th scope="col">' +
+              head +
+              '</th><th scope="col">Recording and replay</th></tr></thead><tbody>' +
+              rows.join("") +
+              "</tbody>",
+          );
+        }
+
+        function conformanceTable(c, agent) {
+          const files = conformanceFiles(c.files).filter((f) =>
+            c.files[f].records.some((r) => r.agent === agent),
+          );
+          if (!files.length)
+            return '<p class="empty">No ' + (agent === "codex" ? "Codex" : "Claude Code") + " conformance results loaded.</p>";
+          const keys = [];
+          for (const f of files)
+            for (const r of c.files[f].records) {
+              const k = r.fixture + "\u0000" + r.launchDir;
+              if (r.agent === agent && !keys.includes(k)) keys.push(k);
+            }
+          keys.sort();
+          const head = files
+            .map((f) => {
+              const doc = c.files[f];
+              const r0 = doc.records.findIndex((r) => r.agent === agent && r.version);
+              const col = /-(pinned|latest)-/.exec(f);
+              return (
+                '<th scope="col">' +
+                (r0 >= 0 ? c.n(f, ["records", r0, "version"], "text") : "version not recorded") +
+                (col ? " (" + col[1] + ")" : "") +
+                '<span class="sub">' +
+                (r0 >= 0 && doc.records[r0].os ? c.n(f, ["records", r0, "os"], "text") : "OS not recorded") +
+                "; " +
+                (doc.date ? c.n(f, ["date"], "date") : "date not recorded") +
+                "</span></th>"
+              );
+            })
+            .join("");
+          const body = keys
+            .map((k) => {
+              const [fixture, dir] = k.split("\u0000");
+              const id = "conf-" + agent + "-" + slug(fixture) + "-" + slug(dir === "." ? "root" : dir);
+              let label = "";
+              const cellsHtml = files
+                .map((f) => {
+                  const i = c.files[f].records.findIndex(
+                    (r) => r.agent === agent && r.fixture === fixture && r.launchDir === dir,
+                  );
+                  if (i < 0) return '<td class="num">not run</td>';
+                  const rec = c.files[f].records[i];
+                  if (!label)
+                    label =
+                      c.n(f, ["records", i, "fixture"], "text") +
+                      anchor(id) +
+                      '<span class="sub">from ' +
+                      c.n(f, ["records", i, "launchDir"], "text") +
+                      "</span>";
+                  const cls = rec.verdict === "agree" ? "agree" : rec.verdict === "disagree" ? "disagree" : "fault";
+                  return (
+                    '<td class="num ' +
+                    cls +
+                    '">' +
+                    esc(rec.verdict) +
+                    "<br>" +
+                    (Array.isArray(rec.cells) ? c.n(f, ["records", i, "cells"], "agree") + " cells" : "") +
+                    (rec.keptBytes ? "<br>bytes " + c.n(f, ["records", i, "keptBytes"], "bytes") + " exact" : "") +
+                    "</td>"
+                  );
+                })
+                .join("");
+              return (
+                '<tr class="finding" id="' +
+                id +
+                '"><th scope="row">' +
+                label +
+                "</th>" +
+                cellsHtml +
+                "</tr>"
+              );
+            })
+            .join("");
+          const what =
+            agent === "codex"
+              ? "Codex fixtures, as rendered by <code>codex debug prompt-input</code>; the model was not run. Each launch is rendered twice and must be identical. Cells: agreeing over decided token cells; bytes: chain files whose kept bytes match map exactly."
+              : "Claude Code fixtures, delivered to the model endpoint (custom base URL); the request is answered with an error and no model runs. Cells: agreeing over decided token cells.";
+          return wrapTable(
+            "<caption>" +
+              what +
+              ' Re-run any row free: <code>node scripts/conformance.mjs --agents ' +
+              agent +
+              " --only &lt;fixture&gt;</code>.</caption>" +
+              '<thead><tr><th scope="col">Fixture and launch directory</th>' +
+              head +
+              "</tr></thead><tbody>" +
+              body +
+              "</tbody>",
+          );
+        }
+
+        function sectionMatrix(c) {
+          return (
+            '<section id="matrix" aria-labelledby="matrix-h"><h2 id="matrix-h">Same repo, different instructions</h2>' +
+            "<p>What reached each agent, by trap and lab cell. Rows are traps and registered cells; columns are an agent at one version on one operating system; each cell is a fraction of usable trials or launches, linked to the recording that replays to it. Results are never pooled across columns.</p>" +
+            '<h3 id="matrix-claude">Claude Code: lab cells</h3>' +
+            cellsTable(c) +
+            '<h3 id="matrix-claude-fixtures">Claude Code: fixtures</h3>' +
+            conformanceTable(c, "claude") +
+            '<h3 id="matrix-codex">Codex: fixtures</h3>' +
+            conformanceTable(c, "codex") +
+            "</section>"
+          );
+        }
+
+        const OUTCOME_LABELS = {
+          "O1-content": "Claude Code receives under half of the root AGENTS.md's lines at root launch",
+          "O1-content-shingle": "As O1-content, matched by word shingles (sensitivity)",
+          "O1-file": "The root AGENTS.md does not reach Claude Code at root launch",
+          O2: "From some package directory, a headless session gets none of the root AGENTS.md",
+          "O2-types123": "As O2, over every launch-directory type",
+          "O2-given-type2": "As O2, among repositories with a package directory",
+          "P1-repos": "Codex cuts or drops a chain file from some launch directory",
+          "P1-repos-types123": "As P1-repos, over every launch-directory type",
+          "P1-pairs": "(repository, launch directory) pairs where Codex cuts or drops a chain file",
+          "P1-pairs-types123": "As P1-pairs, over every launch-directory type",
+          O4: "A nested AGENTS.md that neither agent preloads at root launch",
+          "O5-any-root-warning": "At least one map warning at root launch",
+          "O5-any-root-warning-no-links": "As above, among repositories without links",
+          O6: "A CLAUDE.md names AGENTS.md in words without importing it",
+          O7: "Instruction files that are symlinks",
+          "O7-root-link-to-agents": "A root CLAUDE.md-family link to AGENTS.md",
+          O8: "Root AGENTS.md mostly CJK text",
+          "K3-regex-O1-file": "K3's regex version of O1-file",
+        };
+        const PRIMARY = ["O1-content", "O1-content-shingle", "O1-file", "O2", "O2-types123", "O2-given-type2", "P1-repos", "P1-repos-types123", "P1-pairs", "P1-pairs-types123"];
+        const VARIANTS = [
+          ["raw", "Raw"],
+          ["dedup", "One per AGENTS.md blob"],
+          ["ownercap", "Owner-capped"],
+        ];
+
+        function outcomeTable(c, frame, ids) {
+          const r = c.files[RESULTS];
+          const rows = ids
+            .map((id) => {
+              const rid = slug(frame) + "-" + slug(id);
+              const first = r.outcomes.findIndex((o) => o.frame === frame && o.id === id);
+              return (
+                '<tr class="finding" id="' +
+                rid +
+                '"><th scope="row">' +
+                c.n(RESULTS, ["outcomes", first, "id"], "text") +
+                anchor(rid) +
+                '<span class="sub">' +
+                esc(OUTCOME_LABELS[id] || (id.indexOf("O5-root:") === 0 ? "map warning at root launch, by code" : "")) +
+                ' (unit: ' +
+                c.n(RESULTS, ["outcomes", first, "unit"], "text") +
+                ")</span></th>" +
+                VARIANTS.map(([v]) => {
+                  const i = r.outcomes.findIndex((o) => o.frame === frame && o.id === id && o.variant === v);
+                  return '<td class="num">' + (i >= 0 ? c.n(RESULTS, ["outcomes", i], "wilson") : "not computed") + "</td>";
+                }).join("") +
+                "</tr>"
+              );
+            })
+            .join("");
+          return wrapTable(
+            '<thead><tr><th scope="col">Outcome</th>' +
+              VARIANTS.map(([, label]) => '<th scope="col">' + label + "</th>").join("") +
+              "</tr></thead><tbody>" +
+              rows +
+              "</tbody>",
+          );
+        }
+
+        function sectionCensus(c) {
+          const r = c.files[RESULTS];
+          if (!r || !r.frames)
+            return (
+              '<section id="census" aria-labelledby="census-h"><h2 id="census-h">The census</h2>' +
+              '<p class="empty">No census results loaded (<code>data/results.json</code>). The census runs after the pre-registration is tagged and timestamped.</p></section>'
+            );
+          const wording = r.wording || {};
+          const prov = provenance(c.files);
+          const run = Array.isArray(prov.runs) ? prov.runs.findIndex((x) => x && x.codex) : -1;
+          const fill = (key, version) =>
+            typeof wording[key] === "string"
+              ? wording[key]
+                  .split("<version>")
+                  .map((part, i, all) => inline(part) + (i < all.length - 1 ? version : ""))
+                  .join("")
+              : "";
+          const frames = Object.keys(r.frames).map((f) => {
+            const fr = r.frames[f];
+            const fid = "frame-" + slug(f);
+            const all = [];
+            for (const o of r.outcomes) if (o.frame === f && !all.includes(o.id)) all.push(o.id);
+            const primary = PRIMARY.filter((id) => all.includes(id));
+            const secondary = all.filter((id) => !primary.includes(id));
+            const excl = Object.keys(fr.exclusions || {})
+              .map((k) => c.n(RESULTS, ["frames", f, "exclusions", k], "key") + " " + c.n(RESULTS, ["frames", f, "exclusions", k], "int"))
+              .join(", ");
+            return (
+              '<article class="finding" id="' +
+              fid +
+              '"><h3>Frame ' +
+              c.n(RESULTS, ["frames", f], "key") +
+              anchor(fid) +
+              "</h3>" +
+              '<dl class="facts"><dt>Drawn</dt><dd class="num">' +
+              c.n(RESULTS, ["frames", f, "drawn"], "int") +
+              '</dd><dt>Measured</dt><dd class="num">' +
+              c.n(RESULTS, ["frames", f, "measured"], "int") +
+              "</dd><dt>Excluded</dt><dd>" +
+              c.n(RESULTS, ["frames", f, "excluded"], "int") +
+              (excl ? " (" + excl + ")" : "") +
+              "</dd><dt>With instrument faults</dt><dd>" +
+              c.n(RESULTS, ["frames", f, "withFaults"], "int") +
+              " (not used)</dd><dt>Lost, excluded or faulty</dt><dd>" +
+              c.n(RESULTS, ["frames", f, "excludedShare"], "pct") +
+              (fr.redrawRequired ? " <strong>over the registered limit: the redraw applies</strong>" : "") +
+              "</dd><dt>Package directories capped</dt><dd>" +
+              c.n(RESULTS, ["frames", f, "type2Capped"], "frac") +
+              " repositories (at most " +
+              c.n(RESULTS, ["frames", f, "type2Capped", "cap"], "int") +
+              " each; there O2 and P1 are lower bounds)</dd><dt>Claude Code modelled</dt><dd>" +
+              (fr.claudeVersions || []).map((_v, i) => c.n(RESULTS, ["frames", f, "claudeVersions", i], "text")).join(", ") +
+              "</dd><dt>ctxreach map</dt><dd>" +
+              (fr.mapVersions || []).map((_v, i) => c.n(RESULTS, ["frames", f, "mapVersions", i], "text")).join(", ") +
+              "</dd></dl>" +
+              outcomeTable(c, f, primary) +
+              (secondary.length
+                ? "<details><summary>Secondary outcomes (no decision rule)</summary>" + outcomeTable(c, f, secondary) + "</details>"
+                : "") +
+              "</article>"
+            );
+          });
+          return (
+            '<section id="census" aria-labelledby="census-h"><h2 id="census-h">The census</h2>' +
+            "<p>Repositories drawn by seed from a frozen Sourcegraph frame, rebuilt file by file at the indexed commit, and measured with <code>ctxreach map</code> from every launch directory as a fresh machine would see them. Each figure is k/n with its Wilson score interval, in three variants. Frames are never pooled.</p>" +
+            '<ul class="note prose">' +
+            (wording.claude
+              ? "<li>Claude Code figures: " +
+                fill(
+                  "claude",
+                  r.frames["S-main"] && (r.frames["S-main"].claudeVersions || []).length
+                    ? c.n(RESULTS, ["frames", "S-main", "claudeVersions", 0], "text")
+                    : "(version in each frame below)",
+                ) +
+                ".</li>"
+              : "") +
+            (wording.codex
+              ? "<li>Codex, check K4: " +
+                fill("codex", run >= 0 ? c.n(PROV, ["runs", run, "codex"], "text") : "(version in the run manifest)") +
+                ".</li>"
+              : "") +
+            (wording.pairs ? "<li>Pairs: " + fill("pairs", "") + ".</li>" : "") +
+            "</ul>" +
+            frames.join("") +
+            "</section>"
+          );
+        }
+
+        function sectionPrereg(c) {
+          const r = c.files[RESULTS];
+          const cells = c.files[CELLS];
+          let hyp = '<p class="empty">No hypothesis has been tested yet.</p>';
+          if (r && Array.isArray(r.hypotheses) && r.hypotheses.length) {
+            hyp = wrapTable(
+              '<thead><tr><th scope="col">Hypothesis</th><th scope="col">Registered</th><th scope="col">Found (raw)</th><th scope="col">Verdict</th></tr></thead><tbody>' +
+                r.hypotheses
+                  .map((h, i) => {
+                    const id = slug(h.id);
+                    const stated =
+                      h.rule === "bound"
+                        ? "confirmed if the lower bound is at least " +
+                          c.n(RESULTS, ["hypotheses", i, "bound"], "pct") +
+                          "; refuted if the upper bound is below it"
+                        : "a hit if the whole interval lies in " +
+                          c.n(RESULTS, ["hypotheses", i, "lo"], "pct") +
+                          " to " +
+                          c.n(RESULTS, ["hypotheses", i, "hi"], "pct");
+                    return (
+                      '<tr class="finding" id="' +
+                      id +
+                      '"><th scope="row">' +
+                      c.n(RESULTS, ["hypotheses", i, "id"], "text") +
+                      (h.primary ? " (primary)" : "") +
+                      anchor(id) +
+                      '<span class="sub">' +
+                      c.n(RESULTS, ["hypotheses", i, "outcome"], "text") +
+                      " in " +
+                      c.n(RESULTS, ["hypotheses", i, "frame"], "text") +
+                      "</span></th><td>" +
+                      stated +
+                      '</td><td class="num">' +
+                      (h.estimate ? c.n(RESULTS, ["hypotheses", i, "estimate"], "wilson") : "no data") +
+                      "</td><td>" +
+                      pill(verdictKind(h.verdict), verdictWord(h.verdict)) +
+                      "</td></tr>"
+                    );
+                  })
+                  .join("") +
+                "</tbody>",
+            );
+          }
+          let cellList = "";
+          if (cells && Array.isArray(cells.results) && cells.results.length)
+            cellList =
+              "<p>Lab cells, each against its registered rule (thresholds in <code>study/behavioural/cells.json</code>): " +
+              cells.results
+                .map(
+                  (res, i) =>
+                    '<a href="#cell-' +
+                    slug(res.cell) +
+                    '">' +
+                    c.n(CELLS, ["results", i, "cell"], "text") +
+                    "</a> " +
+                    pill(verdictKind(res.verdict), verdictWord(res.verdict)),
+                )
+                .join(", ") +
+              ".</p>";
+          return (
+            '<section id="prereg-vs-found" aria-labelledby="prereg-h"><h2 id="prereg-h">Registered against found</h2>' +
+            "<p>Each hypothesis was fixed, with its decision rule, before the census fetched anything. The raw variant decides; the verdict is printed whichever way it falls.</p>" +
+            hyp +
+            cellList +
+            "</section>"
+          );
+        }
+
+        function sectionMethod() {
+          return (
+            '<section id="method" aria-labelledby="method-h"><h2 id="method-h">Method and limits</h2>' +
+            '<ul class="prose">' +
+            "<li><strong>An echo proves delivery, not compliance.</strong> A token that reaches the model shows the file's text arrived. It says nothing about whether the model follows it.</li>" +
+            "<li><strong>Codex figures come from Codex's renderer, not a model turn:</strong> as rendered by <code>codex debug prompt-input</code>; the model was not run.</li>" +
+            "<li><strong>Capture cells use the gateway path.</strong> Claude Code is pointed at a loopback endpoint (a custom base URL) that records the request and answers with an error. That is delivery to the model endpoint, not a first-party session; first-party equivalence is measured separately with paired billed runs.</li>" +
+            "<li><strong>Census figures about Claude Code are predictions</strong> by <code>ctxreach map</code> on a fresh machine, checked live on a seeded subsample (K5).</li>" +
+            "<li><strong>Lab cells ran on one Windows host.</strong> Every caption carries the agent version, the operating system and the date; nothing is pooled across them.</li>" +
+            "<li><strong>Pilot data is never pooled</strong> with registered rows or trials, and is cited as pilot.</li>" +
+            "<li><strong>No repository is named for a defect.</strong> Published rows hold <code>owner/repo@commit</code>, blob ids and measurements, never file contents. Owners can opt out by opening an issue on the repository.</li>" +
+            "<li>openai/codex#41499: not reproduced on Windows with a key form shown to apply. A trusted control showed that the dotted <code>-c</code> trust key never addressed the project, which would have produced a false reproduction.</li>" +
+            "</ul></section>"
+          );
+        }
+
+        function sectionCredits() {
+          return (
+            '<section id="credits" aria-labelledby="credits-h"><h2 id="credits-h">Credits</h2><ul class="prose">' +
+            '<li>P. Szypowicz, <a href="https://blog.szypowi.cz/p/claude-code-reads-agents.md-only-when-telemetry-is-on/">Claude Code reads AGENTS.md only when telemetry is on</a>: the canary-word method this study automates.</li>' +
+            '<li>The reporter and commenters on <a href="https://github.com/openai/codex/issues/13386">openai/codex#13386</a>, who documented silent truncation of AGENTS.md.</li>' +
+            '<li>The reporter and commenters on <a href="https://github.com/anthropics/claude-code/issues/80580">anthropics/claude-code#80580</a>, where the home folder\'s <code>~/.claude/CLAUDE.md</code> was shown to load as an ancestor project file.</li>' +
+            '<li>M. Galster and colleagues, <a href="https://arxiv.org/abs/2602.14690">Harness Engineering for Agentic AI Coding Tools: An Exploratory Study</a> and <a href="https://arxiv.org/abs/2605.08435">A Dataset of Agentic AI Coding Tool Configurations</a>.</li>' +
+            '<li>T. Gloaguen and colleagues, <a href="https://arxiv.org/abs/2602.11988">Evaluating AGENTS.md: Are Repository-Level Context Files Helpful for Coding Agents?</a>, on whether the files help once they arrive.</li>' +
+            "</ul></section>"
+          );
+        }
+
+        function sectionReproduce(c) {
+          const prov = provenance(c.files);
+          const r = c.files[RESULTS];
+          const facts = [];
+          const fact = (dt, dd) => facts.push("<dt>" + dt + "</dt><dd>" + dd + "</dd>");
+          if (prov.prereg && prov.prereg.tag) {
+            fact(
+              "Pre-registration",
+              c.n(PROV, ["prereg", "tag"], "text") +
+                (prov.prereg.commit ? " at " + c.n(PROV, ["prereg", "commit"], "text") : "") +
+                (prov.prereg.preregSha256 ? '<span class="sub">PREREG.md SHA-256 ' + c.n(PROV, ["prereg", "preregSha256"], "text") + "</span>" : ""),
+            );
+            if (prov.prereg.seed) fact("Seed", c.n(PROV, ["prereg", "seed"], "text") + '<span class="sub">taken from the tagged commit\'s hash</span>');
+          }
+          if (prov.freeze && prov.freeze.tag)
+            fact(
+              "Tool freeze",
+              c.n(PROV, ["freeze", "tag"], "text") +
+                (prov.freeze.commit ? " at " + c.n(PROV, ["freeze", "commit"], "text") : "") +
+                (prov.freeze.distDigest ? '<span class="sub">dist digest ' + c.n(PROV, ["freeze", "distDigest"], "text") + "</span>" : ""),
+            );
+          (Array.isArray(prov.runs) ? prov.runs : []).forEach((run, i) =>
+            fact(
+              "Census run " + c.n(PROV, ["runs", i, "frame"], "text"),
+              "sample " +
+                c.n(PROV, ["runs", i, "sample"], "text") +
+                ", SHA-256 " +
+                c.n(PROV, ["runs", i, "sampleSha256"], "sha12") +
+                '<span class="sub">seed ' +
+                c.n(PROV, ["runs", i, "seed"], "text") +
+                "; " +
+                c.n(PROV, ["runs", i, "startedAt"], "datetime") +
+                " to " +
+                c.n(PROV, ["runs", i, "endedAt"], "datetime") +
+                "; Node " +
+                c.n(PROV, ["runs", i, "node"], "text") +
+                " on " +
+                c.n(PROV, ["runs", i, "platform"], "text") +
+                "</span>",
+            ),
+          );
+          if (r && Array.isArray(r.inputs))
+            r.inputs.forEach((inp, i) =>
+              fact(
+                "Rows " + c.n(RESULTS, ["inputs", i, "file"], "text"),
+                c.n(RESULTS, ["inputs", i, "rows"], "int") +
+                  ' rows<span class="sub">SHA-256 ' +
+                  c.n(RESULTS, ["inputs", i, "sha256"], "text") +
+                  "</span>",
+              ),
+            );
+          if (prov.demo && prov.demo.label) fact("README demo", c.n(PROV, ["demo", "label"], "text"));
+          const rowsArgs =
+            r && Array.isArray(r.inputs)
+              ? r.inputs.map((_x, i) => " --rows " + c.n(RESULTS, ["inputs", i, "file"], "text")).join("")
+              : " --rows rows-S-main.jsonl --rows rows-S-imp.jsonl";
+          const sampleN = (frame) =>
+            r && r.frames && r.frames[frame] ? c.n(RESULTS, ["frames", frame, "drawn"], "int") : "&lt;n&gt;";
+          const cmds = [
+            ["Every census figure and hypothesis verdict", "node study/census/analyze.mjs" + rowsArgs + " --k3 K3.manifest.json --frame-manifest S.manifest.json --out results.json"],
+            ["The seed", "node study/census/seed.mjs"],
+            ["The S-main sample", "node study/census/sample.mjs --frame S.tsv --n " + sampleN("S-main") + " --stream S-main --seed-from-tag prereg-v1 --out S-main.tsv"],
+            ["The S-imp sample", "node study/census/sample.mjs --frame S-imp.tsv --n " + sampleN("S-imp") + " --stream S-imp --seed-from-tag prereg-v1 --exclude S-main.tsv --out S-imp.tsv"],
+            ["K1 and K2", "node study/census/known-answer.mjs --json\nnode study/census/plant-census-faults.mjs"],
+            ["K6", "node study/handcheck/handcheck.mjs score --out &lt;k6 folder&gt;"],
+            ["Lab cells", "node study/behavioural/run-cells.mjs --live --out &lt;dir&gt; --ctxreach dist/cli.js --claude-bin &lt;pinned claude&gt; --model &lt;pin&gt;"],
+            ["A lab-cell recording", "ctxreach verify --agent claude --replay &lt;recording&gt;\nctxreach probe --replay &lt;recording&gt;"],
+            ["The conformance matrix (free, no login)", "node scripts/conformance.mjs --agents codex\nnode scripts/conformance.mjs --agents claude --model &lt;pin&gt;"],
+            ["The README demo", "node scripts/make-cast.mjs --svg docs/demo.svg"],
+            ["This page's data", "node scripts/site-data.mjs --label study --out site/data/provenance.json &lt;sources&gt;"],
+          ];
+          const loaded = Object.keys(c.files).filter((f) => c.has(f));
+          return (
+            '<section id="reproduce" aria-labelledby="reproduce-h"><h2 id="reproduce-h">Reproduce</h2>' +
+            "<p>Every figure has one command. Run them from a clone at the tagged commit; the census scripts take the seed from the tag, never from a typed value.</p>" +
+            (facts.length ? '<dl class="facts">' + facts.join("") + "</dl>" : '<p class="empty">No manifest loaded yet (<code>data/provenance.json</code>).</p>') +
+            wrapTable(
+              '<thead><tr><th scope="col">Figure</th><th scope="col">Command</th></tr></thead><tbody>' +
+                cmds.map(([what, cmd]) => '<tr><th scope="row">' + what + '</th><td class="cmd"><pre><code>' + cmd + "</code></pre></td></tr>").join("") +
+                "</tbody>",
+            ) +
+            "<p>Data loaded by this page: " +
+            (loaded.length
+              ? loaded.map((f) => '<a href="data/' + esc(f) + '">' + c.n(f, [], "file") + "</a>").join(", ")
+              : "none") +
+            ".</p></section>"
+          );
+        }
+
+        /** The whole page body for the loaded data. */
+        function renderSite(data) {
+          const c = context(data, "html");
+          const state = dataState(c.files);
+          const html = [
+            banner(c, state),
+            sectionHeadline(c, state),
+            sectionChecks(c),
+            sectionMatrix(c),
+            sectionCensus(c),
+            sectionPrereg(c),
+            sectionMethod(),
+            sectionCredits(),
+            sectionReproduce(c),
+          ].join("\n");
+          return { html, state };
+        }
+
+        root.ctxrCore = {
+          RESULTS,
+          CELLS,
+          PROV,
+          CONFORMANCE_FILES,
+          SECTION_ORDER,
+          FORMATS,
+          pointer,
+          context,
+          dataState,
+          headline,
+          slots,
+          renderTemplate,
+          renderSite,
+        };
+      })(globalThis);
+    </script>
+
+    <script id="ctxr-boot">
+      (function () {
+        "use strict";
+        const core = globalThis.ctxrCore;
+        async function get(name) {
+          try {
+            const r = await fetch("data/" + name, { cache: "no-cache" });
+            if (!r.ok) return undefined;
+            return await r.json();
+          } catch (e) {
+            return undefined;
+          }
+        }
+        async function boot() {
+          const files = {};
+          await Promise.all([core.RESULTS, core.CELLS, core.PROV].map(async (n) => (files[n] = await get(n))));
+          let conf = core.CONFORMANCE_FILES;
+          const index = await get("conformance/latest/index.json");
+          if (index && Array.isArray(index.files))
+            conf = index.files
+              .filter((f) => /^[A-Za-z0-9._-]+\.json$/.test(f) && f !== "index.json")
+              .map((f) => "conformance/latest/" + f);
+          await Promise.all(conf.map(async (n) => (files[n] = await get(n))));
+          for (const k of Object.keys(files)) if (files[k] === undefined) delete files[k];
+          let out;
+          try {
+            out = core.renderSite({ files });
+          } catch (e) {
+            document.getElementById("site").innerHTML =
+              '<p class="empty">The data files could not be drawn: ' +
+              String(e && e.message ? e.message : e).replace(/[<>&]/g, "") +
+              "</p>";
+            return;
+          }
+          document.getElementById("site").innerHTML = out.html;
+          document.documentElement.classList.toggle("is-sample", out.state.sample);
+          if (location.hash.length > 1) {
+            const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+            if (el) el.scrollIntoView();
+          }
+        }
+        boot();
+      })();
+    </script>
+  </body>
+</html>
