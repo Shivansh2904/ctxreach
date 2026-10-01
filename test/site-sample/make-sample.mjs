@@ -46,6 +46,9 @@ const sha256 = (s) => createHash("sha256").update(s).digest("hex");
 export function fakeRows(frame, n, seed) {
   const r = rng(seed);
   const p = (x) => r() < x;
+  // A second stream for the fields the analysis came to read later (each pair's Codex chain, O7's broken links,
+  // O8's bytes), so the values drawn from the first stream stay what they were.
+  const q = rng(seed ^ 0x2545f491);
   const imp = frame === "S-imp";
   const codes = ["claude.agents-shadowed", "codex.cut", "claude.words-not-import", "codex.nested", "claude.too-large"];
   const rows = [];
@@ -86,6 +89,29 @@ export function fakeRows(frame, n, seed) {
       };
     });
     const faults = p(0.012) ? ["map answered for another launch directory"] : [];
+    // The root AGENTS.md's bytes, and what Codex keeps of it at the root launch: at most its budget, and
+    // nothing when an AGENTS.override.md beside it is read instead.
+    const rootBytes = 200 + Math.floor(q() * (q() < 0.05 ? 90000 : 12000));
+    const overridden = q() < 0.02;
+    const rootChain = overridden
+      ? [{ path: "AGENTS.override.md", bytes: 400, kept: 400, status: "full" }]
+      : [
+          {
+            path: "AGENTS.md",
+            bytes: rootBytes,
+            kept: Math.min(rootBytes, 32768),
+            status: rootBytes > 32768 ? "cut" : "full",
+          },
+        ];
+    const broken = linkAffected && q() < 0.3 ? 1 : 0;
+    const samplePairs = Array.from({ length: pairs }, (_x, d) => ({
+      dir: d === 0 ? "." : `packages/p${d}`,
+      type: d === 0 ? 1 : 2,
+      warn: d === 0 ? rootWarn : [],
+      findings: [],
+      codex: { chain: d === 0 ? rootChain : [], notPreloaded: [], codes: [] },
+      claude: { agentsRead: !o1file, codes: [], files: [], shadowers: [] },
+    }));
     rows.push({
       ...base,
       status: "measured",
@@ -96,6 +122,7 @@ export function fakeRows(frame, n, seed) {
       blobs: { rootAgents: p(0.05) ? "sample-template-blob" : sha256(`${repo}:AGENTS.md`).slice(0, 40) },
       launch: { t2Total, t2: Array.from({ length: t2Dirs }, (_x, d) => `packages/p${d + 1}`), t3: [] },
       files: [],
+      pairs: samplePairs,
       k4: { pairs: k4pairs, exact: k4pairs.filter((x) => x.verdict === "EXACT").length, n: k4pairs.length },
       outcomes: {
         o1content: { eligible, event: o1 },
@@ -113,8 +140,13 @@ export function fakeRows(frame, n, seed) {
         o4: { eligible, event: eligible && p(0.11) },
         o5: { rootWarn, rootWarnMap: rootWarn, anyWarn: rootWarn, linkAffected },
         o6: { eligible, event: eligible && p(0.05) },
-        o7: { event: linkAffected, rootLinkToAgents: linkAffected && p(0.5) },
-        o8: { eligible, event: eligible && p(0.03) },
+        o7: { event: linkAffected, broken, rootLinkToAgents: linkAffected && p(0.5) },
+        o8: {
+          eligible,
+          event: eligible && p(0.03),
+          bytes: rootBytes,
+          ...(rootBytes > 32768 ? { effectiveChars: 20000 + Math.floor(q() * 12768) } : {}),
+        },
         k3: { eligible, event: o1file || (eligible && p(0.02)) },
       },
     });

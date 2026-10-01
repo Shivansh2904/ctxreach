@@ -640,6 +640,8 @@ describe("site/data", () => {
       "frames",
       "hypotheses",
       "outcomes",
+      // Figures that are not proportions (O8-held-chars), in the study's results.json since 1b54a13.
+      "summaries",
       "checks",
       "wording",
     ]);
@@ -748,7 +750,7 @@ describe("names, links and issue numbers in the site, the talk and the workshop"
   // it is checked the same way and added.
   const LINKS = new Set([
     "https://github.com/Shivansh2904/ctxreach", // git remote get-url origin; public (gh api repos/...)
-    "https://github.com/Shivansh2904/ctxreach/blob/main/study/PREREG.md", // main:study/PREREG.md (not pushed on 2026-10-01)
+    "https://github.com/Shivansh2904/ctxreach/blob/main/study/PREREG.md", // study/PREREG.md (added in ae939bb), on origin/main at 8dbb4a4
     "https://shivansh2904.github.io/ctxreach/", // Pages' project-site address, <owner>.github.io/<repo> (main's pages.yml)
     "https://blog.szypowi.cz/p/claude-code-reads-agents.md-only-when-telemetry-is-on/",
     "https://github.com/openai/codex/issues/13386",

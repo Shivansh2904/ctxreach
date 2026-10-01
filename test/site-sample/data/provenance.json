@@ -1,7 +1,7 @@
 {
   "schema": "ctxreach.site-provenance/v1",
   "label": "sample",
-  "assembledAt": "2026-10-01T00:54:09.491Z",
+  "assembledAt": "2026-10-01T07:49:20.704Z",
   "repo": "Shivansh2904/ctxreach",
   "sources": [
     {
@@ -37,7 +37,7 @@
     {
       "arg": "--trials",
       "file": "trials.jsonl",
-      "sha256": "ad4b2349610926d159ef7095dd18b070d7ac1c8359eaa0564b659c210d6953b5"
+      "sha256": "277557b14deb52dc887c0ffd7d3376be93be6aca9d8a74a6da2360c78af4015f"
     },
     {
       "arg": "--cast",
@@ -142,8 +142,8 @@
     "agentVersions": ["0.0.0-fake"],
     "models": ["fake-model"],
     "os": ["win32 10.0.26200"],
-    "firstTrial": "2026-10-01T00:53:51.106Z",
-    "lastTrial": "2026-10-01T00:54:09.449Z",
+    "firstTrial": "2026-10-01T07:49:09.972Z",
+    "lastTrial": "2026-10-01T07:49:20.676Z",
     "dryRun": true
   },
   "recordings": [

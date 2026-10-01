@@ -277,6 +277,270 @@
       "reasons": []
     },
     {
+      "fixture": "codex-home-is-root",
+      "launchDir": ".",
+      "agent": "codex",
+      "version": "0.0.0-sample",
+      "os": "win32 sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "render",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": {
+        "AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        },
+        "packages/api/AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        }
+      },
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "codex-home-is-root",
+      "launchDir": "packages/api",
+      "agent": "codex",
+      "version": "0.0.0-sample",
+      "os": "win32 sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "render",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["packages/api/AGENTS.md"],
+      "verdict": "disagree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": {
+        "AGENTS.md": {
+          "predicted": 1000,
+          "observed": 990,
+          "verdict": "OFF BY -10"
+        },
+        "packages/api/AGENTS.md": {
+          "predicted": 1000,
+          "observed": 990,
+          "verdict": "OFF BY -10"
+        }
+      },
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "codex-home-is-root-twin",
+      "launchDir": ".",
+      "agent": "codex",
+      "version": "0.0.0-sample",
+      "os": "win32 sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "render",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": {
+        "AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        },
+        "packages/api/AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        }
+      },
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "codex-home-is-root-twin",
+      "launchDir": "packages/api",
+      "agent": "codex",
+      "version": "0.0.0-sample",
+      "os": "win32 sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "render",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": {
+        "AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        },
+        "packages/api/AGENTS.md": {
+          "predicted": 1000,
+          "observed": 1000,
+          "verdict": "EXACT"
+        }
+      },
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
       "fixture": "codex-nested-below-cwd",
       "launchDir": ".",
       "agent": "codex",
@@ -351,72 +615,6 @@
       "date": "2026-01-01T00:00:00.000Z",
       "instrument": "render",
       "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
-      "observed": ["packages/api/AGENTS.md"],
-      "verdict": "disagree",
-      "cells": [
-        {
-          "file": "AGENTS.md",
-          "position": "head",
-          "predicted": "launch",
-          "observed": "2/2",
-          "verdict": "missed"
-        },
-        {
-          "file": "AGENTS.md",
-          "position": "tail",
-          "predicted": "launch",
-          "observed": "2/2",
-          "verdict": "missed"
-        },
-        {
-          "file": "packages/api/AGENTS.md",
-          "position": "head",
-          "predicted": "launch",
-          "observed": "2/2",
-          "verdict": "confirmed"
-        },
-        {
-          "file": "packages/api/AGENTS.md",
-          "position": "tail",
-          "predicted": "launch",
-          "observed": "2/2",
-          "verdict": "confirmed"
-        }
-      ],
-      "keptBytes": {
-        "AGENTS.md": {
-          "predicted": 1000,
-          "observed": 990,
-          "verdict": "OFF BY -10"
-        },
-        "packages/api/AGENTS.md": {
-          "predicted": 1000,
-          "observed": 990,
-          "verdict": "OFF BY -10"
-        }
-      },
-      "controls": {
-        "control": {
-          "seen": 2,
-          "usable": 2
-        },
-        "decoy": {
-          "seen": 0,
-          "usable": 2
-        },
-        "deliveredKinds": ["launch", "launch-cut", "import"]
-      },
-      "reasons": []
-    },
-    {
-      "fixture": "codex-nested-below-cwd-twin",
-      "launchDir": ".",
-      "agent": "codex",
-      "version": "0.0.0-sample",
-      "os": "win32 sample",
-      "date": "2026-01-01T00:00:00.000Z",
-      "instrument": "render",
-      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
       "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
       "verdict": "agree",
       "cells": [
@@ -459,6 +657,72 @@
           "predicted": 1000,
           "observed": 1000,
           "verdict": "EXACT"
+        }
+      },
+      "controls": {
+        "control": {
+          "seen": 2,
+          "usable": 2
+        },
+        "decoy": {
+          "seen": 0,
+          "usable": 2
+        },
+        "deliveredKinds": ["launch", "launch-cut", "import"]
+      },
+      "reasons": []
+    },
+    {
+      "fixture": "codex-nested-below-cwd-twin",
+      "launchDir": ".",
+      "agent": "codex",
+      "version": "0.0.0-sample",
+      "os": "win32 sample",
+      "date": "2026-01-01T00:00:00.000Z",
+      "instrument": "render",
+      "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "observed": ["packages/api/AGENTS.md"],
+      "verdict": "disagree",
+      "cells": [
+        {
+          "file": "AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "missed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "head",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        },
+        {
+          "file": "packages/api/AGENTS.md",
+          "position": "tail",
+          "predicted": "launch",
+          "observed": "2/2",
+          "verdict": "confirmed"
+        }
+      ],
+      "keptBytes": {
+        "AGENTS.md": {
+          "predicted": 1000,
+          "observed": 990,
+          "verdict": "OFF BY -10"
+        },
+        "packages/api/AGENTS.md": {
+          "predicted": 1000,
+          "observed": 990,
+          "verdict": "OFF BY -10"
         }
       },
       "controls": {
@@ -681,22 +945,22 @@
       "date": "2026-01-01T00:00:00.000Z",
       "instrument": "render",
       "predicted": ["AGENTS.md", "packages/api/AGENTS.md"],
-      "observed": ["packages/api/AGENTS.md"],
-      "verdict": "disagree",
+      "observed": ["AGENTS.md", "packages/api/AGENTS.md"],
+      "verdict": "agree",
       "cells": [
         {
           "file": "AGENTS.md",
           "position": "head",
           "predicted": "launch",
           "observed": "2/2",
-          "verdict": "missed"
+          "verdict": "confirmed"
         },
         {
           "file": "AGENTS.md",
           "position": "tail",
           "predicted": "launch",
           "observed": "2/2",
-          "verdict": "missed"
+          "verdict": "confirmed"
         },
         {
           "file": "packages/api/AGENTS.md",
@@ -716,13 +980,13 @@
       "keptBytes": {
         "AGENTS.md": {
           "predicted": 1000,
-          "observed": 990,
-          "verdict": "OFF BY -10"
+          "observed": 1000,
+          "verdict": "EXACT"
         },
         "packages/api/AGENTS.md": {
           "predicted": 1000,
-          "observed": 990,
-          "verdict": "OFF BY -10"
+          "observed": 1000,
+          "verdict": "EXACT"
         }
       },
       "controls": {

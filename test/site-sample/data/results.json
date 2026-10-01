@@ -1,22 +1,26 @@
 {
   "schema": "ctxreach.study-results/v1",
   "label": "sample",
-  "generatedAt": "2026-10-01T00:53:50.699Z",
+  "generatedAt": "2026-10-01T07:49:09.804Z",
   "inputs": [
     {
       "file": "SAMPLE-rows-S-main.jsonl",
-      "sha256": "b5ddf27b3ce5216dfafc6de7e845e7c81c95e4d5b5398a4dc3970ba0059b8ccb",
+      "sha256": "49942c771013212e870997c74e988d187f1f2aaa00b80b7b3a72adf4c2d5fc24",
       "rows": 240
     },
     {
       "file": "SAMPLE-rows-S-imp.jsonl",
-      "sha256": "e63f337609ddf4f5a477319ef2703d1524eeaa7f0a34f5940bd00139e0bcb54f",
+      "sha256": "1de699b628fadf8dca6b18062b64179e96754df989aec5335f11fba5285c8a67",
       "rows": 90
     }
   ],
   "frames": {
     "S-main": {
+      "frame": "S-main",
+      "draw": 1,
       "drawn": 240,
+      "rowsGiven": 240,
+      "complete": true,
       "measured": 230,
       "excluded": 7,
       "exclusions": {
@@ -51,10 +55,20 @@
       "redrawRequired": false,
       "claudeVersions": ["0.0.0-sample"],
       "mapVersions": ["0.0.0-sample"],
-      "labels": ["sample"]
+      "codexVersions": [null],
+      "dists": [null],
+      "platforms": [null],
+      "labels": ["sample"],
+      "sharedRepos": {
+        "S-imp": 0
+      }
     },
     "S-imp": {
+      "frame": "S-imp",
+      "draw": 1,
       "drawn": 90,
+      "rowsGiven": 90,
+      "complete": true,
       "measured": 85,
       "excluded": 4,
       "exclusions": {
@@ -81,7 +95,13 @@
       "redrawRequired": false,
       "claudeVersions": ["0.0.0-sample"],
       "mapVersions": ["0.0.0-sample"],
-      "labels": ["sample"]
+      "codexVersions": [null],
+      "dists": [null],
+      "platforms": [null],
+      "labels": ["sample"],
+      "sharedRepos": {
+        "S-main": 0
+      }
     }
   },
   "hypotheses": [
@@ -178,7 +198,10 @@
       "p": 0.230088,
       "lo": 0.18,
       "hi": 0.289199,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -190,7 +213,40 @@
       "p": 0.20354,
       "lo": 0.156207,
       "hi": 0.260782,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 8,
+      "n": 226,
+      "p": 0.035398,
+      "lo": 0.018044,
+      "hi": 0.068283,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 11,
+      "n": 226,
+      "p": 0.048673,
+      "lo": 0.027392,
+      "hi": 0.085039,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-file",
@@ -202,7 +258,10 @@
       "p": 0.287611,
       "lo": 0.232534,
       "hi": 0.349787,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2",
@@ -214,7 +273,10 @@
       "p": 0.057522,
       "lo": 0.033921,
       "hi": 0.095914,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-types123",
@@ -226,7 +288,10 @@
       "p": 0.075221,
       "lo": 0.047492,
       "hi": 0.11715,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-given-type2",
@@ -238,7 +303,11 @@
       "p": 0.160494,
       "lo": 0.096262,
       "hi": 0.25547,
-      "ineligible": 149
+      "ineligible": 149,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 145,
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-repos",
@@ -250,7 +319,8 @@
       "p": 0.06087,
       "lo": 0.036601,
       "hi": 0.099565,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -262,7 +332,8 @@
       "p": 0.086957,
       "lo": 0.056995,
       "hi": 0.130488,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -274,7 +345,10 @@
       "p": 0.128319,
       "lo": 0.09085,
       "hi": 0.178212,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -286,7 +360,21 @@
       "p": 0.365217,
       "lo": 0.305679,
       "hi": 0.429184,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 84,
+      "n": 230,
+      "p": 0.365217,
+      "lo": 0.305679,
+      "hi": 0.429184,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -298,7 +386,10 @@
       "p": 0.372197,
       "lo": 0.311419,
       "hi": 0.437304,
-      "ineligible": 7
+      "ineligible": 7,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 7
+      }
     },
     {
       "id": "O6",
@@ -310,7 +401,25 @@
       "p": 0.048673,
       "lo": 0.027392,
       "hi": 0.085039,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 8,
+      "n": 226,
+      "p": 0.035398,
+      "lo": 0.018044,
+      "hi": 0.068283,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O7",
@@ -322,7 +431,21 @@
       "p": 0.030435,
       "lo": 0.014819,
       "hi": 0.061478,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 1,
+      "n": 230,
+      "p": 0.004348,
+      "lo": 0.000768,
+      "hi": 0.024213,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -334,7 +457,8 @@
       "p": 0.017391,
       "lo": 0.006783,
       "hi": 0.043855,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -346,7 +470,25 @@
       "p": 0.030973,
       "lo": 0.015083,
       "hi": 0.062542,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 7,
+      "n": 226,
+      "p": 0.030973,
+      "lo": 0.015083,
+      "hi": 0.062542,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -358,7 +500,10 @@
       "p": 0.29646,
       "lo": 0.240722,
       "hi": 0.359002,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-pairs",
@@ -394,7 +539,73 @@
       "p": 0.291304,
       "lo": 0.236396,
       "hi": 0.353069,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -406,7 +617,21 @@
       "p": 0.008696,
       "lo": 0.002388,
       "hi": 0.031145,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -418,7 +643,8 @@
       "p": 0.034783,
       "lo": 0.017728,
       "hi": 0.067122,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -430,7 +656,47 @@
       "p": 0.017391,
       "lo": 0.006783,
       "hi": 0.043855,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -442,7 +708,294 @@
       "p": 0.043478,
       "lo": 0.023785,
       "hi": 0.07817,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 67,
+      "n": 230,
+      "p": 0.291304,
+      "lo": 0.236396,
+      "hi": 0.353069,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 2,
+      "n": 230,
+      "p": 0.008696,
+      "lo": 0.002388,
+      "hi": 0.031145,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 8,
+      "n": 230,
+      "p": 0.034783,
+      "lo": 0.017728,
+      "hi": 0.067122,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 4,
+      "n": 230,
+      "p": 0.017391,
+      "lo": 0.006783,
+      "hi": 0.043855,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 10,
+      "n": 230,
+      "p": 0.043478,
+      "lo": 0.023785,
+      "hi": 0.07817,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 230,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016428,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O1-content",
@@ -454,7 +1007,10 @@
       "p": 0.239437,
       "lo": 0.187066,
       "hi": 0.301039,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -466,7 +1022,40 @@
       "p": 0.211268,
       "lo": 0.16181,
       "hi": 0.270955,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 8,
+      "n": 213,
+      "p": 0.037559,
+      "lo": 0.019152,
+      "hi": 0.07235,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 11,
+      "n": 213,
+      "p": 0.051643,
+      "lo": 0.029078,
+      "hi": 0.090094,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-file",
@@ -478,7 +1067,10 @@
       "p": 0.295775,
       "lo": 0.23854,
       "hi": 0.360246,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2",
@@ -490,7 +1082,10 @@
       "p": 0.056338,
       "lo": 0.032518,
       "hi": 0.095877,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-types123",
@@ -502,7 +1097,10 @@
       "p": 0.075117,
       "lo": 0.046764,
       "hi": 0.118525,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-given-type2",
@@ -514,7 +1112,11 @@
       "p": 0.155844,
       "lo": 0.091459,
       "hi": 0.252937,
-      "ineligible": 140
+      "ineligible": 140,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 136,
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-repos",
@@ -526,7 +1128,8 @@
       "p": 0.064516,
       "lo": 0.038816,
       "hi": 0.105366,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -538,7 +1141,8 @@
       "p": 0.087558,
       "lo": 0.056769,
       "hi": 0.132694,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -550,7 +1154,10 @@
       "p": 0.126761,
       "lo": 0.088599,
       "hi": 0.178146,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -562,7 +1169,21 @@
       "p": 0.373272,
       "lo": 0.311647,
       "hi": 0.439305,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 81,
+      "n": 217,
+      "p": 0.373272,
+      "lo": 0.311647,
+      "hi": 0.439305,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -574,7 +1195,10 @@
       "p": 0.380952,
       "lo": 0.317968,
       "hi": 0.448214,
-      "ineligible": 7
+      "ineligible": 7,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 7
+      }
     },
     {
       "id": "O6",
@@ -586,7 +1210,25 @@
       "p": 0.051643,
       "lo": 0.029078,
       "hi": 0.090094,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 8,
+      "n": 213,
+      "p": 0.037559,
+      "lo": 0.019152,
+      "hi": 0.07235,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O7",
@@ -598,7 +1240,21 @@
       "p": 0.032258,
       "lo": 0.015712,
       "hi": 0.065077,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 1,
+      "n": 217,
+      "p": 0.004608,
+      "lo": 0.000814,
+      "hi": 0.025637,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -610,7 +1266,8 @@
       "p": 0.018433,
       "lo": 0.007191,
       "hi": 0.046429,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -622,7 +1279,25 @@
       "p": 0.028169,
       "lo": 0.012973,
       "hi": 0.060083,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 7,
+      "n": 213,
+      "p": 0.032864,
+      "lo": 0.016009,
+      "hi": 0.06627,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -634,7 +1309,10 @@
       "p": 0.305164,
       "lo": 0.247229,
       "hi": 0.370002,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-pairs",
@@ -670,7 +1348,73 @@
       "p": 0.294931,
       "lo": 0.238249,
       "hi": 0.358746,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -682,7 +1426,21 @@
       "p": 0.009217,
       "lo": 0.002531,
       "hi": 0.032976,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -694,7 +1452,8 @@
       "p": 0.036866,
       "lo": 0.018797,
       "hi": 0.071048,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -706,7 +1465,47 @@
       "p": 0.018433,
       "lo": 0.007191,
       "hi": 0.046429,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -718,7 +1517,294 @@
       "p": 0.046083,
       "lo": 0.025221,
       "hi": 0.082736,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 64,
+      "n": 217,
+      "p": 0.294931,
+      "lo": 0.238249,
+      "hi": 0.358746,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 2,
+      "n": 217,
+      "p": 0.009217,
+      "lo": 0.002531,
+      "hi": 0.032976,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 8,
+      "n": 217,
+      "p": 0.036866,
+      "lo": 0.018797,
+      "hi": 0.071048,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 4,
+      "n": 217,
+      "p": 0.018433,
+      "lo": 0.007191,
+      "hi": 0.046429,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 10,
+      "n": 217,
+      "p": 0.046083,
+      "lo": 0.025221,
+      "hi": 0.082736,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 217,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.017395,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O1-content",
@@ -730,7 +1816,10 @@
       "p": 0.232143,
       "lo": 0.181652,
       "hi": 0.291666,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -742,7 +1831,40 @@
       "p": 0.205357,
       "lo": 0.157637,
       "hi": 0.263013,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 7,
+      "n": 224,
+      "p": 0.03125,
+      "lo": 0.015218,
+      "hi": 0.063088,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 10,
+      "n": 224,
+      "p": 0.044643,
+      "lo": 0.024427,
+      "hi": 0.080213,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O1-file",
@@ -754,7 +1876,10 @@
       "p": 0.290179,
       "lo": 0.23468,
       "hi": 0.352753,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2",
@@ -766,7 +1891,10 @@
       "p": 0.058036,
       "lo": 0.034227,
       "hi": 0.096748,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-types123",
@@ -778,7 +1906,10 @@
       "p": 0.075893,
       "lo": 0.047921,
       "hi": 0.118166,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O2-given-type2",
@@ -790,7 +1921,11 @@
       "p": 0.160494,
       "lo": 0.096262,
       "hi": 0.25547,
-      "ineligible": 147
+      "ineligible": 147,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 143,
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-repos",
@@ -802,7 +1937,8 @@
       "p": 0.061404,
       "lo": 0.036926,
       "hi": 0.100416,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -814,7 +1950,8 @@
       "p": 0.087719,
       "lo": 0.057502,
       "hi": 0.131599,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -826,7 +1963,10 @@
       "p": 0.125,
       "lo": 0.087917,
       "hi": 0.174728,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -838,7 +1978,21 @@
       "p": 0.364035,
       "lo": 0.304311,
       "hi": 0.428265,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 83,
+      "n": 228,
+      "p": 0.364035,
+      "lo": 0.304311,
+      "hi": 0.428265,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -850,7 +2004,10 @@
       "p": 0.371041,
       "lo": 0.310062,
       "hi": 0.436426,
-      "ineligible": 7
+      "ineligible": 7,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 7
+      }
     },
     {
       "id": "O6",
@@ -862,7 +2019,25 @@
       "p": 0.049107,
       "lo": 0.027639,
       "hi": 0.08578,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 8,
+      "n": 224,
+      "p": 0.035714,
+      "lo": 0.018206,
+      "hi": 0.068878,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "O7",
@@ -874,7 +2049,21 @@
       "p": 0.030702,
       "lo": 0.01495,
       "hi": 0.062005,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 1,
+      "n": 228,
+      "p": 0.004386,
+      "lo": 0.000775,
+      "hi": 0.024421,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -886,7 +2075,8 @@
       "p": 0.017544,
       "lo": 0.006843,
       "hi": 0.044233,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -898,7 +2088,25 @@
       "p": 0.03125,
       "lo": 0.015218,
       "hi": 0.063088,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 7,
+      "n": 224,
+      "p": 0.03125,
+      "lo": 0.015218,
+      "hi": 0.063088,
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -910,7 +2118,10 @@
       "p": 0.299107,
       "lo": 0.242945,
       "hi": 0.362043,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "not eligible": 4
+      }
     },
     {
       "id": "P1-pairs",
@@ -946,7 +2157,73 @@
       "p": 0.289474,
       "lo": 0.23448,
       "hi": 0.351444,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -958,7 +2235,21 @@
       "p": 0.008772,
       "lo": 0.002409,
       "hi": 0.031414,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -970,7 +2261,8 @@
       "p": 0.035088,
       "lo": 0.017885,
       "hi": 0.067697,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -982,7 +2274,47 @@
       "p": 0.017544,
       "lo": 0.006843,
       "hi": 0.044233,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -994,7 +2326,294 @@
       "p": 0.04386,
       "lo": 0.023995,
       "hi": 0.07884,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 66,
+      "n": 228,
+      "p": 0.289474,
+      "lo": 0.23448,
+      "hi": 0.351444,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 2,
+      "n": 228,
+      "p": 0.008772,
+      "lo": 0.002409,
+      "hi": 0.031414,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 8,
+      "n": 228,
+      "p": 0.035088,
+      "lo": 0.017885,
+      "hi": 0.067697,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 4,
+      "n": 228,
+      "p": 0.017544,
+      "lo": 0.006843,
+      "hi": 0.044233,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 10,
+      "n": 228,
+      "p": 0.04386,
+      "lo": 0.023995,
+      "hi": 0.07884,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 228,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.016569,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O1-content",
@@ -1006,7 +2625,10 @@
       "p": 0.060976,
       "lo": 0.026324,
       "hi": 0.13492,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -1018,7 +2640,40 @@
       "p": 0.04878,
       "lo": 0.019131,
       "hi": 0.118815,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 3,
+      "n": 82,
+      "p": 0.036585,
+      "lo": 0.01252,
+      "hi": 0.102127,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 3,
+      "n": 82,
+      "p": 0.036585,
+      "lo": 0.01252,
+      "hi": 0.102127,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O1-file",
@@ -1030,7 +2685,10 @@
       "p": 0.097561,
       "lo": 0.050269,
       "hi": 0.180872,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2",
@@ -1042,7 +2700,10 @@
       "p": 0.182927,
       "lo": 0.11411,
       "hi": 0.280122,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2-types123",
@@ -1054,7 +2715,10 @@
       "p": 0.195122,
       "lo": 0.123829,
       "hi": 0.293702,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2-given-type2",
@@ -1066,7 +2730,11 @@
       "p": 0.214286,
       "lo": 0.134387,
       "hi": 0.323912,
-      "ineligible": 15
+      "ineligible": 15,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 12,
+        "not eligible": 3
+      }
     },
     {
       "id": "P1-repos",
@@ -1078,7 +2746,8 @@
       "p": 0.117647,
       "lo": 0.065174,
       "hi": 0.203186,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -1090,7 +2759,8 @@
       "p": 0.141176,
       "lo": 0.082642,
       "hi": 0.230741,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -1102,7 +2772,10 @@
       "p": 0.073171,
       "lo": 0.033965,
       "hi": 0.150578,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -1114,7 +2787,21 @@
       "p": 0.294118,
       "lo": 0.207855,
       "hi": 0.398185,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 25,
+      "n": 85,
+      "p": 0.294118,
+      "lo": 0.207855,
+      "hi": 0.398185,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -1126,7 +2813,10 @@
       "p": 0.308642,
       "lo": 0.218632,
       "hi": 0.415981,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 4
+      }
     },
     {
       "id": "O6",
@@ -1138,7 +2828,25 @@
       "p": 0.02439,
       "lo": 0.006714,
       "hi": 0.084634,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 5,
+      "n": 82,
+      "p": 0.060976,
+      "lo": 0.026324,
+      "hi": 0.13492,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O7",
@@ -1150,7 +2858,21 @@
       "p": 0.047059,
       "lo": 0.01845,
       "hi": 0.114837,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -1162,7 +2884,8 @@
       "p": 0.023529,
       "lo": 0.006477,
       "hi": 0.081787,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -1174,7 +2897,25 @@
       "p": 0.04878,
       "lo": 0.019131,
       "hi": 0.118815,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 2,
+      "n": 82,
+      "p": 0.02439,
+      "lo": 0.006714,
+      "hi": 0.084634,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -1186,7 +2927,10 @@
       "p": 0.097561,
       "lo": 0.050269,
       "hi": 0.180872,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "P1-pairs",
@@ -1222,7 +2966,73 @@
       "p": 0.2,
       "lo": 0.12879,
       "hi": 0.297154,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -1234,7 +3044,21 @@
       "p": 0.011765,
       "lo": 0.00208,
       "hi": 0.063672,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -1246,7 +3070,8 @@
       "p": 0.058824,
       "lo": 0.025385,
       "hi": 0.130414,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -1258,7 +3083,47 @@
       "p": 0.011765,
       "lo": 0.00208,
       "hi": 0.063672,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -1270,7 +3135,294 @@
       "p": 0.047059,
       "lo": 0.01845,
       "hi": 0.114837,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 17,
+      "n": 85,
+      "p": 0.2,
+      "lo": 0.12879,
+      "hi": 0.297154,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 5,
+      "n": 85,
+      "p": 0.058824,
+      "lo": 0.025385,
+      "hi": 0.130414,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 4,
+      "n": 85,
+      "p": 0.047059,
+      "lo": 0.01845,
+      "hi": 0.114837,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O1-content",
@@ -1282,7 +3434,10 @@
       "p": 0.064935,
       "lo": 0.028053,
       "hi": 0.143164,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -1294,7 +3449,40 @@
       "p": 0.051948,
       "lo": 0.020385,
       "hi": 0.126093,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 3,
+      "n": 77,
+      "p": 0.038961,
+      "lo": 0.013338,
+      "hi": 0.1084,
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 3,
+      "n": 77,
+      "p": 0.038961,
+      "lo": 0.013338,
+      "hi": 0.1084,
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O1-file",
@@ -1306,7 +3494,10 @@
       "p": 0.103896,
       "lo": 0.053593,
       "hi": 0.191844,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O2",
@@ -1318,7 +3509,10 @@
       "p": 0.168831,
       "lo": 0.101407,
       "hi": 0.267729,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O2-types123",
@@ -1330,7 +3524,10 @@
       "p": 0.181818,
       "lo": 0.111513,
       "hi": 0.282363,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O2-given-type2",
@@ -1342,7 +3539,11 @@
       "p": 0.2,
       "lo": 0.12078,
       "hi": 0.312701,
-      "ineligible": 14
+      "ineligible": 14,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 12,
+        "not eligible": 2
+      }
     },
     {
       "id": "P1-repos",
@@ -1354,7 +3555,8 @@
       "p": 0.126582,
       "lo": 0.070233,
       "hi": 0.217564,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -1366,7 +3568,8 @@
       "p": 0.139241,
       "lo": 0.079565,
       "hi": 0.232373,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -1378,7 +3581,10 @@
       "p": 0.077922,
       "lo": 0.036201,
       "hi": 0.159756,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -1390,7 +3596,21 @@
       "p": 0.291139,
       "lo": 0.20252,
       "hi": 0.399129,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 23,
+      "n": 79,
+      "p": 0.291139,
+      "lo": 0.20252,
+      "hi": 0.399129,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -1402,7 +3622,10 @@
       "p": 0.306667,
       "lo": 0.213869,
       "hi": 0.418305,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 4
+      }
     },
     {
       "id": "O6",
@@ -1414,7 +3637,25 @@
       "p": 0.025974,
       "lo": 0.007152,
       "hi": 0.089846,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 5,
+      "n": 77,
+      "p": 0.064935,
+      "lo": 0.028053,
+      "hi": 0.143164,
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "O7",
@@ -1426,7 +3667,21 @@
       "p": 0.050633,
       "lo": 0.019864,
       "hi": 0.123077,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 1,
+      "n": 79,
+      "p": 0.012658,
+      "lo": 0.002238,
+      "hi": 0.068276,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -1438,7 +3693,8 @@
       "p": 0.025316,
       "lo": 0.00697,
       "hi": 0.087686,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -1450,7 +3706,25 @@
       "p": 0.051948,
       "lo": 0.020385,
       "hi": 0.126093,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 2,
+      "n": 77,
+      "p": 0.025974,
+      "lo": 0.007152,
+      "hi": 0.089846,
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -1462,7 +3736,10 @@
       "p": 0.103896,
       "lo": 0.053593,
       "hi": 0.191844,
-      "ineligible": 2
+      "ineligible": 2,
+      "ineligibleWhy": {
+        "not eligible": 2
+      }
     },
     {
       "id": "P1-pairs",
@@ -1498,7 +3775,73 @@
       "p": 0.189873,
       "lo": 0.118582,
       "hi": 0.289926,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -1510,7 +3853,21 @@
       "p": 0.012658,
       "lo": 0.002238,
       "hi": 0.068276,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -1522,7 +3879,8 @@
       "p": 0.063291,
       "lo": 0.027335,
       "hi": 0.139749,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -1534,7 +3892,47 @@
       "p": 0.012658,
       "lo": 0.002238,
       "hi": 0.068276,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -1546,7 +3944,294 @@
       "p": 0.050633,
       "lo": 0.019864,
       "hi": 0.123077,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 15,
+      "n": 79,
+      "p": 0.189873,
+      "lo": 0.118582,
+      "hi": 0.289926,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 1,
+      "n": 79,
+      "p": 0.012658,
+      "lo": 0.002238,
+      "hi": 0.068276,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 5,
+      "n": 79,
+      "p": 0.063291,
+      "lo": 0.027335,
+      "hi": 0.139749,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 1,
+      "n": 79,
+      "p": 0.012658,
+      "lo": 0.002238,
+      "hi": 0.068276,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 4,
+      "n": 79,
+      "p": 0.050633,
+      "lo": 0.019864,
+      "hi": 0.123077,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "repository",
+      "k": 0,
+      "n": 79,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.046371,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O1-content",
@@ -1558,7 +4243,10 @@
       "p": 0.060976,
       "lo": 0.026324,
       "hi": 0.13492,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O1-content-shingle",
@@ -1570,7 +4258,40 @@
       "p": 0.04878,
       "lo": 0.019131,
       "hi": 0.118815,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O1-codex-under-half",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 3,
+      "n": 82,
+      "p": 0.036585,
+      "lo": 0.01252,
+      "hi": 0.102127,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O1-codex-under-all",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 3,
+      "n": 82,
+      "p": 0.036585,
+      "lo": 0.01252,
+      "hi": 0.102127,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O1-file",
@@ -1582,7 +4303,10 @@
       "p": 0.097561,
       "lo": 0.050269,
       "hi": 0.180872,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2",
@@ -1594,7 +4318,10 @@
       "p": 0.182927,
       "lo": 0.11411,
       "hi": 0.280122,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2-types123",
@@ -1606,7 +4333,10 @@
       "p": 0.195122,
       "lo": 0.123829,
       "hi": 0.293702,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O2-given-type2",
@@ -1618,7 +4348,11 @@
       "p": 0.214286,
       "lo": 0.134387,
       "hi": 0.323912,
-      "ineligible": 15
+      "ineligible": 15,
+      "ineligibleWhy": {
+        "no type-2 launch directory": 12,
+        "not eligible": 3
+      }
     },
     {
       "id": "P1-repos",
@@ -1630,7 +4364,8 @@
       "p": 0.117647,
       "lo": 0.065174,
       "hi": 0.203186,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "P1-repos-types123",
@@ -1642,7 +4377,8 @@
       "p": 0.141176,
       "lo": 0.082642,
       "hi": 0.230741,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O4",
@@ -1654,7 +4390,10 @@
       "p": 0.073171,
       "lo": 0.033965,
       "hi": 0.150578,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O5-any-root-warning",
@@ -1666,7 +4405,21 @@
       "p": 0.294118,
       "lo": 0.207855,
       "hi": 0.398185,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-any-root-warning-map",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 25,
+      "n": 85,
+      "p": 0.294118,
+      "lo": 0.207855,
+      "hi": 0.398185,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-any-root-warning-no-links",
@@ -1678,7 +4431,10 @@
       "p": 0.308642,
       "lo": 0.218632,
       "hi": 0.415981,
-      "ineligible": 4
+      "ineligible": 4,
+      "ineligibleWhy": {
+        "an instruction file is a symlink": 4
+      }
     },
     {
       "id": "O6",
@@ -1690,7 +4446,25 @@
       "p": 0.02439,
       "lo": 0.006714,
       "hi": 0.084634,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O6-map",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 5,
+      "n": 82,
+      "p": 0.060976,
+      "lo": 0.026324,
+      "hi": 0.13492,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "O7",
@@ -1702,7 +4476,21 @@
       "p": 0.047059,
       "lo": 0.01845,
       "hi": 0.114837,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O7-broken",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O7-root-link-to-agents",
@@ -1714,7 +4502,8 @@
       "p": 0.023529,
       "lo": 0.006477,
       "hi": 0.081787,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O8",
@@ -1726,7 +4515,25 @@
       "p": 0.04878,
       "lo": 0.019131,
       "hi": 0.118815,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
+    },
+    {
+      "id": "O8-over-budget",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 2,
+      "n": 82,
+      "p": 0.02439,
+      "lo": 0.006714,
+      "hi": 0.084634,
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "K3-regex-O1-file",
@@ -1738,7 +4545,10 @@
       "p": 0.097561,
       "lo": 0.050269,
       "hi": 0.180872,
-      "ineligible": 3
+      "ineligible": 3,
+      "ineligibleWhy": {
+        "not eligible": 3
+      }
     },
     {
       "id": "P1-pairs",
@@ -1774,7 +4584,73 @@
       "p": 0.2,
       "lo": 0.12879,
       "hi": 0.297154,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.too-large",
@@ -1786,7 +4662,21 @@
       "p": 0.011765,
       "lo": 0.00208,
       "hi": 0.063672,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:claude.words-not-import",
@@ -1798,7 +4688,8 @@
       "p": 0.058824,
       "lo": 0.025385,
       "hi": 0.130414,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.cut",
@@ -1810,7 +4701,47 @@
       "p": 0.011765,
       "lo": 0.00208,
       "hi": 0.063672,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
     },
     {
       "id": "O5-root:codex.nested",
@@ -1822,17 +4753,422 @@
       "p": 0.047059,
       "lo": 0.01845,
       "hi": 0.114837,
-      "ineligible": 0
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.agents-shadowed",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 17,
+      "n": 85,
+      "p": 0.2,
+      "lo": 0.12879,
+      "hi": 0.297154,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.external-import-headless",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.home-ancestor",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.import-too-deep",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.link-as-text",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.mode-in-project-settings",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.too-large",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.version-no-agents",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:claude.words-not-import",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 5,
+      "n": 85,
+      "p": 0.058824,
+      "lo": 0.025385,
+      "hi": 0.130414,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.cut",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 1,
+      "n": 85,
+      "p": 0.011765,
+      "lo": 0.00208,
+      "hi": 0.063672,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.empty-override",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.home-is-root",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.mid-codepoint",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.nested",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 4,
+      "n": 85,
+      "p": 0.047059,
+      "lo": 0.01845,
+      "hi": 0.114837,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.no-budget",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.project-config-ignored",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.untrusted",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    },
+    {
+      "id": "O5-root-map:codex.zero-budget",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "repository",
+      "k": 0,
+      "n": 85,
+      "p": 0,
+      "lo": 0,
+      "hi": 0.043239,
+      "ineligible": 0,
+      "ineligibleWhy": {}
+    }
+  ],
+  "summaries": [
+    {
+      "id": "O8-held-chars",
+      "frame": "S-main",
+      "variant": "raw",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 7,
+        "min": 24043,
+        "median": 27159,
+        "max": 31815
+      }
+    },
+    {
+      "id": "O8-held-chars",
+      "frame": "S-main",
+      "variant": "dedup",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 7,
+        "min": 24043,
+        "median": 27159,
+        "max": 31815
+      }
+    },
+    {
+      "id": "O8-held-chars",
+      "frame": "S-main",
+      "variant": "ownercap",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 7,
+        "min": 24043,
+        "median": 27159,
+        "max": 31815
+      }
+    },
+    {
+      "id": "O8-held-chars",
+      "frame": "S-imp",
+      "variant": "raw",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 2,
+        "min": 30361,
+        "median": 30560,
+        "max": 30759
+      }
+    },
+    {
+      "id": "O8-held-chars",
+      "frame": "S-imp",
+      "variant": "dedup",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 2,
+        "min": 30361,
+        "median": 30560,
+        "max": 30759
+      }
+    },
+    {
+      "id": "O8-held-chars",
+      "frame": "S-imp",
+      "variant": "ownercap",
+      "unit": "characters in the first 32,768 bytes of a root AGENTS.md over the budget",
+      "budget": 32768,
+      "cjk": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "other": {
+        "n": 2,
+        "min": 30361,
+        "median": 30560,
+        "max": 30759
+      }
     }
   ],
   "checks": {
     "K4": {
-      "k": 1010,
-      "n": 1023,
-      "p": 0.987292,
-      "lo": 0.97838,
-      "hi": 0.992559,
+      "k": 995,
+      "n": 1008,
+      "p": 0.987103,
+      "lo": 0.97806,
+      "hi": 0.992448,
       "expectedAtLeast": 0.98,
+      "expectationMet": true,
+      "codexVersions": [null],
       "faults": 4,
       "mismatches": [
         {
@@ -1935,7 +5271,25 @@
           "offBy": 3,
           "firstDiff": 120
         }
-      ]
+      ],
+      "byFrame": {
+        "S-main": {
+          "k": 609,
+          "n": 617,
+          "p": 0.987034,
+          "lo": 0.974625,
+          "hi": 0.993416,
+          "faults": 3
+        },
+        "S-imp": {
+          "k": 386,
+          "n": 391,
+          "p": 0.987212,
+          "lo": 0.970418,
+          "hi": 0.994526,
+          "faults": 1
+        }
+      }
     },
     "K3": {
       "pass": false,
@@ -1957,7 +5311,8 @@
   },
   "wording": {
     "codex": "as rendered by `codex debug prompt-input` <version>; the model was not run",
-    "claude": "predicted by ctxreach map for Claude Code <version>, default settings, a fresh machine; not a live run",
+    "codexCensus": "as predicted by map and checked byte-for-byte against Codex's own `debug prompt-input` renderer (K4: k/n)",
+    "claude": "predicted by ctxreach map for Claude Code <version> on a fresh machine with default settings, not a live run; checked live in K5 as k/n",
     "pairs": "intervals on (repository, launch directory) pairs ignore clustering within a repository; the repository-level figure is the one with a valid interval"
   }
 }

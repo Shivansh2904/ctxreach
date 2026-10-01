@@ -1,7 +1,7 @@
 {
   "schema": "ctxreach.study-cell-results/v1",
   "dryRun": true,
-  "generatedAt": "2026-10-01T00:54:09.457Z",
+  "generatedAt": "2026-10-01T07:49:20.681Z",
   "realAgentRuns": 0,
   "billedRuns": 0,
   "results": [
@@ -388,7 +388,7 @@
       "cell": "B7",
       "title": "A CLAUDE.md that says 'read AGENTS.md' in words: does the model open it during a task?",
       "instrument": "echo",
-      "wording": "echoed by the model in a first-party session (an echo proves delivery, not compliance)",
+      "wording": "echoed by the model in a first-party session; an echo proves delivery, not compliance",
       "arms": {
         "trap": {
           "planned": 10,
