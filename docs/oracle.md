@@ -260,6 +260,11 @@ agree; a body that is not JSON is replaced by a line giving its length
 and SHA-256. `test/oracle-capture-saved.test.ts` checks every recorded
 capture against that shape.
 
+`test/oracle-vendor-text.test.ts` reads every recording, and every source,
+test, script and document, for phrases taken from what Codex 0.159.2 and
+Claude Code 2.1.285 sent; the phrases are held as hashes of their words
+(`test/helpers/vendor-text.ts`), so the test does not contain them.
+
 `test/recorded/verify/` holds the pilot renders and captures of
 2026-09-30 and the recordings made from the fixtures; its README lists
 them.

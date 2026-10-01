@@ -38,7 +38,8 @@ const RENDERS = FILES.filter((p) => p.endsWith(".render.json")).map(rel);
 /**
  * Markup only Codex's own items carry: the tag each developer item of
  * 0.159.2 opens with, and the environment context's fields other than the
- * cwd.
+ * cwd. Phrases of the items' text are looked for, as hashes, in
+ * test/oracle-vendor-text.test.ts.
  */
 const CODEX_OWN = [
   "<skills_instructions>",

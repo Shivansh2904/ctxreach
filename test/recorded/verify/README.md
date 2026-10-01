@@ -36,7 +36,8 @@ prompt; 70 digests, each checked against the text or JSON it replaced),
 shrinking from about 9.6 KB to about 3.7 KB each; replaying all 30
 recordings here gave byte-identical scores, reports and JSON before and
 after, and each capture parses to the same model, working directory,
-files and token presence.
+files and token presence. `test/oracle-vendor-text.test.ts` fails if any
+file here holds a phrase of either agent's prompt.
 
 These directories sit one level below `test/recorded/` because
 `test/probe-recorded.test.ts` reads every `*.jsonl` directly under
