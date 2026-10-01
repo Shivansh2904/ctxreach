@@ -28,13 +28,14 @@ prints its count of non-GET attempts at the end (check K7).
 `study/prereg.mjs` checks PREREG.md's registry against these scripts and
 fills its tag-time values.
 
-**K1 today: 38/39, not a pass.** The one failure,
-`census-o2-external-import`, is a known `map` defect listed in
-`known-answers.json` and marked as awaiting the map-rules fix (lane L1).
-Its answer stays as derived from `docs/rules.md`; `known-answer.mjs` prints
-it as a known defect and still exits 1, and `prereg.mjs stamp` refuses to
-stamp while it is listed. The entry is removed when the fix merges and K1
-reads 39/39.
+**K1 on 2026-10-01: 55/55, a pass**, over the 44 fixtures in
+`test/fixtures/` and the 11 in `known-answer-fixtures/`. The 16 fixtures
+the map-rules lane added were answered by hand from `docs/rules.md`
+before K1 was run on them. `census-o2-external-import`, listed until then
+as a known `map` defect, passes since the map-rules fix merged, and
+`knownDefects` is empty. `census-o7-symlink-twin`'s answer follows the
+rule that a `CLAUDE.md` holding only a path raises `claude.link-as-text`
+instead of `claude.words-not-import` (its note says what changed).
 
 ## Order in the main session
 

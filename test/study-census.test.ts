@@ -753,18 +753,26 @@ describe("K1: known-answer fixtures through the census pipeline", () => {
     expect(res.k).toBe(res.n - Object.keys(answers.knownDefects).length);
   }, 120_000);
 
-  it("marks every known defect as awaiting the map-rules fix, and never lets K1 pass while one fails", () => {
+  it("lists no known defect since the map-rules fix merged, and never lets K1 pass while a known defect fails", () => {
     const answers = k1.loadAnswers();
-    const defects = Object.entries(answers.knownDefects as Record<string, { awaiting?: string }>);
-    expect(defects.length).toBeGreaterThan(0);
-    for (const [name, d] of defects) expect(d.awaiting, name).toMatch(/^the map-rules fix \(lane L1/);
+    // census-o2-external-import was the one known defect; the map-rules fix made it pass, so the entry is gone.
+    expect(answers.knownDefects).toEqual({});
+    const withDefect = {
+      ...answers,
+      knownDefects: {
+        "census-o2-external-import": { fields: ["o5.rootWarn", "o6.event"], awaiting: "the map-rules fix (lane L1)" },
+      },
+    };
+    const defects = Object.keys(withDefect.knownDefects);
     const row = (name: string, pass: boolean) => ({ name, pass, diffs: pass ? [] : ["o5.rootWarn: x"] });
-    const failing = { k: 38, n: 39, orphans: [], results: [row("a", true), row(defects[0]![0], false)] };
-    const v = k1.k1Verdict(failing, answers);
+    const failing = { k: 54, n: 55, orphans: [], results: [row("a", true), row(defects[0]!, false)] };
+    const v = k1.k1Verdict(failing, withDefect);
     expect(v.pass).toBe(false);
     expect(v.line).toBe(
-      `K1: 38/39 fixtures match their known answers; FAIL, 1 known map defect awaiting the map-rules fix (lane L1): ${defects[0]![0]}`,
+      `K1: 54/55 fixtures match their known answers; FAIL, 1 known map defect awaiting the map-rules fix (lane L1): ${defects[0]}`,
     );
+    // Without the entry the same failure is unexplained, never a pass.
+    expect(k1.k1Verdict(failing, answers).line).toMatch(/FAIL, 1 unexplained: census-o2-external-import$/);
     // An unexplained failure is named as such, and n/n with no orphan is the only pass.
     expect(k1.k1Verdict({ ...failing, results: [row("b", false)] }, answers).line).toMatch(/FAIL, 1 unexplained: b$/);
     expect(k1.k1Verdict({ k: 2, n: 2, orphans: [], results: [row("a", true), row("b", true)] }, answers)).toEqual({

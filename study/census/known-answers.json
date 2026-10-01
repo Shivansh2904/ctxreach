@@ -3,6 +3,515 @@
   "about": "Check K1 (study/PREREG.md). Expected census outcomes for every fixture, derived by hand from docs/rules.md and the fixture files, never copied from the pipeline's output. Census semantics: a fresh machine (empty user homes, default settings; a fixture's home/ is ignored), Claude Code 2.1.285 modelled, launch directories of types 1-3. Every detector key must be present for every fixture. A knownDefects entry names a field whose rule-correct value differs from what map produces today; K1 still counts that fixture as failing.",
   "claudeVersion": "2.1.285",
   "fixtures": {
+    "claude-agents-imported": {
+      "launch": {
+        "t2": ["packages/api", "packages/web"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api", "packages/web"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "At root launch CLAUDE.md loads and imports AGENTS.md (inside the launch dir), so the root file arrives; packages/web/AGENTS.md is switched off by the root CLAUDE.md and nothing imports it (claude.agents-shadowed). Neither CLAUDE.md is a words-not-import case: both import an AGENTS.md. From packages/api and packages/web the root CLAUDE.md's @AGENTS.md is an external import with no approval recorded, so the root AGENTS.md does not arrive (claude.imports): O2 in both."
+    },
+    "claude-agents-imported-twin": {
+      "launch": {
+        "t2": ["packages/api", "packages/web"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 5,
+        "r": 5,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api", "packages/web"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "Every AGENTS.md is imported, so no Claude Code warning at the root; codex.nested is Codex's (the package files are below the root launch dir). From each package the root AGENTS.md is an external import with no approval recorded: O2 in both, as in the trap."
+    },
+    "claude-ancestor-rules": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 3,
+        "r": 3,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "No directory but the root holds an instruction file of its own (rules do not make a type-2 dir), so the census launches at the root only, where the ancestor-rules question does not arise."
+    },
+    "claude-ancestor-rules-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 3,
+        "r": 3,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      }
+    },
+    "claude-dedup-copy": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "Default mode on a fresh machine (the claude-md-and-agents-md setting in home/ is ignored): CLAUDE.md switches AGENTS.md off, so O1-file is an event, but CLAUDE.md is a byte copy, so every line of AGENTS.md arrives and O1-content is not. CLAUDE.md does not contain the text AGENTS.md, so no words-not-import."
+    },
+    "claude-dedup-copy-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "As claude-dedup-copy: default mode, CLAUDE.md switches AGENTS.md off and holds all of its lines plus one."
+    },
+    "claude-external-headless": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "From packages/api the root CLAUDE.md loads and its @AGENTS.md resolves outside the launch dir with no approval recorded, so the root AGENTS.md does not arrive (claude.imports): O2. At the root everything arrives; packages/api/AGENTS.md is imported by its CLAUDE.md, so it is not reported as shadowed."
+    },
+    "claude-external-headless-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      },
+      "note": "The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as claude-external-headless's; the answer is the same."
+    },
+    "claude-home-ancestor": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The trap needs ~/.claude/CLAUDE.md above the repository; on a fresh machine there is none, and the repository alone is clean. The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as claude-home-ancestor-twin's; the answer is the same."
+    },
+    "claude-home-ancestor-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as claude-home-ancestor's; the answer is the same."
+    },
     "claude-import-in-code-block": {
       "launch": {
         "t2": [],
@@ -274,6 +783,107 @@
         "event": true
       }
     },
+    "claude-link-as-text": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 0,
+        "event": true
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": true
+      },
+      "o1file": {
+        "eligible": true,
+        "event": true
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": ["claude.agents-shadowed", "claude.link-as-text"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": true
+      },
+      "note": "CLAUDE.md is a regular file whose whole text is AGENTS.md: it switches AGENTS.md off and imports nothing. Rule claude.symlink: claude.link-as-text is raised for it and claude.words-not-import is not, so O6 is not an event."
+    },
+    "claude-link-as-text-twin": {
+      "launch": {
+        "t2": [],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": false
+      },
+      "o5": {
+        "rootWarn": []
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": true,
+        "event": false
+      }
+    },
     "claude-local-shadows-agents": {
       "launch": {
         "t2": [],
@@ -475,6 +1085,108 @@
         "event": true
       },
       "note": "The twin's user settings are in home/, which the census ignores (a fresh machine has default settings), so for the census it is the trap without the project settings file."
+    },
+    "claude-package-imports-root": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "At the root no CLAUDE.md counts, so AGENTS.md loads; packages/api/AGENTS.md arrives on read through its CLAUDE.md's import, and an imported AGENTS.md is not reported as shadowed. From packages/api that CLAUDE.md switches AGENTS.md off and its @../../AGENTS.md is an external import with no approval recorded: O2."
+    },
+    "claude-package-imports-root-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": true,
+        "eventDirs": ["packages/api"]
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as claude-package-imports-root's; the answer is the same."
     },
     "claude-root-shadows-package": {
       "launch": {
@@ -767,6 +1479,108 @@
         "rootClaude": false,
         "event": false
       }
+    },
+    "codex-home-is-root": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The trap needs CODEX_HOME at the repository root; the census runs with an empty Codex home outside it, so the root file is read once. The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as codex-home-is-root-twin's; the answer is the same."
+    },
+    "codex-home-is-root-twin": {
+      "launch": {
+        "t2": ["packages/api"],
+        "t3": []
+      },
+      "o1content": {
+        "eligible": true,
+        "a": 4,
+        "r": 4,
+        "event": false
+      },
+      "o1contentShingle": {
+        "eligible": true,
+        "event": false
+      },
+      "o1file": {
+        "eligible": true,
+        "event": false
+      },
+      "o2": {
+        "eligible": true,
+        "event": false,
+        "eventDirs": []
+      },
+      "p1": {
+        "eventDirs": [],
+        "repoEvent": false
+      },
+      "o4": {
+        "event": true
+      },
+      "o5": {
+        "rootWarn": ["codex.nested"]
+      },
+      "o6": {
+        "event": false
+      },
+      "o7": {
+        "event": false,
+        "links": 0
+      },
+      "o8": {
+        "eligible": true,
+        "event": false
+      },
+      "k3": {
+        "rootClaude": false,
+        "event": false
+      },
+      "note": "The fixture's home/ is ignored on a fresh machine, so the census sees only repo/, which is the same as codex-home-is-root's; the answer is the same."
     },
     "codex-nested-below-cwd": {
       "launch": {
@@ -1411,7 +2225,7 @@
         "rootClaude": true,
         "event": false
       },
-      "note": "At root launch packages/api/AGENTS.md reaches Claude on read, through packages/api/CLAUDE.md's import, and both CLAUDE.md files import their AGENTS.md; so by the rules neither claude.agents-shadowed nor claude.words-not-import applies. See knownDefects."
+      "note": "At root launch packages/api/AGENTS.md reaches Claude on read, through packages/api/CLAUDE.md's import, and both CLAUDE.md files import their AGENTS.md; so by the rules neither claude.agents-shadowed nor claude.words-not-import applies. map reported both until the map-rules fix merged (2026-10-01); until then this fixture was listed in knownDefects."
     },
     "census-o2-package-claude": {
       "launch": {
@@ -1597,10 +2411,10 @@
         "event": false
       },
       "o5": {
-        "rootWarn": ["claude.agents-shadowed", "claude.words-not-import"]
+        "rootWarn": ["claude.agents-shadowed", "claude.link-as-text"]
       },
       "o6": {
-        "event": true
+        "event": false
       },
       "o7": {
         "event": false,
@@ -1613,7 +2427,8 @@
       "k3": {
         "rootClaude": true,
         "event": true
-      }
+      },
+      "note": "CLAUDE.md is the text AGENTS.md: it shadows AGENTS.md (both O1 outcomes are events) and is a symlink checked out as text. docs/rules.md now raises claude.link-as-text for such a file and not claude.words-not-import (rule claude.symlink and the Findings table), so O5 lists claude.link-as-text and O6 is not an event. Before that rule (merged 2026-10-01) the answer was claude.words-not-import and an O6 event."
     },
     "census-o8-cjk": {
       "launch": {
@@ -1920,15 +2735,5 @@
       }
     }
   },
-  "knownDefects": {
-    "census-o2-external-import": {
-      "fields": ["o5.rootWarn", "o6.event"],
-      "found": "2026-09-30, first K1 run (37/38), confirmed with map --json on the fixture",
-      "what": "map (resolve.ts, rules claude.words and claude.agents-default) reports claude.words-not-import on CLAUDE.md and packages/api/CLAUDE.md, whose whole content is the line @AGENTS.md and whose import map itself marks delivered, and claude.agents-shadowed on packages/api/AGENTS.md, which the same map output shows arriving on read through that import. The words check fires whenever any AGENTS.md is lost, without checking whether this CLAUDE.md imports one; the shadow check ignores a second entry for the same file.",
-      "effect": "O5 and O6 are overstated in repositories where every package CLAUDE.md imports its AGENTS.md (the S-imp stratum's typical shape).",
-      "owner": "lane L1 (src/agents/claude/resolve.ts); remove this entry when the fix lands and K1 passes",
-      "awaiting": "the map-rules fix (lane L1)",
-      "awaitingNote": "not merged yet: K1 stays 38/39, and prereg.mjs stamp refuses, until it is; the answer and the check are not relaxed meanwhile"
-    }
-  }
+  "knownDefects": {}
 }
