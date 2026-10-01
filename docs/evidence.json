@@ -182,7 +182,7 @@
       "agent": "claude",
       "date": "2026-09-28",
       "confidence": "docs@2026-09-28",
-      "note": "Branch v1/map-rules corrects this rule: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor)."
+      "note": "Corrected in docs/rules.md on 2026-09-30, from the agents-md mod's source and #80580: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor). The home-directory case has not been run."
     },
     {
       "rule": "claude.subdirs",
@@ -271,7 +271,7 @@
         "test/recorded/nested-recall",
         "test/recorded/nested-task"
       ],
-      "note": "Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Branch v1/map-rules predicts it not loaded (finding claude.external-import-headless)."
+      "note": "Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Since 2026-09-30 map predicts such an import not loaded unless ~/.claude.json records an approval (finding claude.external-import-headless); the recordings keep the prediction they were made with, so they replay to this fraction."
     },
     {
       "rule": "claude.words",

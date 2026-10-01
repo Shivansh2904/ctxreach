@@ -32,18 +32,6 @@ vi.setConfig({ testTimeout: 60_000 });
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RECORDED = "test/recorded";
 
-/**
- * Ids that branch v1/map-rules adds to docs/rules.md. Their entries are in
- * docs/evidence.json already, so merging that branch loses nothing. Once
- * they are in docs/rules.md, the test below fails: delete them from here.
- */
-const PENDING = [
-  "claude.external-import-headless",
-  "claude.home-ancestor",
-  "claude.link-as-text",
-  "codex.home-is-root",
-];
-
 interface Cell {
   rule: string;
   delivery: string;
@@ -109,15 +97,15 @@ describe("docs/evidence.json", () => {
     expect(registry.entries.length).toBeGreaterThanOrEqual(ids.length);
   });
 
-  it("reads 27 rule ids and 20 finding codes from docs/rules.md (the reader can find them)", () => {
+  it("reads 29 rule ids and 24 finding codes from docs/rules.md (the reader can find them)", () => {
     // If docs/rules.md gains ids, raise these; a reader that found none would pass the checks below vacuously.
-    expect(doc.rules.length).toBeGreaterThanOrEqual(27);
-    expect(doc.findings.length).toBeGreaterThanOrEqual(20);
+    expect(doc.rules.length).toBeGreaterThanOrEqual(29);
+    expect(doc.findings.length).toBeGreaterThanOrEqual(24);
     expect(doc.rules).toContain("codex.budget");
     expect(doc.findings).toContain("claude.agents-shadowed");
   });
 
-  it("stays compatible with the shape branch v1/map-rules reads (rule, status, agent, date, confidence)", () => {
+  it("stays compatible with the shape src/agents/claude/resolve.ts reads (rule, status, agent, date, confidence)", () => {
     for (const e of registry.entries) {
       expect(typeof e.rule).toBe("string");
       expect(["documented", "source", "observed", "contradicted"]).toContain(e.status);
@@ -144,10 +132,17 @@ describe("check 1: every rule id and finding code in docs/rules.md has an entry"
     expect(missingEntries([...plantedIds.rules, ...plantedIds.findings], registry)).toEqual(["codex.brand-new"]);
   });
 
-  it("has no entry for an id docs/rules.md does not list, except the ids pending from v1/map-rules", () => {
-    // Once v1/map-rules is merged, these ids are in docs/rules.md, this list is empty, and PENDING can go.
-    const pending = PENDING.filter((id) => !ids.includes(id));
-    expect(orphanEntries(ids, registry).sort()).toEqual(pending);
+  it("has no entry for an id docs/rules.md does not list", () => {
+    // The four ids v1/map-rules added (claude.home-ancestor, claude.external-import-headless,
+    // claude.link-as-text, codex.home-is-root) are in docs/rules.md since it merged.
+    expect(orphanEntries(ids, registry)).toEqual([]);
+    for (const id of [
+      "claude.external-import-headless",
+      "claude.home-ancestor",
+      "claude.link-as-text",
+      "codex.home-is-root",
+    ])
+      expect(ids, id).toContain(id);
   });
 
   it("trap: an entry whose id docs/rules.md no longer lists (a renamed rule) is reported", () => {

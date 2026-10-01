@@ -65,10 +65,10 @@ independent, so no interval is given. Pilot runs are named in notes and are neve
 | `claude.external-import` | finding | documented | docs@2026-09-28 | |
 | `claude.nested` | finding | observed | docs@2026-09-28 | observed 10/10 |
 | `claude.version-some-sessions` | finding | documented | docs@2026-09-28 | |
-| `claude.home-ancestor` | not in docs/rules.md yet | source | source@2282079 | |
-| `claude.external-import-headless` | not in docs/rules.md yet | source | source@2282079 | |
-| `claude.link-as-text` | not in docs/rules.md yet | documented | docs@2026-09-30 | |
-| `codex.home-is-root` | not in docs/rules.md yet | source | source@c0d2694 | |
+| `claude.home-ancestor` | rule + finding | source | source@2282079 | |
+| `claude.external-import-headless` | finding | source | source@2282079 | |
+| `claude.link-as-text` | finding | documented | docs@2026-09-30 | |
+| `codex.home-is-root` | rule + finding | source | source@c0d2694 | |
 
 ## Recorded entries
 
@@ -117,7 +117,7 @@ Claude Code 2.1.280 on win32, 2026-09-28, instrument canary, 9 usable trials in 
 - `test/recorded/nested-recall`, replay with `ctxreach probe --replay test/recorded/nested-recall`
 - `test/recorded/nested-task`, replay with `ctxreach probe --replay test/recorded/nested-task`
 
-Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Branch v1/map-rules predicts it not loaded (finding claude.external-import-headless).
+Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Since 2026-09-30 map predicts such an import not loaded unless ~/.claude.json records an approval (finding claude.external-import-headless); the recordings keep the prediction they were made with, so they replay to this fraction.
 
 ### `claude.rules`: observed 8/8 cells
 
@@ -161,7 +161,7 @@ Cells of files predicted to load on read of a file in their directory: never pre
 - `codex.budget` (source): Pilot, not a result: codex debug prompt-input 0.159.2 on Windows, 2026-09-30, kept 32,768 of a 40,064-byte chain, as map predicts, and 22/22 fixture launches agreed with map. The renders are not in this repository yet, so this stays source.
 - `codex.cut` (source): Pilot, not a result: the same renders put U+FFFD where a cut split a character, as map predicts. Not in this repository yet.
 - `codex.untrusted` (source): Pilot, not a result: with the trust level given as an inline table (the dotted -c key form did not reach the project, issue #41499), an untrusted project got no project file in a 0.159.2 render. Not in this repository.
-- `claude.user` (documented): Branch v1/map-rules corrects this rule: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor).
+- `claude.user` (documented): Corrected in docs/rules.md on 2026-09-30, from the agents-md mod's source and #80580: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor). The home-directory case has not been run.
 - `claude.hook-blind` (documented): Pilot, not a result: an InstructionsLoaded hook passed with --settings fired under claude -p and did not report an AGENTS.md read through the setting (1/1, Claude Code 2.1.280, 2026-09-30). The run is not in this repository.
 - `claude.external-import` (documented): The approval it describes is documented. Under claude -p, which asks nothing, such an import did not load (see claude.imports).
 - `claude.home-ancestor` (source): Pilot, not a result: a .claude/CLAUDE.md above the git root switched AGENTS.md off in 1/1 billed probe run (2.1.280) and 1/1 capture run (2.1.285), against 1/1 and 1/1 without it. The home-directory case has not been run.

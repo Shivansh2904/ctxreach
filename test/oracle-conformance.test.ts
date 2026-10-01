@@ -21,7 +21,7 @@ describe("scripts/conformance.mjs", () => {
       agent: string;
       launchDir: string;
     }[];
-    expect(launches.filter((l) => l.agent === "codex")).toHaveLength(22);
+    expect(launches.filter((l) => l.agent === "codex")).toHaveLength(26);
     expect(launches.filter((l) => l.agent === "claude").length).toBeGreaterThanOrEqual(14);
     expect(launches.every((l) => l.fixture.startsWith(`${l.agent}-`))).toBe(true);
     expect(launches.filter((l) => l.fixture === "codex-over-cap").map((l) => l.launchDir)).toEqual(["."]);

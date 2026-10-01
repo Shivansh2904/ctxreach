@@ -1772,8 +1772,9 @@ describe("behavioural cells: layout, scoring and decisions", () => {
     };
     const rootAgents = (j: { claude: { files: { path: string; delivery: string; needsApproval?: boolean }[] } }) =>
       j.claude.files.find((f) => f.path === "AGENTS.md");
+    // Rule claude.imports: an external import with no approval recorded is left out headless.
     expect(rootAgents(await predict("b3-external-import", "packages/api"))).toMatchObject({
-      delivery: "import",
+      delivery: "not-loaded",
       needsApproval: true,
     });
     expect(rootAgents(await predict("b3-external-import-twin", "packages/api"))).toMatchObject({ delivery: "launch" });

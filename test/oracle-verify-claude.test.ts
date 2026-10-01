@@ -100,18 +100,19 @@ describe("verify --agent claude with a stand-in claude (no Claude Code installed
     expect(agrees(result)).toBe(true);
   });
 
-  it("shows the documented headless gap: an import from outside the launch directory is predicted loaded but not delivered", async () => {
+  it("confirms the headless rule: an import from outside the launch directory, with no approval recorded, is predicted not loaded and is not delivered", async () => {
+    // Before rule claude.imports predicted this (finding claude.external-import-headless), map said
+    // "needs approval" and these cells were MISSED; a map that still predicted the import would fail here.
     const { result } = await verify("claude-import-outside-launch", "packages/api");
     expect(result.score.instrument.fault).toBe(false);
-    expect(result.score.cells.filter((c) => c.file === "docs/testing.md").map((c) => c.verdict)).toEqual([
-      "missed",
-      "missed",
-    ]);
+    const testing = result.score.cells.filter((c) => c.file === "docs/testing.md");
+    expect(testing.map((c) => c.verdict)).toEqual(["confirmed", "confirmed"]);
+    expect(testing.map((c) => c.seen)).toEqual([0, 0]);
     expect(result.score.cells.filter((c) => c.file === "CLAUDE.md").map((c) => c.verdict)).toEqual([
       "confirmed",
       "confirmed",
     ]);
-    expect(agrees(result)).toBe(false);
+    expect(agrees(result)).toBe(true);
   });
 
   it("saves each request reduced to what ctxreach scores: the prompt and the instruction files whole, the agent's own text as digests", async () => {

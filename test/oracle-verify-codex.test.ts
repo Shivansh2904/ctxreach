@@ -64,7 +64,7 @@ const cells = (r: ReturnType<typeof scoreVerify>) =>
 describe("verify --agent codex with a stand-in codex (no Codex installed)", () => {
   it("agrees with map on every codex fixture, from the root and from packages/api: byte-exact, two identical renders each", async () => {
     const names = readdirSync(FIXTURES).filter((n) => n.startsWith("codex-"));
-    expect(names).toHaveLength(14);
+    expect(names).toHaveLength(16);
     const launches: string[] = [];
     const agreeing: string[] = [];
     for (const name of names) {
@@ -85,7 +85,7 @@ describe("verify --agent codex with a stand-in codex (no Codex installed)", () =
         );
       }
     }
-    expect(launches).toHaveLength(22);
+    expect(launches).toHaveLength(26);
     expect(agreeing, `agreeing launches: ${agreeing.length}/${launches.length}`).toEqual(launches);
   });
 

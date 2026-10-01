@@ -31,9 +31,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var version = "0.0.0";
 
 // src/report/annotations.ts
-var import_node_fs8 = require("node:fs");
+var import_node_fs10 = require("node:fs");
 var import_node_os4 = __toESM(require("node:os"), 1);
-var import_node_path10 = __toESM(require("node:path"), 1);
+var import_node_path11 = __toESM(require("node:path"), 1);
 
 // src/discover/surfaces.ts
 var import_node_fs2 = require("node:fs");
@@ -66,6 +66,9 @@ function isFileNamed(dir, name) {
   } catch {
     return false;
   }
+}
+function existsNamed(dir, name) {
+  return entryNames(dir).has(name);
 }
 function readBytes(p) {
   return new Uint8Array((0, import_node_fs.readFileSync)(p));
@@ -192,67 +195,13 @@ function safeReaddir(dir) {
 }
 
 // src/map/map.ts
-var import_node_fs7 = require("node:fs");
-var import_node_path9 = __toESM(require("node:path"), 1);
+var import_node_fs9 = require("node:fs");
+var import_node_path10 = __toESM(require("node:path"), 1);
 
 // src/agents/claude/resolve.ts
-var import_node_fs5 = require("node:fs");
+var import_node_fs6 = require("node:fs");
 var import_node_os2 = __toESM(require("node:os"), 1);
-var import_node_path5 = __toESM(require("node:path"), 1);
-
-// src/agents/claude/imports.ts
-var import_node_fs3 = require("node:fs");
-var import_node_path3 = __toESM(require("node:path"), 1);
-var FENCE = /^ {0,3}(`{3,}|~{3,})/;
-var CODE_SPAN = /(`+)[\s\S]*?\1/g;
-var IMPORT = /(?:^|\s)@(\S+)/g;
-function withoutCode(text) {
-  const out = [];
-  let fence = null;
-  for (const line of text.split(/\r?\n/)) {
-    const m = FENCE.exec(line);
-    if (m?.[1]) {
-      const marker = m[1];
-      if (fence === null) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-      out.push("");
-      continue;
-    }
-    out.push(fence === null ? line.replace(CODE_SPAN, "") : "");
-  }
-  return out.join("\n");
-}
-function importTokens(text) {
-  const tokens = [];
-  for (const m of withoutCode(text).matchAll(IMPORT)) if (m[1]) tokens.push(m[1]);
-  return tokens;
-}
-function regularFile(p) {
-  try {
-    return (0, import_node_fs3.statSync)(p).isFile();
-  } catch {
-    return false;
-  }
-}
-function resolveImport(token, fromFile, homeDir) {
-  const attempt = (t) => {
-    if (t === "") return void 0;
-    let p;
-    if (t === "~" || t.startsWith("~/")) p = import_node_path3.default.join(homeDir, t.slice(2));
-    else if (import_node_path3.default.isAbsolute(t)) p = t;
-    else p = import_node_path3.default.resolve(import_node_path3.default.dirname(fromFile), t);
-    return regularFile(p) ? p : void 0;
-  };
-  const direct = attempt(token);
-  if (direct) return direct;
-  const trimmed = token.replace(/[.,;:!?)]+$/, "");
-  return trimmed !== token ? attempt(trimmed) : void 0;
-}
-
-// src/agents/claude/settings.ts
-var import_node_fs4 = require("node:fs");
-var import_node_os = __toESM(require("node:os"), 1);
-var import_node_path4 = __toESM(require("node:path"), 1);
+var import_node_path6 = __toESM(require("node:path"), 1);
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -1070,10 +1019,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path11) {
-  if (!path11)
+function getElementAtPath(obj, path12) {
+  if (!path12)
     return obj;
-  return path11.reduce((acc, key) => acc?.[key], obj);
+  return path12.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -1413,11 +1362,11 @@ function explicitlyAborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path11, issues) {
+function prefixIssues(path12, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path11);
+    iss.path.unshift(path12);
     return iss;
   });
 }
@@ -1867,16 +1816,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path11 = []) => {
+  const processError = (error63, path12 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path11, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path12, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path11, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path12, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path11, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path12, ...issue2.path]);
       } else {
-        const fullpath = [...path11, ...issue2.path];
+        const fullpath = [...path12, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -1915,17 +1864,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path11 = []) => {
+  const processError = (error63, path12 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path11, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path12, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path11, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path12, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path11, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path12, ...issue2.path]);
       } else {
-        const fullpath = [...path11, ...issue2.path];
+        const fullpath = [...path12, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -1964,8 +1913,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path11 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path11) {
+  const path12 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path12) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -19067,13 +19016,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path11 = ref.slice(1).split("/").filter(Boolean);
-  if (path11.length === 0) {
+  const path12 = ref.slice(1).split("/").filter(Boolean);
+  if (path12.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path11[0] === defsKey) {
-    const key = path11[1] === void 0 ? void 0 : decodeJSONPointerSegment(path11[1]);
+  if (path12[0] === defsKey) {
+    const key = path12[1] === void 0 ? void 0 : decodeJSONPointerSegment(path12[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -19922,11 +19871,593 @@ function date4(params) {
   return _coercedDate(ZodDate, params);
 }
 
+// docs/evidence.json
+var evidence_default = {
+  schema: "ctxreach.evidence/v1",
+  entries: [
+    {
+      rule: "codex.root",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.walk",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.one-per-dir",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.empty-skip",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694",
+      note: "Pilot, not a result: an empty AGENTS.override.md took its directory's slot in a render by codex debug prompt-input 0.159.2 on Windows, 2026-09-30 (1/1). The render is not in this repository."
+    },
+    {
+      rule: "codex.budget",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694",
+      note: "Pilot, not a result: codex debug prompt-input 0.159.2 on Windows, 2026-09-30, kept 32,768 of a 40,064-byte chain, as map predicts, and 22/22 fixture launches agreed with map. The renders are not in this repository yet, so this stays source."
+    },
+    {
+      rule: "codex.cut",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694",
+      note: "Pilot, not a result: the same renders put U+FFFD where a cut split a character, as map predicts. Not in this repository yet."
+    },
+    {
+      rule: "codex.zero",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.join",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.global",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.config",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.fallback-names",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.untrusted",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694",
+      note: "Pilot, not a result: with the trust level given as an inline table (the dotted -c key form did not reach the project, issue #41499), an untrusted project got no project file in a 0.159.2 render. Not in this repository."
+    },
+    {
+      rule: "codex.nested",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.mid-codepoint",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.no-budget",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.empty-override",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.project-config-ignored",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.zero-budget",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.shadowed",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.empty",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "codex.no-root",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-28",
+      confidence: "source@c0d2694"
+    },
+    {
+      rule: "claude.ancestors",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 14,
+      n: 14,
+      trials: 15,
+      recording: [
+        "test/recorded/ancestor-imports-recall",
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      note: "Covers CLAUDE.md and CLAUDE.local.md in the launch directory and above it. Where .claude/CLAUDE.md goes (marked assumed in docs/rules.md) was not tested."
+    },
+    {
+      rule: "claude.user",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28",
+      note: "Corrected in docs/rules.md on 2026-09-30, from the agents-md mod's source and #80580: for a repository under the home directory, ~/.claude/CLAUDE.md is also an ancestor's .claude/CLAUDE.md (rule claude.home-ancestor). The home-directory case has not been run."
+    },
+    {
+      rule: "claude.subdirs",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 8,
+      n: 8,
+      trials: 10,
+      recording: [
+        "test/recorded/demo-api-recall",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      note: "A subdirectory's .claude/CLAUDE.md (marked assumed in docs/rules.md) was not tested."
+    },
+    {
+      rule: "claude.agents-default",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 30,
+      n: 30,
+      trials: 18,
+      recording: [
+        "test/recorded/agents-recall",
+        "test/recorded/agents-task",
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ]
+    },
+    {
+      rule: "claude.agents-never",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.modes",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.version",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.imports",
+      status: "contradicted",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 6,
+      n: 10,
+      trials: 9,
+      recording: [
+        "test/recorded/ancestor-imports-recall",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      note: "Imports inside the launch directory loaded as predicted (6/6 cells). An ancestor's import from outside the launch directory, predicted as an import that needs approval, did not load under claude -p (0/4 cells, nested-api-recall and ancestor-imports-recall). Since 2026-09-30 map predicts such an import not loaded unless ~/.claude.json records an approval (finding claude.external-import-headless); the recordings keep the prediction they were made with, so they replay to this fraction."
+    },
+    {
+      rule: "claude.words",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.symlink",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.size",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.rules",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 8,
+      n: 8,
+      trials: 5,
+      recording: [
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      note: "The launch directory's rules only. Rules in a directory above the launch directory are not modelled; their 4 cells (nested-api-recall) are not counted."
+    },
+    {
+      rule: "claude.hook-blind",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28",
+      note: "Pilot, not a result: an InstructionsLoaded hook passed with --settings fired under claude -p and did not report an AGENTS.md read through the setting (1/1, Claude Code 2.1.280, 2026-09-30). The run is not in this repository."
+    },
+    {
+      rule: "claude.bare",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.agents-shadowed",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 20,
+      n: 20,
+      trials: 13,
+      recording: [
+        "test/recorded/demo-api-recall",
+        "test/recorded/demo-root-task",
+        "test/recorded/nested-api-recall",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      select: {
+        rule: [
+          "claude.agents-default"
+        ],
+        delivery: [
+          "not-loaded"
+        ]
+      },
+      note: "Cells of AGENTS.md files predicted not to load by rule claude.agents-default."
+    },
+    {
+      rule: "claude.words-not-import",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.import-too-deep",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.mode-in-project-settings",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.too-large",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.version-no-agents",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.external-import",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28",
+      note: "The approval it describes is documented. Under claude -p, which asks nothing, such an import did not load (see claude.imports)."
+    },
+    {
+      rule: "claude.nested",
+      status: "observed",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "canary@2.1.280",
+      basis: "docs@2026-09-28",
+      version: "2.1.280",
+      os: "win32",
+      instrument: "canary",
+      unit: "cells",
+      k: 10,
+      n: 10,
+      trials: 10,
+      recording: [
+        "test/recorded/agents-recall",
+        "test/recorded/agents-task",
+        "test/recorded/nested-recall",
+        "test/recorded/nested-task"
+      ],
+      select: {
+        rule: [
+          "claude.subdirs",
+          "claude.agents-default"
+        ],
+        delivery: [
+          "on-read"
+        ]
+      },
+      note: "Cells of files predicted to load on read of a file in their directory: never preloaded, and delivered after such a read in task mode."
+    },
+    {
+      rule: "claude.version-some-sessions",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-28",
+      confidence: "docs@2026-09-28"
+    },
+    {
+      rule: "claude.home-ancestor",
+      status: "source",
+      agent: "claude",
+      date: "2026-09-30",
+      confidence: "source@2282079",
+      note: "Pilot, not a result: a .claude/CLAUDE.md above the git root switched AGENTS.md off in 1/1 billed probe run (2.1.280) and 1/1 capture run (2.1.285), against 1/1 and 1/1 without it. The home-directory case has not been run."
+    },
+    {
+      rule: "claude.external-import-headless",
+      status: "source",
+      agent: "claude",
+      date: "2026-09-30",
+      confidence: "source@2282079"
+    },
+    {
+      rule: "claude.link-as-text",
+      status: "documented",
+      agent: "claude",
+      date: "2026-09-30",
+      confidence: "docs@2026-09-30"
+    },
+    {
+      rule: "codex.home-is-root",
+      status: "source",
+      agent: "codex",
+      date: "2026-09-30",
+      confidence: "source@c0d2694",
+      note: "Pilot, not a result: with CODEX_HOME at the project root, a 0.159.2 render showed the root AGENTS.md twice (1/1, issue #34193)."
+    }
+  ]
+};
+
+// src/agents/claude/approvals.ts
+var import_node_fs3 = require("node:fs");
+var import_node_path3 = __toESM(require("node:path"), 1);
+
 // src/util/errors.ts
 var ConfigError = class extends Error {
 };
 
+// src/agents/claude/approvals.ts
+var APPROVAL_KEY = "hasClaudeMdExternalIncludesApproved";
+var ProjectEntry = external_exports.looseObject({ [APPROVAL_KEY]: external_exports.boolean().optional() });
+var ClaudeJson = external_exports.looseObject({ projects: external_exports.record(external_exports.string(), external_exports.unknown()).optional() });
+function mainWorktree(dir, ceiling) {
+  for (const d of ancestors(import_node_path3.default.resolve(dir), ceiling)) {
+    const dotGit = import_node_path3.default.join(d, ".git");
+    let st;
+    try {
+      st = (0, import_node_fs3.lstatSync)(dotGit);
+    } catch {
+      continue;
+    }
+    if (!st.isFile()) return d;
+    const m = /^gitdir:\s*(.+?)\s*$/m.exec((0, import_node_fs3.readFileSync)(dotGit, "utf8"));
+    if (!m?.[1]) return d;
+    const gitdir = import_node_path3.default.resolve(d, m[1]);
+    const parts = gitdir.split(/[\\/]+/);
+    if (parts.length >= 3 && parts.at(-3) === ".git" && parts.at(-2) === "worktrees")
+      return import_node_path3.default.dirname(import_node_path3.default.dirname(import_node_path3.default.dirname(gitdir)));
+    return d;
+  }
+  return void 0;
+}
+function externalImportApproval(launchDir, file2, ceiling) {
+  const project = mainWorktree(launchDir, ceiling) ?? import_node_path3.default.resolve(launchDir);
+  const answer = (approved2, why) => ({ file: file2, project, approved: approved2, why });
+  if (!(0, import_node_fs3.existsSync)(file2)) return answer(false, `no ${import_node_path3.default.basename(file2)}`);
+  let raw;
+  try {
+    raw = JSON.parse((0, import_node_fs3.readFileSync)(file2, "utf8"));
+  } catch (err) {
+    throw new ConfigError(`${file2}: not valid JSON (${err.message})`);
+  }
+  const top = ClaudeJson.safeParse(raw);
+  if (!top.success) throw new ConfigError(`${file2}: projects: ${top.error.issues[0]?.message ?? "invalid"}`);
+  const key = Object.keys(top.data.projects ?? {}).find((k) => samePath(k, project));
+  if (key === void 0) return answer(false, "no entry for this project");
+  const entry = ProjectEntry.safeParse(top.data.projects?.[key]);
+  if (!entry.success) {
+    const issue2 = entry.error.issues[0];
+    throw new ConfigError(
+      `${file2}: projects["${key}"].${issue2?.path.join(".") ?? "?"}: ${issue2?.message ?? "invalid"}`
+    );
+  }
+  const approved = entry.data[APPROVAL_KEY] === true;
+  return answer(approved, approved ? "approved" : "not approved");
+}
+
+// src/agents/claude/imports.ts
+var import_node_fs4 = require("node:fs");
+var import_node_path4 = __toESM(require("node:path"), 1);
+var FENCE = /^ {0,3}(`{3,}|~{3,})/;
+var CODE_SPAN = /(`+)[\s\S]*?\1/g;
+var IMPORT = /(?:^|\s)@(\S+)/g;
+function withoutCode(text) {
+  const out = [];
+  let fence = null;
+  for (const line of text.split(/\r?\n/)) {
+    const m = FENCE.exec(line);
+    if (m?.[1]) {
+      const marker = m[1];
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      out.push("");
+      continue;
+    }
+    out.push(fence === null ? line.replace(CODE_SPAN, "") : "");
+  }
+  return out.join("\n");
+}
+function importTokens(text) {
+  const tokens = [];
+  for (const m of withoutCode(text).matchAll(IMPORT)) if (m[1]) tokens.push(m[1]);
+  return tokens;
+}
+function regularFile(p) {
+  try {
+    return (0, import_node_fs4.statSync)(p).isFile();
+  } catch {
+    return false;
+  }
+}
+function resolveImport(token, fromFile, homeDir) {
+  const attempt = (t) => {
+    if (t === "") return void 0;
+    let p;
+    if (t === "~" || t.startsWith("~/")) p = import_node_path4.default.join(homeDir, t.slice(2));
+    else if (import_node_path4.default.isAbsolute(t)) p = t;
+    else p = import_node_path4.default.resolve(import_node_path4.default.dirname(fromFile), t);
+    return regularFile(p) ? p : void 0;
+  };
+  const direct = attempt(token);
+  if (direct) return direct;
+  const trimmed = token.replace(/[.,;:!?)]+$/, "");
+  return trimmed !== token ? attempt(trimmed) : void 0;
+}
+
 // src/agents/claude/settings.ts
+var import_node_fs5 = require("node:fs");
+var import_node_os = __toESM(require("node:os"), 1);
+var import_node_path5 = __toESM(require("node:path"), 1);
 var CLAUDE_MODES = ["claude-md-or-agents-md", "claude-md-and-agents-md", "claude-md", "managed-only"];
 var CLAUDE_DEFAULT_MODE = "claude-md-or-agents-md";
 var AGENTS_MD_PLUGIN = "agents-md@builtin";
@@ -19938,13 +20469,13 @@ var Settings = external_exports.looseObject({
   }).optional()
 });
 function defaultClaudeHome() {
-  return import_node_path4.default.join(import_node_os.default.homedir(), ".claude");
+  return import_node_path5.default.join(import_node_os.default.homedir(), ".claude");
 }
 function modeInSettings(file2) {
-  if (!(0, import_node_fs4.existsSync)(file2)) return void 0;
+  if (!(0, import_node_fs5.existsSync)(file2)) return void 0;
   let raw;
   try {
-    raw = JSON.parse((0, import_node_fs4.readFileSync)(file2, "utf8"));
+    raw = JSON.parse((0, import_node_fs5.readFileSync)(file2, "utf8"));
   } catch (err) {
     throw new ConfigError(`${file2}: not valid JSON (${err.message})`);
   }
@@ -19975,16 +20506,50 @@ var AGENTS_NAMES = ["AGENTS.md", ".claude/AGENTS.md"];
 var WORDS = /AGENTS\.md/;
 function real(p) {
   try {
-    return (0, import_node_fs5.realpathSync)(p);
+    return (0, import_node_fs6.realpathSync)(p);
   } catch {
-    return import_node_path5.default.resolve(p);
+    return import_node_path6.default.resolve(p);
   }
 }
 function size(p) {
   try {
-    return (0, import_node_fs5.statSync)(p).size;
+    return (0, import_node_fs6.statSync)(p).size;
   } catch {
     return 0;
+  }
+}
+var EvidenceEntry = external_exports.looseObject({
+  rule: external_exports.string(),
+  status: external_exports.enum(["documented", "source", "observed", "contradicted"]),
+  version: external_exports.string().optional(),
+  k: external_exports.number().int().nonnegative().optional(),
+  n: external_exports.number().int().positive().optional()
+});
+var EvidenceRegistry = external_exports.looseObject({ entries: external_exports.array(EvidenceEntry) });
+var REGISTRY = EvidenceRegistry.parse(evidence_default);
+function evidenceLabel(rule, from = REGISTRY) {
+  const entry = from.entries.find((e) => e.rule === rule);
+  if (!entry) throw new Error(`docs/evidence.json has no entry for ${rule}`);
+  if (entry.status === "documented" || entry.status === "source") return entry.status;
+  if (entry.version === void 0)
+    throw new Error(`docs/evidence.json: ${rule} is ${entry.status} but names no version`);
+  const count = entry.k !== void 0 && entry.n !== void 0 ? ` ${entry.k}/${entry.n}` : "";
+  return `${entry.status}@${entry.version}${count}`;
+}
+function linkAsText(file2) {
+  try {
+    if ((0, import_node_fs6.lstatSync)(file2).isSymbolicLink()) return void 0;
+  } catch {
+    return void 0;
+  }
+  const text = (0, import_node_fs6.readFileSync)(file2, "utf8").trim();
+  if (text === "" || text.length > 4096 || /\s/.test(text)) return void 0;
+  if (text.startsWith("@") || text.startsWith("~") || import_node_path6.default.isAbsolute(text)) return void 0;
+  const target = import_node_path6.default.resolve(import_node_path6.default.dirname(file2), text);
+  try {
+    return (0, import_node_fs6.statSync)(target).isFile() ? { text, target } : void 0;
+  } catch {
+    return void 0;
   }
 }
 function hasPathsFrontmatter(text) {
@@ -19992,18 +20557,28 @@ function hasPathsFrontmatter(text) {
   return m?.[1] !== void 0 && /^paths\s*:/m.test(m[1]);
 }
 function resolveClaude(options) {
-  const launchDir = import_node_path5.default.resolve(options.launchDir);
+  const launchDir = import_node_path6.default.resolve(options.launchDir);
   const claudeHome = options.claudeHome ?? defaultClaudeHome();
-  const homeDir = options.homeDir ?? (options.claudeHome ? import_node_path5.default.dirname(options.claudeHome) : import_node_os2.default.homedir());
+  const homeDir = options.homeDir ?? (options.claudeHome ? import_node_path6.default.dirname(options.claudeHome) : import_node_os2.default.homedir());
   const scanRoot = options.scanRoot ?? launchDir;
+  const modelAncestorRules = options.ancestorRules === true;
   const findings = [];
   const files = [];
   const unresolvedImports = [];
   const delivered = /* @__PURE__ */ new Map();
+  const listed = /* @__PURE__ */ new Set();
   const rel = (p) => displayPath(p, scanRoot);
+  const inRepo2 = (p) => isInside(p, scanRoot);
+  const personalFile = import_node_path6.default.join(homeDir, ".claude", "CLAUDE.md");
+  const show = (p) => !inRepo2(p) && isInside(p, homeDir) ? `~/${displayPath(p, homeDir)}` : rel(p);
+  const claudeJson = options.claudeJson ?? import_node_path6.default.join(homeDir, ".claude.json");
+  let approval;
+  const approvalFor = () => approval ??= externalImportApproval(launchDir, claudeJson, options.ceiling);
+  const userScope = /* @__PURE__ */ new Set();
+  const blocked = /* @__PURE__ */ new Map();
   let mode = CLAUDE_DEFAULT_MODE;
   let modeFrom = "default";
-  const userSettings = import_node_path5.default.join(claudeHome, "settings.json");
+  const userSettings = import_node_path6.default.join(claudeHome, "settings.json");
   const fromUser = modeInSettings(userSettings);
   if (fromUser) {
     mode = fromUser;
@@ -20019,7 +20594,7 @@ function resolveClaude(options) {
   ];
   for (const dir of projectSettingsDirs) {
     for (const name of ["settings.json", "settings.local.json"]) {
-      const file2 = import_node_path5.default.join(dir, ".claude", name);
+      const file2 = import_node_path6.default.join(dir, ".claude", name);
       const set2 = modeInSettings(file2);
       if (set2) {
         findings.push({
@@ -20071,13 +20646,22 @@ function resolveClaude(options) {
       });
     }
     files.push(file2);
+    listed.add(real(file2.path));
     if (file2.delivery !== "not-loaded") delivered.set(real(file2.path), file2);
     return file2;
+  };
+  const supersede = (file2) => {
+    const i = files.findIndex(
+      (f) => (f.kind === "AGENTS.md" || f.kind === ".claude/AGENTS.md") && f.delivery === "not-loaded" && (f.rule === "claude.agents-default" || f.rule === "claude.modes") && real(f.path) === real(file2)
+    );
+    if (i === -1) return;
+    files.splice(i, 1);
+    listed.delete(real(file2));
   };
   const expandImports = (file2, scope, depth, delivery) => {
     let text;
     try {
-      text = (0, import_node_fs5.readFileSync)(file2, "utf8");
+      text = (0, import_node_fs6.readFileSync)(file2, "utf8");
     } catch {
       return;
     }
@@ -20088,6 +20672,7 @@ function resolveClaude(options) {
         continue;
       }
       if (delivered.has(real(target))) continue;
+      supersede(target);
       const hops = depth + 1;
       if (hops > CLAUDE_MAX_IMPORT_DEPTH) {
         add({
@@ -20111,17 +20696,33 @@ function resolveClaude(options) {
         continue;
       }
       const external = scope !== "user" && !isInside(target, launchDir);
+      if (external && !approvalFor().approved) {
+        if (blocked.has(real(target))) continue;
+        const row = add({
+          path: target,
+          kind: "import",
+          delivery: "not-loaded",
+          why: `imported by ${rel(file2)} from outside the launch dir: no approval recorded, so left out (claude -p, SDK, CI)`,
+          rule: "claude.imports",
+          bytes: size(target),
+          importedBy: file2,
+          depth: hops,
+          needsApproval: true
+        });
+        blocked.set(real(target), { row, importer: file2, scope });
+        continue;
+      }
       add({
         path: target,
         kind: "import",
         delivery: delivery === "on-read" ? "on-read" : "import",
-        why: `imported by ${rel(file2)}${external ? scope === "agents" ? " (external: loads only if already approved)" : " (external: needs approval)" : ""}`,
+        why: `imported by ${rel(file2)}${external ? " (external: approved for this project)" : ""}`,
         rule: "claude.imports",
         bytes: size(target),
         importedBy: file2,
-        depth: hops,
-        ...external ? { needsApproval: true } : {}
+        depth: hops
       });
+      if (scope === "user") userScope.add(real(target));
       if (external) {
         findings.push({
           code: "claude.external-import",
@@ -20129,17 +20730,42 @@ function resolveClaude(options) {
           agent: "claude",
           rule: "claude.imports",
           path: target,
-          message: scope === "agents" ? `${rel(file2)} imports ${rel(target)}, which is outside the launch directory. For an AGENTS.md, Claude Code loads it only if external imports were already approved for this project.` : `${rel(file2)} imports ${rel(target)}, which is outside the launch directory. Claude Code asks once to approve external imports; if that is declined, it never loads.`
+          message: `${rel(file2)} imports ${rel(target)}, which is outside the launch directory. ${show(claudeJson)} records that external imports are approved for this project, so it loads here; in a fresh clone, in CI or on another machine it does not.`
         });
       }
       expandImports(target, scope, hops, delivery);
     }
   };
+  const unblock = (file2) => {
+    const b = blocked.get(real(file2));
+    if (!b) return;
+    blocked.delete(real(file2));
+    files.splice(files.indexOf(b.row), 1);
+    listed.delete(real(file2));
+  };
+  const ruleRow = (file2, bytes2, ancestor) => {
+    const paths = hasPathsFrontmatter((0, import_node_fs6.readFileSync)(file2, "utf8"));
+    if (mode === "managed-only" && !paths)
+      return {
+        path: file2,
+        kind: ".claude/rules",
+        delivery: "not-loaded",
+        why: `Project instructions is "managed-only"`,
+        rule: "claude.modes",
+        bytes: bytes2
+      };
+    const whose = ancestor ? "ancestor's rule" : "rule";
+    return {
+      path: file2,
+      kind: ".claude/rules",
+      delivery: paths ? "on-read" : "launch",
+      why: paths ? `${whose} with paths: on read of a matching file` : ancestor ? whose : "project rule",
+      rule: "claude.rules",
+      bytes: bytes2
+    };
+  };
   const upward = ancestors(launchDir, options.ceiling).reverse();
-  const isHome = (dir) => samePath(dir, homeDir);
-  const claudeFilesIn = (dir) => CLAUDE_NAMES.filter((n) => !(n === ".claude/CLAUDE.md" && isHome(dir)) && isFileNamed(dir, n)).map(
-    (n) => import_node_path5.default.join(dir, ...n.split("/"))
-  );
+  const claudeFilesIn = (dir) => CLAUDE_NAMES.filter((n) => isFileNamed(dir, n)).map((n) => import_node_path6.default.join(dir, ...n.split("/")));
   const shadowers = upward.flatMap(claudeFilesIn);
   let agentsAtLaunch = false;
   let agentsReason = "";
@@ -20150,23 +20776,24 @@ function resolveClaude(options) {
   } else if (shadowers.length === 0) {
     agentsAtLaunch = true;
   } else {
-    agentsReason = `switched off by ${shadowers.map(rel).join(", ")}`;
+    agentsReason = `switched off by ${shadowers.map(show).join(", ")}`;
   }
   if (mode !== "managed-only") {
-    const userFile = import_node_path5.default.join(claudeHome, "CLAUDE.md");
+    const userFile = import_node_path6.default.join(claudeHome, "CLAUDE.md");
     if (isFileNamed(claudeHome, "CLAUDE.md")) {
+      const alsoAncestor = shadowers.some((s) => samePath(s, userFile));
       add({
         path: userFile,
         kind: "user",
         delivery: "launch",
-        why: "user file",
+        why: alsoAncestor ? "user file, and an ancestor's .claude/CLAUDE.md here" : "user file",
         rule: "claude.user",
         bytes: size(userFile)
       });
       expandImports(userFile, "user", 0, "launch");
     }
-    for (const rule of markdownFilesUnder(import_node_path5.default.join(claudeHome, "rules"))) {
-      const paths = hasPathsFrontmatter((0, import_node_fs5.readFileSync)(rule, "utf8"));
+    for (const rule of markdownFilesUnder(import_node_path6.default.join(claudeHome, "rules"))) {
+      const paths = hasPathsFrontmatter((0, import_node_fs6.readFileSync)(rule, "utf8"));
       add({
         path: rule,
         kind: "user-rule",
@@ -20179,7 +20806,7 @@ function resolveClaude(options) {
   }
   for (const dir of upward) {
     for (const file2 of claudeFilesIn(dir)) {
-      const kind = import_node_path5.default.basename(import_node_path5.default.dirname(file2)) === ".claude" ? ".claude/CLAUDE.md" : import_node_path5.default.basename(file2);
+      const kind = import_node_path6.default.basename(import_node_path6.default.dirname(file2)) === ".claude" ? ".claude/CLAUDE.md" : import_node_path6.default.basename(file2);
       if (mode === "managed-only") {
         add({
           path: file2,
@@ -20192,6 +20819,7 @@ function resolveClaude(options) {
         continue;
       }
       if (delivered.has(real(file2))) continue;
+      unblock(file2);
       add({
         path: file2,
         kind,
@@ -20204,7 +20832,7 @@ function resolveClaude(options) {
     }
     for (const name of AGENTS_NAMES) {
       if (!isFileNamed(dir, name)) continue;
-      const file2 = import_node_path5.default.join(dir, ...name.split("/"));
+      const file2 = import_node_path6.default.join(dir, ...name.split("/"));
       const kind = name;
       const already = delivered.get(real(file2));
       if (already) {
@@ -20221,6 +20849,7 @@ function resolveClaude(options) {
         continue;
       }
       if (agentsAtLaunch) {
+        unblock(file2);
         add({
           path: file2,
           kind,
@@ -20230,6 +20859,8 @@ function resolveClaude(options) {
           bytes: size(file2)
         });
         expandImports(file2, "agents", 0, "launch");
+      } else if (blocked.has(real(file2))) {
+        continue;
       } else {
         add({
           path: file2,
@@ -20241,10 +20872,16 @@ function resolveClaude(options) {
         });
       }
     }
+    if (modelAncestorRules && !inRepo2(dir) && existsNamed(dir, ".claude") && existsNamed(import_node_path6.default.join(dir, ".claude"), "rules")) {
+      for (const file2 of markdownFilesUnder(import_node_path6.default.join(dir, ".claude", "rules"))) {
+        if (!listed.has(real(file2))) add(ruleRow(file2, size(file2), true));
+      }
+    }
   }
-  const seen = new Set(files.map((f) => real(f.path)));
-  const surfaces = discoverSurfaces(scanRoot).filter((s) => !seen.has(real(s.path)));
-  for (const s of surfaces) {
+  const isAgentsKind = (k) => k === "AGENTS.md" || k === ".claude/AGENTS.md";
+  const tree = discoverSurfaces(scanRoot);
+  for (const s of [...tree.filter((t) => !isAgentsKind(t.kind)), ...tree.filter((t) => isAgentsKind(t.kind))]) {
+    if (listed.has(real(s.path))) continue;
     const below = isInside(s.dir, launchDir) && !samePath(s.dir, launchDir);
     const atOrAbove = isInside(launchDir, s.dir);
     if (s.kind === "AGENTS.override.md" || s.kind === "AGENTS.local.md" || s.kind === "fallback") {
@@ -20260,26 +20897,9 @@ function resolveClaude(options) {
     }
     if (!below) {
       if (s.kind === ".claude/rules" && samePath(s.dir, launchDir)) {
-        const paths = hasPathsFrontmatter((0, import_node_fs5.readFileSync)(s.path, "utf8"));
-        if (mode === "managed-only" && !paths) {
-          add({
-            path: s.path,
-            kind: s.kind,
-            delivery: "not-loaded",
-            why: `Project instructions is "managed-only"`,
-            rule: "claude.modes",
-            bytes: s.bytes
-          });
-        } else {
-          add({
-            path: s.path,
-            kind: s.kind,
-            delivery: paths ? "on-read" : "launch",
-            why: paths ? "rule with paths: on read of a matching file" : "project rule",
-            rule: "claude.rules",
-            bytes: s.bytes
-          });
-        }
+        add(ruleRow(s.path, s.bytes, false));
+      } else if (s.kind === ".claude/rules" && atOrAbove && modelAncestorRules) {
+        add(ruleRow(s.path, s.bytes, true));
       } else if (s.kind === ".claude/rules" && atOrAbove) {
         add({
           path: s.path,
@@ -20326,7 +20946,7 @@ function resolveClaude(options) {
         });
         expandImports(s.path, "agents", 0, "on-read");
       } else {
-        const why = !agentsSupported ? agentsOffReason : !agentsAtLaunch ? agentsReason : `${where}/ has its own ${ownClaude.map((f) => import_node_path5.default.basename(f)).join(", ")}`;
+        const why = !agentsSupported ? agentsOffReason : !agentsAtLaunch ? agentsReason : `${where}/ has its own ${ownClaude.map((f) => import_node_path6.default.basename(f)).join(", ")}`;
         add({ path: s.path, kind: s.kind, delivery: "not-loaded", why, rule: "claude.agents-default", bytes: s.bytes });
       }
     } else if (s.kind === ".claude/rules") {
@@ -20340,6 +20960,59 @@ function resolveClaude(options) {
       });
     }
   }
+  const dedupeByText = () => {
+    const texts = /* @__PURE__ */ new Map();
+    const textOf = (p) => {
+      let t = texts.get(p);
+      if (t === void 0) {
+        t = (0, import_node_fs6.readFileSync)(p, "utf8").trim();
+        texts.set(p, t);
+      }
+      return t;
+    };
+    const isClaudeKind = (f) => f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md";
+    const bySetting = (f) => (f.kind === "AGENTS.md" || f.kind === ".claude/AGENTS.md") && f.rule === "claude.agents-default" && f.delivery !== "not-loaded";
+    const projectFile = (f) => f.kind !== "user" && f.kind !== "user-rule" && !userScope.has(real(f.path));
+    const dirOf = (p) => import_node_path6.default.dirname(p).replace(/[\\/]\.claude$/, "");
+    const handed = files.filter(
+      (f) => (f.delivery === "launch" || f.delivery === "import") && projectFile(f) && !bySetting(f)
+    );
+    const twinOf = (f, among) => {
+      const text = textOf(f.path);
+      return text === "" ? void 0 : among.find((o) => real(o.path) !== real(f.path) && textOf(o.path) === text);
+    };
+    const drop = (f, twin) => {
+      f.delivery = "not-loaded";
+      f.why = `same text as ${rel(twin.path)}, which ${twin.delivery === "on-read" ? "loads with it" : "already loads"} (compared by content)`;
+      f.rule = "claude.modes";
+      delivered.delete(real(f.path));
+    };
+    for (const f of files.filter((x) => bySetting(x) && x.delivery === "launch")) {
+      const twin = twinOf(f, handed);
+      if (twin) drop(f, twin);
+    }
+    const inContext = [...handed, ...files.filter((x) => bySetting(x) && x.delivery === "launch")];
+    for (const f of files.filter((x) => bySetting(x) && x.delivery === "on-read")) {
+      const onPath = files.filter(
+        (o) => isClaudeKind(o) && o.delivery === "on-read" && isInside(dirOf(f.path), dirOf(o.path))
+      );
+      const twin = twinOf(f, [...inContext, ...onPath]);
+      if (twin) drop(f, twin);
+    }
+  };
+  if (agentsSupported) dedupeByText();
+  for (const { row, importer, scope } of blocked.values()) {
+    const target = row.path;
+    const setting = scope === "project" && (options.version === void 0 || compareVersions(options.version, AGENTS_MD_MIN_VERSION) >= 0) && (import_node_path6.default.basename(target) === "AGENTS.md" || target.endsWith(import_node_path6.default.join(".claude", "AGENTS.md"))) && isInside(launchDir, import_node_path6.default.dirname(target).replace(/[\\/]\.claude$/, ""));
+    findings.push({
+      code: "claude.external-import-headless",
+      severity: "warn",
+      agent: "claude",
+      rule: "claude.imports",
+      path: target,
+      message: scope === "agents" ? `${rel(importer)} imports ${rel(target)}, which is outside the launch directory. Claude Code loads an AGENTS.md's external imports only if they were approved for this project before, and never asks; ${show(claudeJson)} records no approval (${approvalFor().why}), so it is left out.` : `${rel(importer)} imports ${rel(target)}, which is outside the launch directory, and ${show(claudeJson)} records no approval of external imports for this project (${approvalFor().why}). claude -p, the Agent SDK and CI never ask, so they leave it out; an interactive session asks once.${setting ? ` Setting Project instructions to claude-md-and-agents-md reads ${rel(target)} without the import.` : ""}`
+    });
+  }
   const lostAgents = files.filter(
     (f) => (
       // Only files the AGENTS.md rule itself keeps out: not files that are
@@ -20347,7 +21020,7 @@ function resolveClaude(options) {
       (f.kind === "AGENTS.md" || f.kind === ".claude/AGENTS.md") && f.delivery === "not-loaded" && f.rule === "claude.agents-default"
     )
   );
-  const localShadowers = shadowers.filter((s) => import_node_path5.default.basename(s) === "CLAUDE.local.md");
+  const localShadowers = shadowers.filter((s) => import_node_path6.default.basename(s) === "CLAUDE.local.md");
   for (const f of lostAgents) {
     if (!agentsSupported) continue;
     const onlyLocal = localShadowers.length > 0 && localShadowers.length === shadowers.length;
@@ -20360,12 +21033,49 @@ function resolveClaude(options) {
       message: onlyLocal ? `${rel(f.path)} does not reach Claude Code: the personal ${localShadowers.map(rel).join(", ")} switches AGENTS.md off. Import it with @AGENTS.md, or set Project instructions to claude-md-and-agents-md.` : `${rel(f.path)} does not reach Claude Code: ${f.why}. Import it with @AGENTS.md in a CLAUDE.md, or set Project instructions to claude-md-and-agents-md.`
     });
   }
+  const aboveRepo = shadowers.filter((s) => !inRepo2(s));
+  if (agentsSupported && lostAgents.length > 0 && aboveRepo.length > 0 && aboveRepo.length === shadowers.length) {
+    const label = evidenceLabel("claude.home-ancestor");
+    for (const s of aboveRepo) {
+      findings.push({
+        code: "claude.home-ancestor",
+        severity: "warn",
+        agent: "claude",
+        rule: "claude.home-ancestor",
+        path: s,
+        message: samePath(s, personalFile) ? `~/.claude/CLAUDE.md, your personal file, switches AGENTS.md off here: the repository is under your home directory, so Claude Code also finds that file as an ancestor's .claude/CLAUDE.md, and nothing in the repository shows it. Keep personal instructions in ~/.claude/rules/ instead, add a CLAUDE.md with @AGENTS.md to the repository, or set Project instructions to claude-md-and-agents-md. [evidence: ${label}]` : `${rel(s)} is above the repository and switches AGENTS.md off for it: Claude Code counts a CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md in any directory above the launch directory, and nothing in the repository shows it. Add a CLAUDE.md with @AGENTS.md to the repository, or set Project instructions to claude-md-and-agents-md. [evidence: ${label}]`
+      });
+    }
+  }
+  const linksAsText = /* @__PURE__ */ new Set();
+  for (const f of files) {
+    if (!(f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md")) continue;
+    if (f.delivery === "not-loaded") continue;
+    const link = linkAsText(f.path);
+    if (!link) continue;
+    linksAsText.add(f.path);
+    const dirOf = (p) => import_node_path6.default.dirname(p).replace(/[\\/]\.claude$/, "");
+    const switchesOff = shadowers.includes(f.path) || lostAgents.some((a) => samePath(dirOf(a.path), dirOf(f.path)));
+    findings.push({
+      code: "claude.link-as-text",
+      severity: "warn",
+      agent: "claude",
+      rule: "claude.symlink",
+      path: f.path,
+      message: `${rel(f.path)} holds only the text "${link.text}": a symlink to ${rel(link.target)} that git checked out as a plain file, as git does on Windows unless symlinks are enabled (core.symlinks). Claude Code reads it as a ${import_node_path6.default.basename(f.path)} whose whole text is that path: it imports nothing${switchesOff && lostAgents.length > 0 ? ", and as a CLAUDE.md it switches AGENTS.md off" : ""}. A line "@${link.text}" works on every system.`
+    });
+  }
+  const importsAgents = (file2, text) => importTokens(text).some((token) => {
+    const target = resolveImport(token, file2, homeDir);
+    return target !== void 0 && import_node_path6.default.basename(target) === "AGENTS.md";
+  });
   if (lostAgents.length > 0 && agentsSupported) {
     for (const f of files) {
       if (!(f.kind === "CLAUDE.md" || f.kind === ".claude/CLAUDE.md" || f.kind === "CLAUDE.local.md")) continue;
-      if (f.delivery === "not-loaded") continue;
-      const text = (0, import_node_fs5.readFileSync)(f.path, "utf8");
+      if (f.delivery === "not-loaded" || linksAsText.has(f.path)) continue;
+      const text = (0, import_node_fs6.readFileSync)(f.path, "utf8");
       if (!WORDS.test(text)) continue;
+      if (importsAgents(f.path, text)) continue;
       const inCode = /@AGENTS\.md/.test(text);
       findings.push({
         code: "claude.words-not-import",
@@ -20386,7 +21096,7 @@ function resolveClaude(options) {
       agent: "claude",
       rule: f.rule,
       path: f.path,
-      message: `${rel(f.path)} is not loaded at launch; Claude Code loads it when it reads a file in ${rel(import_node_path5.default.dirname(f.path).replace(/[\\/]\.claude$/, ""))}/.`
+      message: `${rel(f.path)} is not loaded at launch; Claude Code loads it when it reads a file in ${rel(import_node_path6.default.dirname(f.path).replace(/[\\/]\.claude$/, ""))}/.`
     });
   }
   return {
@@ -20399,12 +21109,14 @@ function resolveClaude(options) {
     shadowers,
     files,
     unresolvedImports,
+    ...approval ? { approval } : {},
     findings
   };
 }
 
 // src/agents/codex/resolve.ts
-var import_node_path7 = __toESM(require("node:path"), 1);
+var import_node_fs8 = require("node:fs");
+var import_node_path8 = __toESM(require("node:path"), 1);
 
 // src/util/text.ts
 function decodeLossy(bytes2) {
@@ -20460,9 +21172,9 @@ function headings(bytes2) {
 }
 
 // src/agents/codex/config.ts
-var import_node_fs6 = require("node:fs");
+var import_node_fs7 = require("node:fs");
 var import_node_os3 = __toESM(require("node:os"), 1);
-var import_node_path6 = __toESM(require("node:path"), 1);
+var import_node_path7 = __toESM(require("node:path"), 1);
 
 // node_modules/smol-toml/dist/error.js
 function getLineColFromPtr(string4, ptr) {
@@ -21231,10 +21943,10 @@ var CodexConfigToml = external_exports.object({
   projects: external_exports.record(external_exports.string(), external_exports.looseObject({ trust_level: external_exports.string().optional() })).optional()
 }).loose();
 function readCodexToml(file2) {
-  if (!(0, import_node_fs6.existsSync)(file2)) return void 0;
+  if (!(0, import_node_fs7.existsSync)(file2)) return void 0;
   let raw;
   try {
-    raw = parse3((0, import_node_fs6.readFileSync)(file2, "utf8"));
+    raw = parse3((0, import_node_fs7.readFileSync)(file2, "utf8"));
   } catch (err) {
     throw new ConfigError(`${file2}: not valid TOML (${err.message.split("\n")[0]})`);
   }
@@ -21246,7 +21958,7 @@ function readCodexToml(file2) {
   return parsed.data;
 }
 function defaultCodexHome() {
-  return process.env.CODEX_HOME ?? import_node_path6.default.join(import_node_os3.default.homedir(), ".codex");
+  return process.env.CODEX_HOME ?? import_node_path7.default.join(import_node_os3.default.homedir(), ".codex");
 }
 function usableFallbackNames(names) {
   const out = [];
@@ -21264,9 +21976,9 @@ function findProjectRoot(launchDir, markers) {
   let cursor = launchDir;
   for (; ; ) {
     for (const marker of markers) {
-      if ((0, import_node_fs6.existsSync)(import_node_path6.default.join(cursor, marker))) return cursor;
+      if ((0, import_node_fs7.existsSync)(import_node_path7.default.join(cursor, marker))) return cursor;
     }
-    const parent = import_node_path6.default.dirname(cursor);
+    const parent = import_node_path7.default.dirname(cursor);
     if (parent === cursor) return void 0;
     cursor = parent;
   }
@@ -21282,7 +21994,7 @@ function lookupTrust(projects, dir) {
 }
 function resolveCodexSettings(options) {
   const codexHome = options.codexHome ?? defaultCodexHome();
-  const userFile = import_node_path6.default.join(codexHome, "config.toml");
+  const userFile = import_node_path7.default.join(codexHome, "config.toml");
   const user = readCodexToml(userFile);
   const sources = [];
   let maxBytes = CODEX_DEFAULT_MAX_BYTES;
@@ -21318,9 +22030,9 @@ function resolveCodexSettings(options) {
   }
   const ignoredProjectConfig = [];
   for (const dir of dirsBetween(projectRoot, options.launchDir)) {
-    const dotCodex = import_node_path6.default.join(dir, ".codex");
+    const dotCodex = import_node_path7.default.join(dir, ".codex");
     if (samePath(dotCodex, codexHome)) continue;
-    const file2 = import_node_path6.default.join(dotCodex, "config.toml");
+    const file2 = import_node_path7.default.join(dotCodex, "config.toml");
     const project = readCodexToml(file2);
     if (!project) continue;
     const keys = [];
@@ -21365,7 +22077,7 @@ function resolveCodexSettings(options) {
 
 // src/agents/codex/resolve.ts
 function resolveCodex(options) {
-  const launchDir = import_node_path7.default.resolve(options.launchDir);
+  const launchDir = import_node_path8.default.resolve(options.launchDir);
   const settings = resolveCodexSettings({ ...options, launchDir });
   const findings = [];
   const rel = (p) => displayPath(p, settings.projectRoot);
@@ -21415,7 +22127,7 @@ function resolveCodex(options) {
       const present = candidates.filter((name) => isFileNamed(dir, name));
       const [chosen, ...others] = present;
       if (!chosen) continue;
-      const file2 = import_node_path7.default.join(dir, chosen);
+      const file2 = import_node_path8.default.join(dir, chosen);
       const bytes2 = readBytes(file2);
       const entry = {
         dir,
@@ -21425,7 +22137,7 @@ function resolveCodex(options) {
         keptBytes: 0,
         status: "loaded",
         budgetBefore: left,
-        shadowed: others.map((name) => import_node_path7.default.join(dir, name))
+        shadowed: others.map((name) => import_node_path8.default.join(dir, name))
       };
       chain.push(entry);
       if (left === 0) {
@@ -21504,6 +22216,18 @@ function resolveCodex(options) {
       }
     }
   }
+  const twice = global && chain.find((e) => e.keptBytes > 0 && sameFile(e.path, global.path));
+  if (global && twice) {
+    const where = samePath(twice.dir, settings.projectRoot) ? "the project root" : `${rel(twice.dir)}/`;
+    findings.push({
+      code: "codex.home-is-root",
+      severity: "warn",
+      agent: "codex",
+      rule: "codex.home-is-root",
+      path: global.path,
+      message: `Codex home (CODEX_HOME) is ${where}, so Codex reads ${rel(global.path)} twice: once as the global instructions file and once as that directory's project file. The model gets its text twice${twice.status === "cut" ? ` (the second copy cut at byte ${twice.keptBytes})` : ""}. Point CODEX_HOME at a directory outside the project.`
+    });
+  }
   const below = belowLaunch(options.scanRoot ?? launchDir, launchDir, candidates, settings.fallbackNames);
   for (const surface of below) {
     findings.push({
@@ -21535,7 +22259,7 @@ function readGlobal(codexHome) {
   const skippedEmpty = [];
   for (const name of ["AGENTS.override.md", "AGENTS.md"]) {
     if (!isFileNamed(codexHome, name)) continue;
-    const file2 = import_node_path7.default.join(codexHome, name);
+    const file2 = import_node_path8.default.join(codexHome, name);
     const bytes2 = readBytes(file2);
     if (isBlankRust(decodeLossy(bytes2))) {
       skippedEmpty.push(file2);
@@ -21544,6 +22268,16 @@ function readGlobal(codexHome) {
     return { path: file2, bytes: bytes2.length, skippedEmpty };
   }
   return void 0;
+}
+function sameFile(a, b) {
+  const real2 = (p) => {
+    try {
+      return (0, import_node_fs8.realpathSync)(p);
+    } catch {
+      return import_node_path8.default.resolve(p);
+    }
+  };
+  return samePath(real2(a), real2(b));
 }
 function listSections(sections, max = 4) {
   const shown = sections.slice(0, max).map((s) => `"${s}"`);
@@ -21567,13 +22301,13 @@ function describeCut(bytes2, at) {
 }
 function belowLaunch(scanRoot, launchDir, candidates, fallbackNames) {
   const surfaces = discoverSurfaces(scanRoot, { fallbackNames }).filter(
-    (s) => !samePath(s.dir, launchDir) && isInside(s.dir, launchDir) && import_node_path7.default.dirname(s.path) === s.dir && candidates.includes(import_node_path7.default.basename(s.path))
+    (s) => !samePath(s.dir, launchDir) && isInside(s.dir, launchDir) && import_node_path8.default.dirname(s.path) === s.dir && candidates.includes(import_node_path8.default.basename(s.path))
   );
   const byDir = /* @__PURE__ */ new Map();
   for (const s of surfaces) {
     const current = byDir.get(s.dir);
-    const rank = candidates.indexOf(import_node_path7.default.basename(s.path));
-    if (!current || rank < candidates.indexOf(import_node_path7.default.basename(current.path))) byDir.set(s.dir, s);
+    const rank = candidates.indexOf(import_node_path8.default.basename(s.path));
+    if (!current || rank < candidates.indexOf(import_node_path8.default.basename(current.path))) byDir.set(s.dir, s);
   }
   return [...byDir.values()].sort((a, b) => a.path < b.path ? -1 : 1);
 }
@@ -21612,10 +22346,10 @@ function codexReach(result) {
 }
 
 // src/map/matrix.ts
-var import_node_path8 = __toESM(require("node:path"), 1);
+var import_node_path9 = __toESM(require("node:path"), 1);
 function buildMatrix(result) {
   const rows = /* @__PURE__ */ new Map();
-  const key = (p) => process.platform === "win32" ? import_node_path8.default.resolve(p).toLowerCase() : import_node_path8.default.resolve(p);
+  const key = (p) => process.platform === "win32" ? import_node_path9.default.resolve(p).toLowerCase() : import_node_path9.default.resolve(p);
   const row = (p) => {
     const k = key(p);
     let r = rows.get(k);
@@ -21652,8 +22386,8 @@ function buildMatrix(result) {
   const codexNames = codex ? ["AGENTS.override.md", "AGENTS.md", ...fallbackNames] : [];
   for (const r of rows.values()) {
     if (codex && !r.cells.codex) {
-      const name = import_node_path8.default.basename(r.path);
-      const dir = import_node_path8.default.dirname(r.path);
+      const name = import_node_path9.default.basename(r.path);
+      const dir = import_node_path9.default.dirname(r.path);
       let why = "not a Codex instruction file";
       let rule = "codex.one-per-dir";
       let delivery = "not-loaded";
@@ -21680,25 +22414,25 @@ function buildMatrix(result) {
     const ia = inRepo2(a.path);
     const ib = inRepo2(b.path);
     if (ia !== ib) return ia ? 1 : -1;
-    const ra = import_node_path8.default.relative(result.repoRoot, a.path).split(import_node_path8.default.sep).join("/");
-    const rb = import_node_path8.default.relative(result.repoRoot, b.path).split(import_node_path8.default.sep).join("/");
+    const ra = import_node_path9.default.relative(result.repoRoot, a.path).split(import_node_path9.default.sep).join("/");
+    const rb = import_node_path9.default.relative(result.repoRoot, b.path).split(import_node_path9.default.sep).join("/");
     return ra < rb ? -1 : ra > rb ? 1 : 0;
   });
 }
 
 // src/map/map.ts
 function findRepoRoot(start) {
-  let cursor = import_node_path9.default.resolve(start);
+  let cursor = import_node_path10.default.resolve(start);
   for (; ; ) {
-    if ((0, import_node_fs7.existsSync)(import_node_path9.default.join(cursor, ".git"))) return cursor;
-    const parent = import_node_path9.default.dirname(cursor);
+    if ((0, import_node_fs9.existsSync)(import_node_path10.default.join(cursor, ".git"))) return cursor;
+    const parent = import_node_path10.default.dirname(cursor);
     if (parent === cursor) return void 0;
     cursor = parent;
   }
 }
 function map2(options) {
-  const launchDir = import_node_path9.default.resolve(options.launchDir);
-  const repoRoot = import_node_path9.default.resolve(options.repoRoot ?? findRepoRoot(launchDir) ?? launchDir);
+  const launchDir = import_node_path10.default.resolve(options.launchDir);
+  const repoRoot = import_node_path10.default.resolve(options.repoRoot ?? findRepoRoot(launchDir) ?? launchDir);
   const agents = options.agents ?? ["codex", "claude"];
   const result = { launchDir, repoRoot, matrix: [], findings: [] };
   if (agents.includes("codex")) {
@@ -21767,7 +22501,7 @@ var CodexJson = external_exports.object({
   notPreloaded: external_exports.array(external_exports.string())
 });
 var DeliveryJson = external_exports.enum(["launch", "launch-cut", "import", "on-read", "maybe", "not-loaded"]);
-var ClaudeJson = external_exports.object({
+var ClaudeJson2 = external_exports.object({
   mode: external_exports.enum(CLAUDE_MODES),
   modeFrom: external_exports.string(),
   version: external_exports.string().optional(),
@@ -21803,7 +22537,7 @@ var MapJson = external_exports.object({
   launchDir: external_exports.string(),
   repoRoot: external_exports.string(),
   codex: CodexJson.optional(),
-  claude: ClaudeJson.optional(),
+  claude: ClaudeJson2.optional(),
   matrix: external_exports.array(external_exports.object({ path: external_exports.string(), codex: CellJson.optional(), claude: CellJson.optional() })),
   findings: external_exports.array(FindingJson)
 });
@@ -22158,10 +22892,10 @@ function list(value) {
 function readInputs(env, cwd, knownCodes) {
   if (knownCodes.length === 0) throw new Error("readInputs: no known finding codes to check fail-on against");
   const given = (env.INPUT_PATH ?? "").trim() || ".";
-  const root = import_node_path10.default.resolve(cwd, given);
+  const root = import_node_path11.default.resolve(cwd, given);
   let isDir = false;
   try {
-    isDir = (0, import_node_fs8.statSync)(root).isDirectory();
+    isDir = (0, import_node_fs10.statSync)(root).isDirectory();
   } catch {
     isDir = false;
   }
@@ -22190,17 +22924,17 @@ function readInputs(env, cwd, knownCodes) {
   return { root, launchDirs, agents, failOn };
 }
 function relTo(root, p) {
-  const r = import_node_path10.default.relative(root, p).split(import_node_path10.default.sep).join("/");
+  const r = import_node_path11.default.relative(root, p).split(import_node_path11.default.sep).join("/");
   return r === "" ? "." : r;
 }
 function launchDirsFor(root, launchDirs) {
   if (launchDirs !== "auto") {
     return launchDirs.map((d) => {
-      const abs = import_node_path10.default.resolve(root, d);
+      const abs = import_node_path11.default.resolve(root, d);
       if (!isInside(abs, root)) throw new InputError(`launch-dirs: ${d} is outside ${root}`);
       let isDir = false;
       try {
-        isDir = (0, import_node_fs8.statSync)(abs).isDirectory();
+        isDir = (0, import_node_fs10.statSync)(abs).isDirectory();
       } catch {
         isDir = false;
       }
@@ -22231,8 +22965,8 @@ function runAction(io) {
     return { status: 2, runs: [], annotations: [] };
   }
   const temp = io.env.RUNNER_TEMP && io.env.RUNNER_TEMP.trim() ? io.env.RUNNER_TEMP : import_node_os4.default.tmpdir();
-  (0, import_node_fs8.mkdirSync)(temp, { recursive: true });
-  const home = (0, import_node_fs8.mkdtempSync)(import_node_path10.default.join(temp, "ctxreach-home-"));
+  (0, import_node_fs10.mkdirSync)(temp, { recursive: true });
+  const home = (0, import_node_fs10.mkdtempSync)(import_node_path11.default.join(temp, "ctxreach-home-"));
   let runs;
   try {
     runs = dirs.map(
@@ -22241,25 +22975,25 @@ function runAction(io) {
           launchDir,
           repoRoot: inputs.root,
           agents: inputs.agents,
-          codex: { home: import_node_path10.default.join(home, ".codex") },
-          claude: { home: import_node_path10.default.join(home, ".claude"), homeDir: home, ceiling: inputs.root }
+          codex: { home: import_node_path11.default.join(home, ".codex") },
+          claude: { home: import_node_path11.default.join(home, ".claude"), homeDir: home, ceiling: inputs.root }
         }),
         io.version
       )
     );
   } finally {
-    (0, import_node_fs8.rmSync)(home, { recursive: true, force: true });
+    (0, import_node_fs10.rmSync)(home, { recursive: true, force: true });
   }
   const annotations = mergeAnnotations(runs.map(annotationsFor));
-  const workspace = io.env.GITHUB_WORKSPACE?.trim() ? import_node_path10.default.resolve(io.env.GITHUB_WORKSPACE) : void 0;
+  const workspace = io.env.GITHUB_WORKSPACE?.trim() ? import_node_path11.default.resolve(io.env.GITHUB_WORKSPACE) : void 0;
   const prefix = workspace !== void 0 && isInside(inputs.root, workspace) && relTo(workspace, inputs.root) !== "." ? relTo(workspace, inputs.root) + "/" : "";
   for (const a of annotations) io.stdout(workflowCommand(a, prefix) + "\n");
   const scanned = workspace !== void 0 && isInside(inputs.root, workspace) ? relTo(workspace, inputs.root) : inputs.root;
   const summary = renderSummary(runs, { version: io.version, scanned, annotations: annotations.length });
-  if (io.env.GITHUB_STEP_SUMMARY?.trim()) (0, import_node_fs8.appendFileSync)(io.env.GITHUB_STEP_SUMMARY, summary + "\n");
+  if (io.env.GITHUB_STEP_SUMMARY?.trim()) (0, import_node_fs10.appendFileSync)(io.env.GITHUB_STEP_SUMMARY, summary + "\n");
   else io.stdout(summary + "\n");
-  const jsonFile = import_node_path10.default.join(temp, `ctxreach-map-${process.pid}-${Date.now()}.json`);
-  (0, import_node_fs8.writeFileSync)(jsonFile, JSON.stringify({ schema: "ctxreach.action/v1", runs }, null, 2) + "\n");
+  const jsonFile = import_node_path11.default.join(temp, `ctxreach-map-${process.pid}-${Date.now()}.json`);
+  (0, import_node_fs10.writeFileSync)(jsonFile, JSON.stringify({ schema: "ctxreach.action/v1", runs }, null, 2) + "\n");
   const warnings = runs.reduce((n, r) => n + r.findings.filter((f) => f.severity === "warn").length, 0);
   const outputs = [
     `annotations=${annotations.length}`,
@@ -22267,7 +23001,7 @@ function runAction(io) {
     `launch-dirs=${runs.length}`,
     `json=${jsonFile}`
   ];
-  if (io.env.GITHUB_OUTPUT?.trim()) (0, import_node_fs8.appendFileSync)(io.env.GITHUB_OUTPUT, outputs.join("\n") + "\n");
+  if (io.env.GITHUB_OUTPUT?.trim()) (0, import_node_fs10.appendFileSync)(io.env.GITHUB_OUTPUT, outputs.join("\n") + "\n");
   else io.stderr(outputs.map((o) => `ctxreach: ${o}`).join("\n") + "\n");
   const status = fails(runs, inputs.failOn) ? 1 : 0;
   if (status === 1)
@@ -22284,7 +23018,7 @@ try {
     env: process.env,
     cwd: process.cwd(),
     version,
-    knownCodes: ["claude.agents-shadowed", "claude.external-import", "claude.import-too-deep", "claude.mode-in-project-settings", "claude.nested", "claude.too-large", "claude.version-no-agents", "claude.version-some-sessions", "claude.words-not-import", "codex.cut", "codex.empty", "codex.empty-override", "codex.mid-codepoint", "codex.nested", "codex.no-budget", "codex.no-root", "codex.project-config-ignored", "codex.shadowed", "codex.untrusted", "codex.zero-budget"],
+    knownCodes: ["claude.agents-shadowed", "claude.external-import", "claude.external-import-headless", "claude.home-ancestor", "claude.import-too-deep", "claude.link-as-text", "claude.mode-in-project-settings", "claude.nested", "claude.too-large", "claude.version-no-agents", "claude.version-some-sessions", "claude.words-not-import", "codex.cut", "codex.empty", "codex.empty-override", "codex.home-is-root", "codex.mid-codepoint", "codex.nested", "codex.no-budget", "codex.no-root", "codex.project-config-ignored", "codex.shadowed", "codex.untrusted", "codex.zero-budget"],
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text)
   });
