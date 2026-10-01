@@ -10,15 +10,17 @@
 //   node study/census/sample.mjs --frame S.tsv --n 1100 --stream S-main --seed-from-tag prereg-v1 --out S-main.tsv
 //   node study/census/sample.mjs --frame S.tsv --n 20 --stream PILOT --seed <8 hex> --label pilot --out pilot.tsv
 // Options: --exclude <sample.tsv> (repeatable), --seed-offset 1 (the one pre-registered redraw).
-// A study sample is refused with a seed offset other than 0 (draw 1) or 1 (draw 2), and with an
-// exclusion other than the registered one's first draw. The header records the draw and the offset.
+// A study sample is refused with a seed offset other than 0 (draw 1) or 1 (draw 2), with an
+// exclusion other than the registered one's first draw, from a frame TSV whose SHA-256 is not the
+// one the tagged PREREG.md stamps for its frame, and while the working PREREG.md differs from the
+// tagged one above the Deviations heading. The header records the draw and the offset.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { sha256 } from "./lib/paths.mjs";
 import { checkSeed, draw, offsetSeed } from "./lib/prng.mjs";
-import { loadRegistry } from "./lib/registry.mjs";
+import { appendOnlyProblems, loadRegistry, PREREG_FILE, readRegistry, readStamps } from "./lib/registry.mjs";
 import { seedFromTag } from "./seed.mjs";
 
 /** Parse a frame TSV (repo, commit, path, stars) into rows. */
@@ -106,6 +108,22 @@ export function registeredProblems(registry, { stream, n, offset = 0, excludeHea
   return problems;
 }
 
+/**
+ * Why a study sample may not be drawn from this frame TSV under the tagged
+ * registration (study/PREREG.md sections 3 and 4): the working PREREG.md must
+ * be the tagged one with deviations appended, and the TSV's SHA-256 must be
+ * the one the tag stamps for the sample's frame. Returns a list of problems.
+ */
+export function studyFrameProblems({ tagged, working, tag = "prereg-v1", stream, frameSha256 }) {
+  const problems = appendOnlyProblems(tagged, working, tag);
+  const frame = readRegistry(tagged).samples?.[stream]?.frame;
+  const stamped = readStamps(tagged)[`frame.${frame}.sha256`];
+  if (!stamped) problems.push(`${tag} stamps no SHA-256 for frame ${frame}`);
+  else if (stamped !== frameSha256)
+    problems.push(`the frame TSV's SHA-256 ${frameSha256} is not frame ${frame}'s, as ${tag} stamps it (${stamped})`);
+  return problems;
+}
+
 /** The header line of a sample TSV: who drew it, which draw it is, from what. */
 export function sampleHeaderText({ label, stream, seed, offset, n, frame, frameSha256, excluded }) {
   return `label=${label} stream=${stream} draw=${Number(offset) + 1} seed=${seed} seedOffset=${offset} n=${n} frame=${frame} frameSha256=${frameSha256} excluded=${excluded}`;
@@ -157,9 +175,31 @@ function main(args) {
       return 2;
     }
   }
-  if (tag) seed = seedFromTag(tag).seed;
-  if (offset) seed = offsetSeed(seed, offset);
   const frameText = readFileSync(frameFile, "utf8");
+  if (tag) {
+    let tagged;
+    try {
+      tagged = seedFromTag(tag);
+    } catch (err) {
+      console.error(`refusing: ${err.message}`);
+      return 2;
+    }
+    seed = tagged.seed;
+    if (label === "study") {
+      const problems = studyFrameProblems({
+        tagged: tagged.prereg,
+        working: readFileSync(PREREG_FILE, "utf8"),
+        tag,
+        stream,
+        frameSha256: sha256(Buffer.from(frameText)),
+      });
+      if (problems.length) {
+        console.error(`refusing: ${problems.join("; ")} (study/PREREG.md, sections 3 and 4)`);
+        return 2;
+      }
+    }
+  }
+  if (offset) seed = offsetSeed(seed, offset);
   const exclude = new Set(excludes.flatMap((f) => readSample(readFileSync(f, "utf8")).map((r) => r.repo)));
   const rows = drawSample(readFrame(frameText), { n, seed, stream, exclude });
   const header = sampleHeaderText({

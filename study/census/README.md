@@ -10,23 +10,27 @@ prints its count of non-GET attempts at the end (check K7).
 | Script | What it does |
 |---|---|
 | `frame.mjs` | Freezes a Sourcegraph frame (S, S-imp, S-ci) or K3's two census lists: the query twice, both answers checked, the TSV and its SHA-256 in a manifest |
-| `sample.mjs` | Draws a sample from a frozen frame with the seeded Fisher-Yates shuffle of `lib/prng.mjs`; a study sample must use the registered stream, size and exclusion (S-main's first draw, for S-imp) and the seed from the `prereg-v1` tag, with `--seed-offset` 0 (draw 1) or 1 (the one redraw, draw 2); the header records the draw |
-| `seed.mjs` | Prints the seed: the first 8 hex digits of the commit `prereg-v1` points to (refuses before the tag exists, or when the tagged PREREG.md still holds a `{{stamp:...}}` placeholder) |
+| `sample.mjs` | Draws a sample from a frozen frame with the seeded Fisher-Yates shuffle of `lib/prng.mjs`; a study sample must use the registered stream, size and exclusion (S-main's first draw, for S-imp) and the seed from the `prereg-v1` tag, with `--seed-offset` 0 (draw 1) or 1 (the one redraw, draw 2), from the frame TSV whose SHA-256 the tagged PREREG.md stamps, while PREREG.md is unchanged above its Deviations heading; the header records the draw and n |
+| `seed.mjs` | Prints the seed: the first 8 hex digits of the commit `prereg-v1` points to (refuses before the tag exists, or when the tagged PREREG.md still holds a `{{stamp:...}}` placeholder); study runs read the registration and its stamps from that tagged copy |
 | `recon.mjs` | Rebuilds one repository's instruction files at a commit (tree, blob-checked files, links recorded, import targets, launch directories) |
 | `measure.mjs`, `detectors.mjs` | Runs `map --json` from each launch directory (in this process, `lib/maprun.mjs`) and computes every outcome; output-side checks turn a leak into a fault |
 | `codex-check.mjs` | Check K4: `codex debug prompt-input` against `map`'s predicted bytes, twice per pair, throwaway `CODEX_HOME` |
 | `pipeline.mjs` | One unit end to end, then deletes the reconstruction; K1 uses the same function |
-| `run-census.mjs` | Runs a sample, serial and resumable, with the seed from the `prereg-v1` tag; `map` in process from the built library, checked against the spawned CLI on every 25th unit (a difference is a fault on the row); api.github.com through `gh api`; refuses under an instruction file, on low disk, with another build than `--expect-dist`, when `gh api rate_limit` does not answer, and for a study run on a sample of another stream or seed, without `--codex-bin`, with a Codex other than the registered version, or into a rows file holding another sample's rows; every row records its draw, sample, build, Codex version and platform |
-| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, each outcome's left-out repositories by reason, the figures that are not proportions (`summaries`), and the registered verdicts; a redrawn sample replaces its first draw, which is reported as `<frame>-draw1`, and `lib/draws.mjs` refuses rows that would pool draws, samples, builds, versions or platforms |
+| `run-census.mjs` | Runs a sample, serial and resumable, with the seed from the `prereg-v1` tag; `map` in process from the built library, checked against the spawned CLI on every 25th unit of the sample, by position, so a resumed run checks the same units (a difference is a fault on the row); api.github.com through `gh api`; refuses under an instruction file, on low disk, with another build than `--expect-dist`, when `gh api rate_limit` does not answer, on a sample whose header's n is not its number of units, and for a study run on a sample of another stream or seed, without `--expect-dist` or with another digest than the tag stamps, with another `--claude-version` than the registered one, without `--codex-bin`, with a Codex other than the registered version, while PREREG.md differs from the tagged copy above its Deviations heading, or into a rows file holding another sample's rows; every row records its draw, sample and its n (`sampleN`), build, Codex version and platform |
+| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, each outcome's left-out repositories by reason, the figures that are not proportions (`summaries`), and the registered verdicts; a draw's lost share is over its n, a redrawn sample replaces its first draw, which is reported as `<frame>-draw1`, and `lib/draws.mjs` refuses rows that would pool draws, samples, builds, versions or platforms, and a study draw with rows for fewer units than its n; rows with a fault are left out of every figure, K3 and K4 |
 | `known-answer.mjs` | Check K1: every fixture with a hand-derived answer (`known-answers.json`) through the pipeline, network replaced by local files, `map` in process as in the census (`--spawn` for the CLI) |
 | `plant-census-faults.mjs` | Check K2: each detector and pipeline step switched off in turn; K1 must fail each time |
 | `consistency.mjs` | Check K3: the regex version of O1-file in the sample against the frame's own proportion |
-| `k5-select.mjs` | Draws K5's 25 repositories from the measured rows in use (a redrawn sample's first draw is left out) |
+| `k5-select.mjs` | Draws K5's 25 repositories (K5-01 to K5-25) from the measured rows in use without faults (a redrawn sample's first draw is left out; a repository in two samples is drawn once) |
+| `k5-score.mjs` | Check K5's figure: one `ctxreach verify --agent claude --trials 2 --json` output per drawn repository (`<dir>/K5-xx.json`) to `k5-results.json`, agreement k/n over decided cells with its Wilson interval, per stratum, disagreements by id and void runs; refuses a missing run, another agent, instrument, Claude Code version or number of trials |
 | `dist-digest.mjs` | The build's fingerprint for the `study-v1` freeze |
 | `time-map.mjs` | Times `map` per launch directory, spawned CLI against in process, over the pilot fixtures (`--k1`, `--synthetic N` for more) and compares every pair of answers |
 
 `study/prereg.mjs` checks PREREG.md's registry against these scripts and
-fills its tag-time values.
+fills its tag-time values (in the text and the `prereg-stamps` block); once
+`prereg-v1` exists, `check` also fails when PREREG.md changed above its
+Deviations heading or a deviation was edited in place (`check --tagged`
+fails before the tag exists, too).
 
 **K1 on 2026-10-01: 55/55, a pass**, over the 44 fixtures in
 `test/fixtures/` and the 11 in `known-answer-fixtures/`. The 16 fixtures
@@ -57,7 +61,8 @@ node study/census/sample.mjs --frame <S-imp.tsv> --n 385 --stream S-imp --seed-f
 gh auth status          # api.github.com is read through gh api; ctxreach reads no token
 node study/census/run-census.mjs --sample S-main.tsv --frame-name S-main \
   --seed-from-tag prereg-v1 --out rows-S-main.jsonl --work C:/ctxr-census --expect-dist <digest> --codex-bin <codex.js>
-# and the same for S-imp.tsv (--frame-name S-imp, --out rows-S-imp.jsonl)
+# and the same for S-imp.tsv (--frame-name S-imp, --out rows-S-imp.jsonl); an interrupted run is run again
+# with the same arguments until every unit has its row (analyze.mjs refuses an incomplete study draw)
 node study/census/analyze.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl \
   --k3 <K3.manifest.json> --frame-manifest <S.manifest.json> --out results.json
 # only if analyze marks a sample redrawRequired (over 10% lost), redraw it once (PREREG.md section 4),
@@ -67,11 +72,15 @@ node study/census/run-census.mjs --sample S-main-draw2.tsv --frame-name S-main \
   --seed-from-tag prereg-v1 --out rows-S-main-draw2.jsonl --work C:/ctxr-census --expect-dist <digest> --codex-bin <codex.js>
 node study/census/analyze.mjs --rows rows-S-main.jsonl --rows rows-S-main-draw2.jsonl --rows rows-S-imp.jsonl \
   --k3 <K3.manifest.json> --frame-manifest <S.manifest.json> --out results.json   # S-main = the redraw; S-main-draw1 reported apart
+# K5 from the rows in use, then one ctxreach verify run per drawn repository, saved as C:/ctxr-k5/verify/K5-xx.json:
+node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <seed> --out C:/ctxr-k5/k5.tsv
+node study/census/k5-score.mjs --selection C:/ctxr-k5/k5.tsv --verify C:/ctxr-k5/verify --out C:/ctxr-k5/k5-results.json
 # K6 after the census (study/handcheck/PROTOCOL.md):
 node study/handcheck/handcheck.mjs draw --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <seed> --out C:/ctxr-k6/pairs.json
 node study/handcheck/handcheck.mjs sheets --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --pairs C:/ctxr-k6/pairs.json --out C:/ctxr-k6
 # a fresh reader fills C:/ctxr-k6/reader/answers/, then:
 node study/handcheck/handcheck.mjs score --out C:/ctxr-k6
+node study/prereg.mjs check --tagged   # PREREG.md unchanged above Deviations since prereg-v1
 ```
 
 What is published per repository is `owner/repo@commit`, measurements and

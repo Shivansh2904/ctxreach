@@ -6,7 +6,8 @@
 // Preconditions, each a refusal: no instruction file in any directory above
 // the work directory (Claude Code walks to the filesystem root, so every
 // reconstruction would inherit it); empty homes; at least --min-free-gb free
-// on the work volume; with --expect-dist, the built dist/ must be that build.
+// on the work volume; with --expect-dist, the built dist/ must be that build
+// (a study run must give it, as the tagged PREREG.md stamps it).
 //
 // Usage:
 //   node study/census/run-census.mjs --sample S-main.tsv --frame-name S-main --seed-from-tag prereg-v1 \
@@ -18,10 +19,14 @@
 // than the caps. A typed --seed <hex8> is for --label pilot only. A study run
 // also needs a study sample whose stream is --frame-name and whose draw (1, or
 // the redraw 2) was drawn with the tag's seed (+ 1 for the redraw), and Codex
-// for K4 (--codex-bin) at the registered version. Every row records its draw,
-// its sample's SHA-256, the build's digest, the Codex version and the platform,
-// so analyze.mjs can refuse rows that would pool them; a rows file holds one
-// sample's rows only (a redraw goes to its own file).
+// for K4 (--codex-bin) at the registered version, --expect-dist with the
+// stamped build and --claude-version at the registered version; it reads the
+// registration from the tagged PREREG.md and refuses while the working copy
+// differs from it above the Deviations heading. Every row records its draw,
+// its sample's SHA-256 and n, the build's digest, the Codex version and the
+// platform, so analyze.mjs can refuse rows that would pool them, or a draw
+// with fewer rows than its n; a rows file holds one sample's rows only (a
+// redraw goes to its own file).
 // Exit: 0 done; 1 some units had instrument faults; 2 a precondition failed; 3 a non-GET attempt was counted.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -33,7 +38,7 @@ import { GetOnlyClient, installFetchGuard } from "./lib/client.mjs";
 import { crossCheckedRunner, inProcessMapRunnerFromDist, spawnMapRunner } from "./lib/maprun.mjs";
 import { sha256 } from "./lib/paths.mjs";
 import { checkSeed, offsetSeed } from "./lib/prng.mjs";
-import { loadRegistry } from "./lib/registry.mjs";
+import { appendOnlyProblems, loadRegistry, PREREG_FILE, readRegistry, readStamps } from "./lib/registry.mjs";
 import { ancestorInstructionFiles, freeBytes, freshHomes, runUnit } from "./pipeline.mjs";
 import { readSample, sampleHeader } from "./sample.mjs";
 import { seedFromTag } from "./seed.mjs";
@@ -42,7 +47,11 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 
 /** The Claude Code version map models for the census (a fresh machine on the pinned release). */
 export const CLAUDE_VERSION = "2.1.285";
-/** Every Nth unit, each launch directory is also run through the spawned CLI and the answers compared (PREREG.md section 6). */
+/**
+ * Every Nth unit of the sample (by its position in the sample, so a resumed
+ * run checks the same units), each launch directory is also run through the
+ * spawned CLI and the answers compared (PREREG.md section 6).
+ */
 export const CLI_CHECK_EVERY = 25;
 
 export function readRows(file) {
@@ -87,7 +96,29 @@ export function studySampleProblems(header, { frameName, seed }) {
     problems.push(
       `draw ${draw} is drawn with seed ${offsetSeed(seed, draw - 1)} (the tag's seed${draw === 2 ? " + 1" : ""}), but the sample says ${header.seed ?? "(none)"}`,
     );
+  if (header.n === undefined) problems.push("the sample's header gives no n");
   return problems;
+}
+
+/**
+ * Why a study run may not start under this registration (study/PREREG.md
+ * sections 1 and 4): the working PREREG.md must be the tagged one with
+ * deviations appended, --expect-dist must name the build the tag stamps, and
+ * --claude-version must be the registered one. Returns { problems, registry }
+ * with the tagged registry.
+ */
+export function studyRunProblems({ tagged, working, tag, expectDist, claudeVersion }) {
+  if (typeof tagged !== "string") return { problems: [`${tag}: no study/PREREG.md to read the registration from`] };
+  const problems = appendOnlyProblems(tagged, working, tag);
+  const registry = readRegistry(tagged);
+  const stamped = readStamps(tagged)["dist.digest"];
+  if (!expectDist)
+    problems.push(`a study run names the frozen build with --expect-dist (${tag} stamps ${stamped ?? "no digest"})`);
+  else if (expectDist !== stamped)
+    problems.push(`--expect-dist ${expectDist} is not the build ${tag} stamps (${stamped ?? "no digest"})`);
+  if (claudeVersion !== registry.claudeVersion)
+    problems.push(`--claude-version ${claudeVersion} is not the registered ${registry.claudeVersion}`);
+  return { problems, registry };
 }
 
 /**
@@ -110,9 +141,11 @@ export async function runCensus(o) {
     return { code: 2 };
   }
   let seed = o.seed;
+  let tagged;
   if (o.seedFromTag) {
     try {
-      seed = (o.seedResolver ?? seedFromTag)(o.seedFromTag).seed;
+      tagged = (o.seedResolver ?? seedFromTag)(o.seedFromTag);
+      seed = tagged.seed;
     } catch (err) {
       log(`refusing: ${err.message}`);
       return { code: 2 };
@@ -126,11 +159,29 @@ export async function runCensus(o) {
   const sampleSha = sha256(Buffer.from(sampleText));
   const header = sampleHeader(sampleText);
   const draw = header.draw === undefined ? 1 : Number(header.draw);
+  const units = readSample(sampleText).map((u) => ({ ...u, frame: o.frameName }));
+  // The sample's n, stamped on every row: analyze.mjs takes a draw's lost share over it and refuses a study draw with fewer rows.
+  const sampleN = header.n === undefined ? units.length : Number(header.n);
   const sampleProblems = label === "study" ? studySampleProblems(header, { frameName: o.frameName, seed }) : [];
+  if (sampleN !== units.length)
+    sampleProblems.push(`the sample's header says n=${header.n}, but it holds ${units.length} units`);
   if (label !== "study" && draw !== 1 && draw !== 2)
     sampleProblems.push(`the sample's draw ${header.draw} is not draw 1 or its one redraw, draw 2`);
   if (label === "study" && !o.codexBin)
     sampleProblems.push("a study run renders every type-1 and type-2 pair with Codex for check K4 (--codex-bin)");
+  // The registration a study run keeps to: the tagged PREREG.md's registry and stamps.
+  let registry;
+  if (label === "study") {
+    const run = studyRunProblems({
+      tagged: tagged?.prereg,
+      working: o.workingPrereg ?? readFileSync(PREREG_FILE, "utf8"),
+      tag: o.seedFromTag,
+      expectDist: o.expectDist,
+      claudeVersion,
+    });
+    sampleProblems.push(...run.problems);
+    registry = run.registry;
+  }
   if (sampleProblems.length) {
     log(`refusing: ${sampleProblems.join("; ")} (study/PREREG.md, sections 4 and 8)`);
     return { code: 2 };
@@ -167,7 +218,7 @@ export async function runCensus(o) {
   // K4's renderer: a study run uses the registered Codex version only (study/PREREG.md section 1).
   const codex = o.codexBin ? await (o.codexVersionOf ?? codexVersion)(o.codexBin) : null;
   if (label === "study") {
-    const problem = codexVersionProblem(codex, loadRegistry().codexVersion);
+    const problem = codexVersionProblem(codex, (registry ?? loadRegistry()).codexVersion);
     if (problem) {
       log(`refusing: ${problem} (study/PREREG.md section 1)`);
       return { code: 2 };
@@ -175,7 +226,6 @@ export async function runCensus(o) {
   }
   const homes = freshHomes(workDir);
 
-  const units = readSample(sampleText).map((u) => ({ ...u, frame: o.frameName }));
   const done = new Set(readRows(o.out).map((r) => r.id));
   const todo = units.filter((u) => !done.has(u.id)).slice(0, o.limit > 0 ? o.limit : undefined);
   // api.github.com goes through gh api (its own login); tests pass local transports instead.
@@ -221,7 +271,9 @@ export async function runCensus(o) {
   try {
     for (const [i, unit] of todo.entries()) {
       const t0 = Date.now();
-      checkThisUnit = Boolean(reference) && every > 0 && i % every === 0;
+      // By the unit's position in the sample, not in this run: a resumed run checks the same units.
+      const position = Number.isInteger(unit.index) ? unit.index : i;
+      checkThisUnit = Boolean(reference) && every > 0 && position % every === 0;
       if (checkThisUnit) mapCheck.units++;
       const row = await runUnit({
         client,
@@ -237,6 +289,7 @@ export async function runCensus(o) {
       row.label = label;
       row.draw = draw;
       row.sampleSha256 = sampleSha;
+      row.sampleN = sampleN;
       row.dist = dist.digest;
       row.codexVersion = codex;
       row.platform = process.platform;
@@ -264,6 +317,7 @@ export async function runCensus(o) {
     draw,
     sample: path.basename(o.sample),
     sampleSha256: sampleSha,
+    sampleN,
     seed,
     seedFrom: o.seedFromTag ?? "typed (pilot)",
     startedAt: started.toISOString(),

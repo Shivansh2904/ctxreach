@@ -2,11 +2,15 @@
 // draw within three strata (study/PREREG.md, K5): 12 where map predicts the
 // root AGENTS.md is shadowed at root launch, 8 importers where it predicts a
 // headless session in a type-2 directory gets none of it, and 5 with no root
-// CLAUDE.md-family file where it predicts delivery. The main session then
-// runs the capture oracle twice on each (repository, launch directory) and
-// reports agreement over decided cells.
+// CLAUDE.md-family file where it predicts delivery. Each repository is drawn
+// once: a repository in two samples (S-imp and a redrawn S-main) is one
+// repository, and its row is the first that qualifies by sample name. The
+// draws are numbered K5-01 to K5-25 in the order drawn. The main session then
+// runs `ctxreach verify` (2 capture trials) on each (repository, launch
+// directory), and k5-score.mjs turns those runs into k5-results.json.
 //
 // Usage: node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <hex8> [--out k5.tsv]
+// The TSV's columns: id, stratum, repo, commit, launch directory.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -45,20 +49,29 @@ export function readRowFiles(files) {
   );
 }
 
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 export function selectK5(rows, seed) {
+  // Canonical order: repository, then sample (frame) name, then commit.
   const usable = rows
     .filter((r) => r.status === "measured" && !(r.faults ?? []).length)
-    .sort((a, b) => (a.repo < b.repo ? -1 : a.repo > b.repo ? 1 : 0));
+    .sort((a, b) => cmp(a.repo, b.repo) || cmp(String(a.frame), String(b.frame)) || cmp(a.commit, b.commit));
   const taken = new Set();
   const out = [];
   for (const s of K5_STRATA) {
-    const pool = usable.filter((r) => !taken.has(r.repo) && s.pick(r));
+    // Each repository once in a stratum's pool, and never one an earlier stratum drew.
+    const inPool = new Set();
+    const pool = usable.filter((r) => {
+      if (taken.has(r.repo) || inPool.has(r.repo) || !s.pick(r)) return false;
+      inPool.add(r.repo);
+      return true;
+    });
     for (const r of draw(pool, s.n, seed, `K5|${s.name}`)) {
       taken.add(r.repo);
       out.push({ stratum: s.name, repo: r.repo, commit: r.commit, launchDir: s.launch(r) });
     }
   }
-  return out;
+  return out.map((p, i) => ({ id: `K5-${String(i + 1).padStart(2, "0")}`, ...p }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -71,7 +84,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exit(2);
   }
   const picked = selectK5(readRowFiles(files), args[seedAt + 1]);
-  const tsv = picked.map((p) => [p.stratum, p.repo, p.commit, p.launchDir].join("\t")).join("\n") + "\n";
+  const tsv = picked.map((p) => [p.id, p.stratum, p.repo, p.commit, p.launchDir].join("\t")).join("\n") + "\n";
   if (outAt >= 0) writeFileSync(args[outAt + 1], tsv);
   process.stdout.write(tsv);
   for (const s of K5_STRATA) console.error(`${s.name}: ${picked.filter((p) => p.stratum === s.name).length}/${s.n}`);

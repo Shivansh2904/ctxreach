@@ -2,7 +2,8 @@
 // points to. It cannot be known before study/PREREG.md is committed, which is
 // the point: nobody can pick it after seeing data. The script also checks
 // that the tagged commit holds the pre-registration, with every tag-time
-// value filled in (no {{stamp:...}} placeholder left).
+// value filled in (no {{stamp:...}} placeholder left), and returns the tagged
+// text: study runs read the registration and its stamps from it.
 //
 // Usage: node study/census/seed.mjs [tag]   (default prereg-v1)
 
@@ -35,7 +36,13 @@ export function seedFromTag(tag = "prereg-v1", cwd = ROOT) {
   }
   let prereg;
   try {
-    prereg = git("show", `${commit}:study/PREREG.md`);
+    // Untrimmed: the tagged text is compared with the working copy byte for byte (lib/registry.mjs).
+    prereg = execFileSync("git", ["show", `${commit}:study/PREREG.md`], {
+      cwd,
+      encoding: "utf8",
+      env: gitEnv(),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
   } catch {
     throw new Error(`${tag} (${commit}) does not contain study/PREREG.md`);
   }
@@ -45,7 +52,7 @@ export function seedFromTag(tag = "prereg-v1", cwd = ROOT) {
     throw new Error(
       `${tag} (${commit}): study/PREREG.md still holds ${left.length} placeholder(s) (${left.slice(0, 3).join(", ")}); run study/prereg.mjs stamp before tagging`,
     );
-  return { tag, commit, seed: commit.slice(0, 8) };
+  return { tag, commit, seed: commit.slice(0, 8), prereg };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

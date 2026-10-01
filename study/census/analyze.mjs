@@ -5,7 +5,9 @@
 // Frames are never pooled, and neither are two draws of one frame: a redrawn
 // sample replaces its first draw for every figure, verdict and check, and the
 // first draw is reported under `<frame>-draw1` (lib/draws.mjs, which refuses
-// rows that would pool draws, samples, builds, versions or platforms).
+// rows that would pool draws, samples, builds, versions or platforms, and a
+// study draw with fewer rows than the n drawn). A row with a fault is not
+// used: not for the outcomes, and not for K3 or K4.
 // Hypotheses get the pre-registered verdicts, taken on the bounds as written
 // here (rounded to 6 decimal places). Each repository-level outcome counts the
 // repositories it leaves out by reason (`ineligibleWhy`); the figures that are
@@ -258,6 +260,7 @@ export function frameSummaries(frame, rows) {
   return out;
 }
 
+/** The verdict of a hypothesis on its outcome: its rule's words, or `no-data` when the outcome is missing or n is 0. */
 export function decide(h, o) {
   if (!o) return "no-data";
   const w = { k: o.k, n: o.n, p: o.p, lo: o.lo, hi: o.hi };
@@ -299,21 +302,26 @@ const usable = (rows) => rows.filter((r) => r.status === "measured" && !(r.fault
 
 /**
  * Throws (from lib/draws.mjs) on rows that would pool two draws of a frame,
- * two samples, builds, agent versions or platforms, or a unit twice.
+ * two samples, builds, agent versions or platforms, on a unit given twice, and
+ * on a study draw with fewer rows than the n drawn.
  */
 export function analyze({ rowSets, k3Manifest, label = "study" }) {
-  const sets = splitDraws(rowSets.flatMap((s) => s.rows));
+  const sets = splitDraws(
+    rowSets.flatMap((s) => s.rows),
+    { label },
+  );
   const inUse = sets.filter((s) => !s.supersededBy);
   const frames = {};
   const outcomes = [];
   const summaries = [];
-  for (const { name: frame, frame: sampled, draw, rows, replaces, supersededBy } of sets) {
+  for (const { name: frame, frame: sampled, draw, n, complete, rows, replaces, supersededBy } of sets) {
     const measured = usable(rows);
     const faulted = rows.filter((r) => r.status === "measured" && (r.faults ?? []).length);
     const excluded = rows.filter((r) => r.status === "excluded");
     const reasons = {};
     for (const r of excluded) reasons[r.exclusion] = (reasons[r.exclusion] ?? 0) + 1;
-    const share = lostShare(rows);
+    // Over the n units drawn, not the rows given: a study draw is complete (lib/draws.mjs refuses one that is not).
+    const share = lostShare(rows, n);
     // Repositories this sample shares with the other samples in use (S-imp against a redrawn S-main): counted, not excluded.
     const repos = new Set(rows.map((r) => r.repo));
     const sharedRepos = supersededBy
@@ -328,7 +336,9 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
       draw,
       ...(replaces ? { replaces } : {}),
       ...(supersededBy ? { supersededBy } : {}),
-      drawn: rows.length,
+      drawn: n,
+      rowsGiven: rows.length,
+      complete,
       measured: measured.length,
       excluded: excluded.length,
       exclusions: reasons,
@@ -340,8 +350,8 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
         ...fraction(measured.filter((r) => (r.launch?.t2Total ?? 0) > MAX_TYPE2_DIRS).length, measured.length),
         cap: MAX_TYPE2_DIRS,
       },
-      // Only a first draw can be redrawn, and only once.
-      redrawRequired: draw === 1 && share > REDRAW_OVER,
+      // Only a complete first draw can be redrawn, and only once.
+      redrawRequired: draw === 1 && complete && share > REDRAW_OVER,
       claudeVersions: [...new Set(measured.map((r) => r.claudeVersion))],
       mapVersions: [...new Set(measured.map((r) => r.mapVersion))],
       codexVersions: [...new Set(rows.map((r) => r.codexVersion ?? null))],
@@ -359,8 +369,9 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
     const o = find(h.frame, h.outcome);
     return { ...h, estimate: o ? { k: o.k, n: o.n, p: o.p, lo: o.lo, hi: o.hi } : null, verdict: decide(h, o) };
   });
-  // The checks read the rows in use: a redrawn sample's first draw is left out of K3 and K4, as of every verdict.
-  const checks = { K4: k4Summary(inUse.flatMap((s) => s.rows)) };
+  // The checks read the usable rows in use: a redrawn sample's first draw is left out of K3 and K4, as of every
+  // verdict, and so is a row with a fault (K4's own render faults are on the row's k4 pairs, not row faults).
+  const checks = { K4: k4Summary(inUse.flatMap((s) => usable(s.rows))) };
   const sMain = inUse.find((s) => s.name === "S-main");
   if (k3Manifest && sMain) checks.K3 = k3Check(usable(sMain.rows), k3Manifest);
   return {
@@ -424,7 +435,7 @@ function main(args) {
     );
   for (const [f, s] of Object.entries(results.frames))
     console.log(
-      `${f}: draw ${s.draw}${s.supersededBy ? ` (superseded by the redraw, ${s.supersededBy})` : ""}, ${s.measured} measured, ${s.excluded} excluded ${JSON.stringify(s.exclusions)}, ${s.withFaults} with faults, type-2 capped ${s.type2Capped.k}/${s.type2Capped.n}${s.redrawRequired ? " -- over 10% lost: the pre-registered redraw applies" : ""}`,
+      `${f}: draw ${s.draw}${s.supersededBy ? ` (superseded by the redraw, ${s.supersededBy})` : ""}${s.complete ? "" : ` (incomplete: rows for ${s.rowsGiven} of ${s.drawn})`}, ${s.measured} measured, ${s.excluded} excluded ${JSON.stringify(s.exclusions)}, ${s.withFaults} with faults, type-2 capped ${s.type2Capped.k}/${s.type2Capped.n}${s.redrawRequired ? " -- over 10% lost: the pre-registered redraw applies" : ""}`,
     );
   if (results.checks.K4)
     console.log(

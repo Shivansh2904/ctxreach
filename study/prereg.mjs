@@ -8,10 +8,16 @@
 // the frozen frames' sizes and hashes. Each such value is a placeholder
 // written {{stamp:<key>}} until then. The seed is never in PREREG.md: it is
 // the first 8 hex digits of the commit that contains it (census/seed.mjs).
+// The stamped values are also held as JSON (the `json prereg-stamps` block),
+// which the census scripts read from the tagged copy.
 //
 // Usage:
-//   node study/prereg.mjs check [--stamped]
-//       the registry against the code; with --stamped, also no placeholder left
+//   node study/prereg.mjs check [--stamped] [--tagged] [--tag prereg-v1]
+//       the registry against the code, and the stamps block against STAMP_KEYS;
+//       with --stamped, also no placeholder left. Once the tag exists, also
+//       PREREG.md against the tagged copy: nothing above the Deviations heading
+//       may change, and deviations are only appended (--tagged: fail when the
+//       tag does not exist yet)
 //   node study/prereg.mjs stamp --study-tag study-v1 --frames <dir> [--dist dist] [--write]
 //       compute every stamp (refusing a pilot frame, an invalid frame, a TSV
 //       whose hash moved, a build not made from the tagged sources, or a known
@@ -28,6 +34,8 @@ import { K4_TRIALS } from "./census/codex-check.mjs";
 import { CJK_EVENT, CODEX_BUDGET, O1_EVENT_SHARE, P1_CODES } from "./census/detectors.mjs";
 import { distDigest } from "./census/dist-digest.mjs";
 import { CHURN_ALLOWANCE, CHURN_TOLERANCE, FRAMES, K3_LISTS } from "./census/frame.mjs";
+import { K5_TRIALS } from "./census/k5-score.mjs";
+import { K5_STRATA } from "./census/k5-select.mjs";
 import { GetOnlyClient } from "./census/lib/client.mjs";
 import { MIN_LINE_CHARS, SHINGLE_THRESHOLD, SHINGLE_WORDS } from "./census/lib/normalise.mjs";
 import { Z95 } from "./census/lib/stats.mjs";
@@ -40,7 +48,7 @@ import {
   MAX_TYPE2_DIRS,
   MAX_TYPE3_DIRS,
 } from "./census/recon.mjs";
-import { readRegistry } from "./census/lib/registry.mjs";
+import { appendOnlyProblems, readRegistry, readStampsBlock } from "./census/lib/registry.mjs";
 import { CLAUDE_VERSION, CLI_CHECK_EVERY } from "./census/run-census.mjs";
 import { gitEnv } from "./census/seed.mjs";
 
@@ -110,6 +118,7 @@ export function codeRegistry({ cells = loadCells(), answers = loadAnswers() } = 
     mapCheckEvery: CLI_CHECK_EVERY,
     knownAnswerClaudeVersion: answers.claudeVersion,
     k4: { trials: K4_TRIALS, expectedAtLeast: K4_EXPECTED, launchTypes: [1, 2] },
+    k5: { trials: K5_TRIALS, strata: Object.fromEntries(K5_STRATA.map((s) => [s.name, s.n])) },
     k6: { pairs: K6_PAIRS, launchTypes: K6_LAUNCH_TYPES },
     analysis: { z: Z95, ownerCap: OWNER_CAP },
     hypotheses: HYPOTHESES,
@@ -164,6 +173,44 @@ export function checkAgainstCode(registry, code = codeRegistry()) {
     problems.push("seed: must be the first 8 hex digits of prereg-v1");
   if (typeof codexVersion !== "string") problems.push("codexVersion: missing");
   return problems;
+}
+
+/**
+ * The stamps block against STAMP_KEYS: every key once, each holding its own
+ * placeholder or, once stamped, a value. Returns a list of problems.
+ */
+export function stampsBlockProblems(text) {
+  let block;
+  try {
+    block = readStampsBlock(text);
+  } catch (err) {
+    return [err.message];
+  }
+  const problems = [];
+  const keys = Object.keys(block);
+  for (const k of STAMP_KEYS) if (!keys.includes(k)) problems.push(`stamps block: no ${k}`);
+  for (const k of keys) {
+    if (!STAMP_KEYS.includes(k)) problems.push(`stamps block: ${k} is not a tag-time value`);
+    const v = block[k];
+    const own = `{{stamp:${k}}}`;
+    if (typeof v !== "string" || v === "" || (v.includes("{{stamp:") && v !== own))
+      problems.push(`stamps block: ${k} holds ${JSON.stringify(v)}, not ${own} or its value`);
+  }
+  return problems;
+}
+
+/** study/PREREG.md as the tag holds it, or undefined when the tag (or the file in it) does not exist. */
+export function taggedPrereg(tag = "prereg-v1", cwd = ROOT) {
+  try {
+    return execFileSync("git", ["show", `${tag}:study/PREREG.md`], {
+      cwd,
+      encoding: "utf8",
+      env: gitEnv(),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 function sha256(buf) {
@@ -283,13 +330,27 @@ function main(args) {
   };
   const text = readFileSync(PREREG, "utf8");
   const registry = readRegistry(text);
-  const drift = checkAgainstCode(registry);
+  const drift = [...checkAgainstCode(registry), ...stampsBlockProblems(text)];
   for (const d of drift) console.log(`drift: ${d}`);
   if (args[0] === "check") {
     const left = placeholders(text);
     console.log(`registry vs code: ${drift.length ? `${drift.length} difference(s)` : "identical"}`);
     console.log(`placeholders left: ${left.length}${left.length ? ` (${left.join(", ")})` : ""}`);
-    return drift.length || (args.includes("--stamped") && left.length) ? 1 : 0;
+    // Append-only after the tag: compared whenever the tag exists, and required with --tagged.
+    const tag = opt("--tag") ?? "prereg-v1";
+    const tagged = taggedPrereg(tag);
+    let appendOnly = [];
+    if (tagged === undefined) {
+      console.log(`against ${tag}: the tag does not exist here (or holds no study/PREREG.md); nothing to compare`);
+      if (args.includes("--tagged")) appendOnly = [`${tag} does not exist`];
+    } else {
+      appendOnly = appendOnlyProblems(tagged, text, tag);
+      for (const p of appendOnly) console.log(`changed after the tag: ${p}`);
+      console.log(
+        `against ${tag}: ${appendOnly.length ? "CHANGED above the appended deviations" : "unchanged; deviations only appended"}`,
+      );
+    }
+    return drift.length || appendOnly.length || (args.includes("--stamped") && left.length) ? 1 : 0;
   }
   if (args[0] === "stamp") {
     if (!opt("--frames")) {
@@ -313,7 +374,9 @@ function main(args) {
     } else console.log("all stamps computed; run again with --write to fill PREREG.md");
     return 0;
   }
-  console.error("usage: node study/prereg.mjs check [--stamped] | stamp --study-tag study-v1 --frames <dir> [--write]");
+  console.error(
+    "usage: node study/prereg.mjs check [--stamped] [--tagged] [--tag prereg-v1] | stamp --study-tag study-v1 --frames <dir> [--write]",
+  );
   return 2;
 }
 
