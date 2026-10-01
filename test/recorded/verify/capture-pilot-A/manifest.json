@@ -1,0 +1,128 @@
+{
+  "schema": "ctxreach.verify-recording/v1",
+  "ctxreach": "0.0.0-pilot",
+  "agent": "claude",
+  "instrument": "capture",
+  "cliVersion": "2.1.285",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-30T15:33:18.059Z",
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": ".",
+  "sourceName": "cfx-A",
+  "trialsPlanned": 1,
+  "args": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--permission-mode",
+    "dontAsk",
+    "--tools",
+    ""
+  ],
+  "prompt": "List every token that starts with CTXR- that appears in your instructions.",
+  "controlToken": "CTXR-A0000c01",
+  "canaries": [
+    {
+      "token": "CTXR-A0000e01",
+      "file": "../.claude/CLAUDE.md",
+      "position": "head",
+      "offset": 30
+    },
+    {
+      "token": "CTXR-A0000a01",
+      "file": "AGENTS.md",
+      "position": "head",
+      "offset": 14
+    },
+    {
+      "token": "CTXR-A0000a02",
+      "file": "AGENTS.md",
+      "position": "tail",
+      "offset": 55
+    },
+    {
+      "token": "CTXR-A0000c01",
+      "file": ".claude/rules/style.md",
+      "position": "head",
+      "offset": 11
+    },
+    {
+      "token": "CTXR-A0000b01",
+      "file": "packages/api/AGENTS.md",
+      "position": "head",
+      "offset": 13
+    },
+    {
+      "token": "CTXR-A0000d01",
+      "file": "docs/decoy.md",
+      "position": "head",
+      "offset": 6,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "../.claude/CLAUDE.md",
+      "delivery": "launch",
+      "why": "ancestor of launch dir",
+      "rule": "claude.ancestors"
+    },
+    {
+      "file": "AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "switched off by ../.claude/CLAUDE.md",
+      "rule": "claude.agents-default"
+    },
+    {
+      "file": ".claude/rules/style.md",
+      "delivery": "launch",
+      "why": "project rule",
+      "rule": "claude.rules"
+    },
+    {
+      "file": "packages/api/AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "switched off by ../.claude/CLAUDE.md",
+      "rule": "claude.agents-default"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": [],
+    "links": []
+  },
+  "notes": [
+    "Pilot recording of 2026-09-30 (Claude Code 2.1.285, Windows 11, breadth lane V8/V9): the tokens were planted by hand, not by ctxreach; no --model was pinned; the session stream was not saved; the copy was not a ctxreach sandbox.",
+    "The prompt carried no must-appear token, so the style rule's token (a file that must load) stands in for it. A pilot is cited as a pilot and never pooled with results."
+  ],
+  "claude": {
+    "configDir": "C:\\ctxreach-pilot\\ccconfig-A",
+    "model": "claude-opus-5-5",
+    "removedEnv": [],
+    "mode": "claude-md-or-agents-md"
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "files": [
+        "trial-1.capture.jsonl"
+      ],
+      "exitCode": null,
+      "timedOut": false,
+      "durationMs": 0,
+      "stderr": "",
+      "warnings": [
+        "the pilot did not save the exit status or the duration"
+      ]
+    }
+  ]
+}

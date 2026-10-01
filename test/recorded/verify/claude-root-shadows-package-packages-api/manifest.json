@@ -1,0 +1,148 @@
+{
+  "schema": "ctxreach.verify-recording/v1",
+  "ctxreach": "0.0.0",
+  "agent": "claude",
+  "instrument": "capture",
+  "cliVersion": "2.1.285",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-30T21:47:55.637Z",
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": "packages/api",
+  "sourceName": "repo",
+  "trialsPlanned": 1,
+  "args": [
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--permission-mode",
+    "dontAsk",
+    "--tools",
+    "",
+    "--model",
+    "claude-opus-5-5"
+  ],
+  "prompt": "ctxreach verify CTXR-2b8fa44a: list every token that starts with CTXR- in your instructions.",
+  "controlToken": "CTXR-2b8fa44a",
+  "canaries": [
+    {
+      "token": "CTXR-bc762f8e",
+      "file": "CLAUDE.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-5da9e979",
+      "file": "CLAUDE.md",
+      "position": "tail",
+      "offset": 121
+    },
+    {
+      "token": "CTXR-649a4420",
+      "file": "packages/api/AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-6487e844",
+      "file": "packages/api/AGENTS.md",
+      "position": "tail",
+      "offset": 193
+    },
+    {
+      "token": "CTXR-187b4803",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "head",
+      "offset": 16,
+      "decoy": true
+    },
+    {
+      "token": "CTXR-13513b5d",
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "tail",
+      "offset": 117,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "CLAUDE.md",
+      "delivery": "launch",
+      "why": "ancestor of launch dir",
+      "rule": "claude.ancestors"
+    },
+    {
+      "file": "packages/api/AGENTS.md",
+      "delivery": "not-loaded",
+      "why": "switched off by CLAUDE.md",
+      "rule": "claude.agents-default"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": [
+      ".git"
+    ],
+    "links": []
+  },
+  "notes": [
+    "The copy is under the home directory.",
+    "~/.claude/CLAUDE.md does not exist on this machine."
+  ],
+  "claude": {
+    "configDir": "C:\\ctxreach-probe\\claude-config",
+    "model": "claude-opus-5-5",
+    "removedEnv": [
+      "ANTHROPIC_BASE_URL",
+      "CLAUDECODE",
+      "CLAUDE_AGENT_SDK_VERSION",
+      "CLAUDE_CODE_CHILD_SESSION",
+      "CLAUDE_CODE_DESKTOP_APP_VERSION",
+      "CLAUDE_CODE_DISABLE_CRON",
+      "CLAUDE_CODE_DISABLE_TERMINAL_TITLE",
+      "CLAUDE_CODE_EAGER_FLUSH",
+      "CLAUDE_CODE_EMIT_TOOL_USE_SUMMARIES",
+      "CLAUDE_CODE_ENABLE_ASK_USER_QUESTION_TOOL",
+      "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+      "CLAUDE_CODE_ENTRYPOINT",
+      "CLAUDE_CODE_EXECPATH",
+      "CLAUDE_CODE_HOST_SESSION_ID",
+      "CLAUDE_CODE_MESSAGING_SOCKET",
+      "CLAUDE_CODE_MESSAGING_TOKEN",
+      "CLAUDE_CODE_OAUTH_SCOPES",
+      "CLAUDE_CODE_REPORT_FINDINGS",
+      "CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH",
+      "CLAUDE_CODE_SESSION_ATTENDED",
+      "CLAUDE_CODE_SESSION_ID",
+      "CLAUDE_CODE_TERMINAL_MCP_TOOLS",
+      "CLAUDE_EFFORT",
+      "CLAUDE_PID",
+      "CLAUDE_PREVIEW_CLASSIFIER_FLOOR",
+      "MCP_CONNECTION_NONBLOCKING",
+      "MCP_SERVER_CONNECTION_BATCH_SIZE"
+    ],
+    "mode": "claude-md-or-agents-md"
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "files": [
+        "trial-1.capture.jsonl",
+        "trial-1.stdout.jsonl"
+      ],
+      "exitCode": 1,
+      "timedOut": false,
+      "durationMs": 5274,
+      "stderr": "",
+      "warnings": []
+    }
+  ]
+}

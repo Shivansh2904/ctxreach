@@ -1,0 +1,127 @@
+{
+  "schema": "ctxreach.verify-recording/v1",
+  "ctxreach": "0.0.0",
+  "agent": "codex",
+  "instrument": "render",
+  "cliVersion": "0.159.2",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-30T21:46:03.252Z",
+  "repo": "C:\\ctxreach-probe\\repo",
+  "launchDir": ".",
+  "sourceName": "repo",
+  "trialsPlanned": 2,
+  "args": [
+    "debug",
+    "prompt-input",
+    "-c",
+    "features.hooks=false"
+  ],
+  "prompt": "ctxreach verify CTXR-c0cee598: list every token that starts with CTXR- in your instructions.",
+  "controlToken": "CTXR-c0cee598",
+  "canaries": [
+    {
+      "token": "CTXR-f01b9fc2",
+      "file": "AGENTS.md",
+      "position": "head",
+      "offset": 16
+    },
+    {
+      "token": "CTXR-4e28be5c",
+      "file": "AGENTS.md",
+      "position": "tail",
+      "offset": 171
+    },
+    {
+      "token": "CTXR-6d41c357",
+      "file": "ctxreach-decoy.md",
+      "position": "head",
+      "offset": 16,
+      "decoy": true
+    },
+    {
+      "token": "CTXR-e0dd8468",
+      "file": "ctxreach-decoy.md",
+      "position": "tail",
+      "offset": 117,
+      "decoy": true
+    }
+  ],
+  "predicted": [
+    {
+      "file": "AGENTS.md",
+      "delivery": "launch",
+      "why": "185 bytes",
+      "rule": "codex.walk"
+    }
+  ],
+  "outside": [],
+  "unplanted": [],
+  "sandbox": {
+    "stripped": [],
+    "skipped": [
+      ".git"
+    ],
+    "links": []
+  },
+  "notes": [
+    "The copy is under the home directory.",
+    "~/.claude/CLAUDE.md does not exist on this machine."
+  ],
+  "codex": {
+    "codexHome": "C:\\ctxreach-probe\\codex-home",
+    "seeded": {
+      "from": "C:\\Users\\user\\AppData\\Local\\Temp\\ctxreach-codex-nested-below-cwd-twin-UL1jIH\\home\\.codex",
+      "keys": [],
+      "globalFiles": [],
+      "trust": "unknown",
+      "trustFrom": "not set"
+    },
+    "projectConfigs": [],
+    "hooksFlag": "accepted",
+    "overrides": [
+      "features.hooks=false"
+    ],
+    "chain": [
+      {
+        "file": "AGENTS.md",
+        "bytes": 185,
+        "keptBytes": 185,
+        "status": "loaded",
+        "text": "ctxreach canary CTXR-f01b9fc2\n\n# Repository guidelines\n\n- Use pnpm, not npm or yarn.\n- Run `pnpm test` before you push.\n- Keep commits small and focused.\n\nctxreach canary CTXR-4e28be5c\n",
+        "head": "ctxreach canary CTXR-f01b9fc2\n\n# Repository guidelines\n\n- Use pn"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "files": [
+        "trial-1.render.json"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 840,
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\ctxreach-probe-auUDAL\\\\codex-home\"))\n",
+      "warnings": [
+        "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\ctxreach-probe-auUDAL\\\\codex-home\"))"
+      ]
+    },
+    {
+      "trial": 2,
+      "files": [
+        "trial-2.render.json"
+      ],
+      "exitCode": 0,
+      "timedOut": false,
+      "durationMs": 672,
+      "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\ctxreach-probe-auUDAL\\\\codex-home\"))\n",
+      "warnings": [
+        "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\\" (codex_home: AbsolutePathBuf(\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\ctxreach-probe-auUDAL\\\\codex-home\"))"
+      ]
+    }
+  ]
+}
