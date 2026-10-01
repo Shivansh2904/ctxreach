@@ -1,0 +1,215 @@
+name: Conformance
+
+# Checks map's predictions against the agents themselves, at no cost and with
+# no secret:
+# - Codex, as rendered by `codex debug prompt-input` (no login; the model is
+#   not run), in two columns: the pinned 0.159.2 and @latest.
+# - Claude Code @latest, by capturing the request it would send to a loopback
+#   endpoint that answers 400 (a dummy key; nothing reaches Anthropic), with
+#   the model pinned (--model), which the script requires for Claude Code.
+# scripts/conformance.mjs runs every fixture from both launch directories,
+# after a planted-fault pass that must disagree, and exits non-zero on any
+# disagreement. Nightly on Ubuntu and Windows; weekly also on macOS. Each
+# column is one call: --agents codex, or --agents claude --model <pin>.
+# test/workflows.test.ts checks every call against the flags the script
+# accepts.
+#
+# Then the results are compared with the previous run of the same column
+# (scripts/evidence.mjs flips): a cell whose verdict changed fails the check
+# and opens an issue. Results are committed to the gh-pages branch under
+# data/conformance/.
+#
+# Scheduled runs do nothing until the repository variable CTXREACH_CONFORMANCE
+# is set to "on" (they write to gh-pages and can open issues). A manual run
+# (workflow_dispatch) always runs the Codex columns. The Claude Code column is
+# off by default: it runs, on a schedule or by hand, only while
+# CTXREACH_CONFORMANCE is "on".
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+    - cron: "41 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: Include macOS
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conformance
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.event_name == 'workflow_dispatch' || vars.CTXREACH_CONFORMANCE == 'on'
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.os.outputs.os }}
+      date: ${{ steps.os.outputs.date }}
+    steps:
+      - id: os
+        shell: bash
+        env:
+          WEEKLY: ${{ github.event.schedule == '41 4 * * 0' || inputs.macos == true }}
+        run: |
+          if [ "$WEEKLY" = "true" ]; then
+            echo 'os=["ubuntu-latest","windows-latest","macos-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["ubuntu-latest","windows-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+  codex:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(needs.plan.outputs.os) }}
+        column: [pinned, latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Codex (${{ matrix.column }})
+        shell: bash
+        env:
+          COLUMN: ${{ matrix.column }}
+        run: |
+          if [ "$COLUMN" = pinned ]; then spec="@openai/codex@0.159.2"; else spec="@openai/codex@latest"; fi
+          npm install --no-save --prefix "$RUNNER_TEMP/codex" "$spec"
+          echo "$RUNNER_TEMP/codex/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Run the Codex conformance battery
+        shell: bash
+        env:
+          OUT: results-codex-${{ matrix.column }}-${{ runner.os }}.json
+        run: |
+          codex --version
+          node scripts/conformance.mjs --agents codex --out "$OUT"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-codex-${{ matrix.column }}-${{ runner.os }}
+          path: results-codex-${{ matrix.column }}-${{ runner.os }}.json
+          if-no-files-found: warn
+
+  claude:
+    needs: plan
+    if: vars.CTXREACH_CONFORMANCE == 'on'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(needs.plan.outputs.os) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Claude Code (latest)
+        shell: bash
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/claude" "@anthropic-ai/claude-code@latest"
+          echo "$RUNNER_TEMP/claude/node_modules/.bin" >> "$GITHUB_PATH"
+      # No secret: the capture harness gives Claude Code a dummy key and a
+      # loopback base URL that answers 400, so no request leaves the runner.
+      - name: Run the Claude Code capture battery
+        shell: bash
+        env:
+          OUT: results-claude-latest-${{ runner.os }}.json
+          DISABLE_AUTOUPDATER: "1"
+        run: |
+          claude --version
+          node scripts/conformance.mjs --agents claude --model claude-opus-5-5 --out "$OUT"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-claude-latest-${{ runner.os }}
+          path: results-claude-latest-${{ runner.os }}.json
+          if-no-files-found: warn
+
+  publish:
+    needs: [plan, codex, claude]
+    if: always() && needs.plan.result == 'success' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: results-*
+          merge-multiple: true
+      - name: Check out gh-pages (a new orphan branch the first time)
+        shell: bash
+        run: |
+          if git fetch --depth 1 origin gh-pages; then
+            git worktree add -b gh-pages gh-pages FETCH_HEAD
+          else
+            git worktree add --orphan -b gh-pages gh-pages
+          fi
+      - name: Compare each column with its previous run
+        id: flips
+        shell: bash
+        run: |
+          : > flips.md
+          flipped=0
+          for current in results/*.json; do
+            [ -e "$current" ] || continue
+            name=$(basename "$current")
+            column="${name#results-}"
+            column="${column%.json}"
+            previous="gh-pages/data/conformance/latest/$name"
+            set +e
+            node scripts/evidence.mjs flips --previous "$previous" --current "$current" --column "$column" > "flip-$name.md"
+            status=$?
+            set -e
+            if [ "$status" = 1 ]; then flipped=1; cat "flip-$name.md" >> flips.md; echo >> flips.md;
+            elif [ "$status" != 0 ]; then echo "::error::flips failed on $name (exit $status)"; exit "$status"; fi
+          done
+          echo "flipped=$flipped" >> "$GITHUB_OUTPUT"
+      - name: Commit the results to gh-pages
+        shell: bash
+        env:
+          DAY: ${{ needs.plan.outputs.date }}
+        run: |
+          shopt -s nullglob
+          files=(results/*.json)
+          if [ ${#files[@]} -eq 0 ]; then echo "::warning::no results to commit"; exit 0; fi
+          mkdir -p "gh-pages/data/conformance/$DAY" gh-pages/data/conformance/latest
+          cp "${files[@]}" "gh-pages/data/conformance/$DAY/"
+          cp "${files[@]}" gh-pages/data/conformance/latest/
+          cd gh-pages
+          git add data/conformance
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Conformance results for $DAY"
+          git push origin HEAD:gh-pages
+      - name: Open an issue for cells that changed verdict
+        if: steps.flips.outputs.flipped == '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DAY: ${{ needs.plan.outputs.date }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          printf '\nRun: %s\n' "$RUN_URL" >> flips.md
+          gh issue create --title "Conformance: cells changed verdict on $DAY" --body-file flips.md
+          echo "::error::conformance cells changed verdict; see the issue"
+          exit 1
