@@ -9,7 +9,7 @@ import { existsSync, lstatSync, mkdirSync, readdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { map } from "../map/map.js";
-import { displayPath, isInside, isInsideReal, nearestExisting } from "../util/fs.js";
+import { displayPath, isInside, isInsideReal, nearestExisting, spelled } from "../util/fs.js";
 import { CONTROL_RULE, plantControl, plantDecoy, plantFile, TokenSource, type RandomSource } from "./canary.js";
 import { copyLocation } from "./instruments.js";
 import { readRecording, RECORDING_SCHEMA, writeManifest, type Manifest, type Recording } from "./recording.js";
@@ -173,7 +173,9 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
     const home = options.homeDir ?? os.homedir();
     const redactions: Redaction[] = [
       { from: box.base, to: ph.base },
-      { from: home, to: ph.home },
+      // The home directory as given, and as the system spells it: paths found by walking up from the copy come
+      // out in the system's spelling (the long name for a short one such as RUNNER~1, a link resolved).
+      ...[...new Set([home, spelled(home)])].map((from) => ({ from, to: ph.home })),
     ];
     for (const row of after.matrix) {
       const cell = row.cells[adapter.id];
@@ -206,7 +208,9 @@ export async function runProbe(options: ProbeOptions): Promise<Recording> {
       ...(claudeMode !== undefined ? { claudeMode } : {}),
       redactions,
     }) ?? { args: adapter.args(options.mode), model: null, hook: false, isolation: "machine", setEnv: [], notes: [] };
-    const location = copyLocation({ repo: box.repo, home, redactions, ceiling: options.ancestorCeiling });
+    // The walk up from the copy is in the system's spelling, so the ceiling is compared in it too.
+    const ceiling = options.ancestorCeiling !== undefined ? spelled(options.ancestorCeiling) : undefined;
+    const location = copyLocation({ repo: box.repo, home, redactions, ceiling });
 
     const prompt =
       options.mode === "recall" ? RECALL_PROMPT : taskPrompt(options.task ?? DEFAULT_TASK, adapter.readTools);

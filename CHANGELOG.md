@@ -30,7 +30,7 @@
     instruction files above the copy; four of its parts are unverified.
   - v1 recordings still replay: the eight in `test/recorded/` print two
     more lines than before and nothing else changes
-    (`test/recorded/before-f5/`). `scripts/plant-probe-faults.mjs` has 117
+    (`test/recorded/before-f5/`). `scripts/plant-probe-faults.mjs` has 119
     plants.
 - `docs/probe.md`: the probe section of the README, moved there and brought
   up to format v2; the README keeps a summary.

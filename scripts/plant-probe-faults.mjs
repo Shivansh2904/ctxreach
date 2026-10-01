@@ -401,6 +401,18 @@ export const PLANTS = [
     find: 'rulesUnder(path.join(dir, ".claude", "rules"), rules);',
     replace: "",
   },
+  {
+    name: "home-redacted-in-one-spelling",
+    file: "src/probe/probe.ts",
+    find: "...[...new Set([home, spelled(home)])].map((from) => ({ from, to: ph.home })),",
+    replace: "{ from: home, to: ph.home },",
+  },
+  {
+    name: "ceiling-compared-as-given",
+    file: "src/probe/probe.ts",
+    find: "options.ancestorCeiling !== undefined ? spelled(options.ancestorCeiling) : undefined",
+    replace: "options.ancestorCeiling",
+  },
 
   // The InstructionsLoaded hook.
   {

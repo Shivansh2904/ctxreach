@@ -117,7 +117,7 @@ export function canonicalPath(p: string): string {
 }
 
 /** `canonicalPath` when `p` exists, else `p` resolved: for comparing a path that may not exist with one that does. */
-function spelled(p: string): string {
+export function spelled(p: string): string {
   try {
     return canonicalPath(p);
   } catch {

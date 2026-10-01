@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -221,6 +221,32 @@ describe("where the copy was", () => {
       "The copy was inside the home directory and ~/.claude/CLAUDE.md exists",
     );
     expect(result.notes.join("\n")).toContain("Instruction files in the directories above the copy:");
+  }, 30_000);
+
+  it("names the home directory, and stops at the ceiling, however the two are spelled (here through a link)", async () => {
+    const fx = fakeRepo({ "CLAUDE.md": "# P\n" });
+    const outer = tempDir("home-like");
+    // Above the ceiling: a walk that went past it would list this file.
+    writeFileSync(path.join(outer, "CLAUDE.md"), "# Above\n");
+    const home = path.join(outer, "home");
+    mkdirSync(path.join(home, ".claude"), { recursive: true });
+    writeFileSync(path.join(home, ".claude", "CLAUDE.md"), "# Me\n");
+    const tmp = path.join(home, "AppData", "Temp");
+    mkdirSync(tmp, { recursive: true });
+    // The same directory by another spelling, as a short name (RUNNER~1) or a link gives it; the walk up
+    // from the copy goes through the system's spelling.
+    const alias = path.join(tempDir("home-alias"), "home");
+    symlinkSync(home, alias, "junction");
+    const { result } = await probeFake(fx, {
+      env: { FAKE_CLAUDE_ECHO: withControl("CLAUDE.md"), FAKE_CLAUDE_HOOK: withControl("CLAUDE.md") },
+      probe: { tmpRoot: tmp, homeDir: alias, ancestorCeiling: alias },
+    });
+    const ph = process.platform === "win32" ? "C:\\Users\\user" : "/home/user";
+    expect(result.manifest.location).toEqual({
+      underHome: true,
+      userClaudeMd: true,
+      ancestors: [`${ph}${path.sep}.claude${path.sep}CLAUDE.md`],
+    });
   }, 30_000);
 });
 
