@@ -85,7 +85,13 @@ export function shingleContainment(source, delivered) {
   return { a: a.size, r, share: a.size === 0 ? undefined : r / a.size };
 }
 
-const CJK =
+/**
+ * One CJK character (a code point): Han with its radicals and compatibility
+ * ideographs, kana with halfwidth katakana, Hangul with its jamo, and
+ * Bopomofo. study/PREREG.md (O8) lists the same ranges, and a test compares
+ * the two code point for code point.
+ */
+export const CJK =
   /[\u1100-\u11ff\u2e80-\u2fdf\u3040-\u30ff\u3100-\u312f\u3130-\u318f\u31a0-\u31bf\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\uff66-\uff9f]|[\u{20000}-\u{3134f}]/u;
 
 /** Share of non-whitespace characters (code points) that are CJK: Han, kana, Hangul. */

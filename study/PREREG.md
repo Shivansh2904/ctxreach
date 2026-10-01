@@ -20,19 +20,21 @@ public repositories that ship an `AGENTS.md`, Claude Code and Codex start a
 session with different instructions from the same repository, and why.
 
 The headline sentence is fixed now. A script fills its numbers from
-`results.json`; nobody types them:
+`results.json` and `cells-results.json`; nobody types them. The script is
+written after the tag (section 13, step 9) and only reads those two files:
 
 > Same repo, different instructions. In k/n (x%, [lo, hi]) of public
 > repositories with an AGENTS.md, Claude Code starts with under half of that
 > file's text; in j/m launch directories Codex cuts or drops a chain file, as
 > rendered by Codex's own `debug prompt-input`. And a personal
-> `~/.claude/CLAUDE.md` switched AGENTS.md off in a/10 vs b/10 runs depending
+> `~/.claude/CLAUDE.md` switched AGENTS.md off in a/u vs b/v runs depending
 > only on where the repository lives.
 
-- k/n is outcome O1-content in frame S-main (raw), with its Wilson 95%
+- k/n is outcome `O1-content` in frame S-main (raw), with its Wilson 95%
   interval.
-- j/m is outcome P1-pairs in S-main (raw).
-- a/10 and b/10 are the trials of cell B2 arms A1 and A2 in which the root
+- j/m is outcome `P1-pairs` in S-main (raw).
+- u and v are the usable trials of cell B2 arms A1 and A2 (section 9: void
+  trials are not counted); a and b are those of them in which the root
   `AGENTS.md` did not reach the model endpoint.
 - If B2 is not **confirmed** by its rule (section 9), the third sentence
   is printed with its fractions and verdict and without the words
@@ -47,14 +49,25 @@ The headline sentence is fixed now. A script fills its numbers from
    The build's fingerprint (SHA-256 of every file in `dist/`, then SHA-256
    of that listing; `node study/census/dist-digest.mjs`) is
    `{{stamp:dist.digest}}`. `run-census.mjs --expect-dist <digest>` refuses
-   any other build. A `map` defect found after the freeze is fixed in a new
-   build; both builds are run over the same rows and both are reported.
+   any other build, and every census row records its build's digest. A
+   `map` defect found after the freeze (by K4, K5 or K6, section 8, or in
+   any other way) is appended to Deviations and fixed in a new build. The
+   new build is run over the same samples; each build's rows are analysed by
+   their own `analyze.mjs` run (it refuses rows of two builds in one frame),
+   and both results are reported. The frozen build's results stay the
+   registered ones and decide the verdicts; the fixed build's are reported
+   beside them as that deviation's result.
 2. **Agent versions.** Claude Code **2.1.285** is modelled by `map`
    (`--claude-version`) and pinned for the lab cells (a scratch install run
    with `--claude-bin` and `DISABLE_AUTOUPDATER=1`). Codex **0.159.2** is the
-   renderer for check K4 and the Codex cells. Lab cells run on Windows 11;
-   Codex renders also run on Linux in CI. Nothing is pooled across
-   versions or operating systems.
+   renderer for check K4 and the Codex cells: a study census run refuses a
+   renderer whose `codex --version` reports another version, every row
+   records what it reported (`codexVersion`), and `results.json` lists it per
+   frame (`codexVersions`) and for K4. Lab cells run on Windows 11; Codex
+   renders also run on Linux in CI. Nothing is pooled across versions or
+   operating systems: every census row records its platform, and
+   `analyze.mjs` refuses rows of one frame that differ in build, Claude Code
+   version, `map` version, Codex version or platform.
 3. **Frames first.** The frames (section 3) are frozen with the study-v1
    build and stamped here **before** this file is committed. The seed then
    comes from a commit that already fixes the frames, so neither the frame
@@ -137,11 +150,14 @@ counted).
   Fisher-Yates (for i from n-1 down to 1, swap i with j drawn uniformly
   from [0, i]). Random words come from SHA-256 in counter mode: word t is the
   first 4 bytes, big-endian, of `SHA-256("ctxreach-study|<seed>|<stream>|<t>")`,
-  with rejection so no value is favoured. The stream is the sample's name
-  (`S-main`, `S-imp`). The first n rows of the shuffle, in draw order, are
-  the sample. `sample.mjs` refuses a study sample whose stream or n is not
-  registered here, whose seed does not come from the tag, or (S-imp) that
-  does not exclude S-main.
+  with t written in decimal and counted from 0, one counter per stream. A
+  uniform integer in [0, m) takes the next word x and returns x mod m when
+  x < m * floor(2^32 / m); otherwise it rejects x and takes the next word, so
+  no value is favoured. The stream is the sample's name (`S-main`,
+  `S-imp`). The first n rows of the shuffle, in draw order, are the sample.
+  `sample.mjs` refuses a study sample whose stream or n is not registered
+  here, whose seed does not come from the tag, whose seed offset is not 0 or
+  1, or (S-imp) that does not exclude S-main's first draw.
 - **Exclusions** (counted and reported per reason): fork, mirror or
   archived at fetch time; repository gone (404) or blocked (403, 451);
   commit gone (404, 422, or an empty repository); tree truncated by GitHub
@@ -152,8 +168,28 @@ counted).
   repository is recorded, not excluded.
 - **Faults.** A measured row with an instrument fault (a `map` error, or an
   output-side check below) is not used, and counts with the exclusions.
-- **Redraw.** If a sample loses more than 10% of its draws, it is redrawn
-  once with seed + 1 over the whole frame, and both draws are reported.
+- **Redraw.** A sample that loses more than 10% of its draws (excluded rows
+  and rows with a fault, over the rows drawn; `redrawRequired` in
+  `results.json`) is redrawn once, with the same stream and n and seed + 1
+  (the seed as a 32-bit number plus 1, modulo 2^32, as 8 hex digits;
+  `sample.mjs --seed-offset 1`): S-main from the whole frame S, and S-imp
+  from S-imp less the S-main draw it was first drawn against (S-main's first
+  draw, whether or not S-main is redrawn). The redrawn sample replaces the
+  first for every figure and verdict: the outcomes, the hypotheses, K3, K4,
+  and the K5 and K6 draws read only its rows. The first draw's rows are
+  reported under a distinct frame name (`S-main-draw1`, `S-imp-draw1`), with
+  their own figures, and are never pooled with the redraw or with any other
+  rows. S-imp's overlap with a redrawn S-main is counted (`sharedRepos` in
+  `results.json`), not excluded. A redrawn sample is not redrawn again,
+  whatever it loses. Every sample records its draw (`draw=1`, or `draw=2`
+  for the redraw) and every census row its draw and its sample's SHA-256;
+  `sample.mjs` refuses a study seed offset other than 0 or 1 and an S-imp
+  exclusion other than S-main's first draw; `run-census.mjs` refuses a study
+  sample that is not of its stream or not drawn with the tag's seed (+ 1 for
+  draw 2), and a rows file that already holds another sample's rows; and
+  `analyze.mjs` refuses rows of one frame and draw from two samples, a unit
+  given twice, a draw 2 without the draw 1 it replaces, and a draw 2 whose
+  draw 1 lost 10% or less.
 
 ## 5. Unit and reconstruction
 
@@ -227,23 +263,34 @@ agent's view; a breach is a fault on the row.
 Every outcome is a proportion k/n with a Wilson 95% interval, per frame, in
 three variants: **raw**; **deduplicated** by the root `AGENTS.md` blob (the
 first drawn row per blob); and **owner-capped** (at most 5 repositories per
-owner, the first drawn). Frames, versions and operating systems are never
-pooled. "Received by Claude" means `map` gives the file delivery `launch`
-or `import` at session start, with no approval needed and inside the
-repository (imports are expanded at launch).
+owner, the first drawn). Frames, draws, builds, versions and operating
+systems are never pooled. Terms used below:
 
-| Id | Metric (as `study/census/detectors.mjs` computes it) |
-|---|---|
-| **O1-content** (Claude headline) | Root launch. A = the root `AGENTS.md`'s lines after trimming and collapsing whitespace, at least 20 characters (code points), deduplicated; text inside code fences counts. R = the lines of A that appear, normalised the same way, in any file Claude receives at root launch. Event: R/\|A\| < 0.5. A repository with \|A\| = 0 is ineligible, and counted apart from the other reasons a repository is left out (no root `AGENTS.md`, root launch not measured): every repository-level outcome in `results.json` counts the repositories it leaves out by reason (`ineligibleWhy`), and for O1-content the reason for \|A\| = 0 is "no line of 20 or more characters". A byte-copy `CLAUDE.md` gives R = \|A\|. |
-| O1-content-shingle (sensitivity) | As O1-content, but a line of A counts as received when at least 0.8 of its 8-word shingles appear among the shingles of the received text (a line under 8 words: when it appears as a substring). |
-| **O1-file** | Root launch: the root `AGENTS.md` is not received by Claude (shadowed by a `CLAUDE.md`-family file that neither imports nor links it). |
-| **O2** (headless import) | At least one type-2 launch directory from which a headless session receives none of the root `AGENTS.md` (for example an import that resolves outside the launch directory, with no approval recorded). Also reported: over types 1-3, and among repositories with at least one type-2 directory. |
-| **P1** (Codex headline) | A (repository, launch directory) pair of types 1 and 2 where `map` reports `codex.cut`, `codex.no-budget` or `codex.empty-override` (Codex 0.159.2 rules, 32,768-byte budget). Reported per pair (P1-pairs) and per repository with at least one such pair (P1-repos); also with type 3. Pair intervals ignore clustering within a repository; the repository-level figure is the one with a valid interval. |
-| O4 | A nested `AGENTS.md` (not at the root, not `.claude/AGENTS.md`) that neither agent preloads at root launch. |
-| O5 | At least one `map` warning at root launch, after the symlink rule (`O5-any-root-warning`); also as `map` printed them (`O5-any-root-warning-map`), and among repositories with no instruction file that is a symlink (`O5-any-root-warning-no-links`). By code: one row for every `warn` code in the Findings table of `docs/rules.md`, 0/n included, plus any other code that occurs, both after the symlink rule (`O5-root:<code>`) and as printed (`O5-root-map:<code>`). Denominator: every measured repository. |
-| O6 | At root launch, `map` raises `claude.words-not-import`, after the symlink rule: some `AGENTS.md` is switched off (`claude.agents-shadowed`), and a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` that loads at launch or on read (nested ones included) contains the text `AGENTS.md` (case-sensitive, anywhere in the file, so also inside a longer name) and imports no file named `AGENTS.md` (an `@AGENTS.md` inside a code span or fenced block is not an import). A file whose whole trimmed text is one relative path to an existing file is not an O6 event: `map` raises `claude.link-as-text` for it instead (rule `claude.symlink`), and it is counted under O5 as `O5-root:claude.link-as-text`. Also as `map` printed it, before the symlink rule (`O6-map`). Denominator: every repository whose root launch was measured. |
-| O7 | Repositories with at least one instruction file that is a symlink (tree mode `120000`; `O7`), with at least one such link that is broken (`O7-broken`), and with a root `CLAUDE.md`-family link to `AGENTS.md` (`O7-root-link-to-agents`: the risk that a Windows checkout writes it as a text file; the census writes links as copies, so `claude.link-as-text` never fires for these). Denominator: every measured repository. |
-| O8 | The root `AGENTS.md`'s CJK share (Han, kana, Hangul among non-space characters); event at 0.1 or more. Denominator: every repository with a non-empty root `AGENTS.md`. Also, over the same repositories, those whose root `AGENTS.md` is longer than Codex's 32,768-byte budget (`O8-over-budget`); and, among those, the characters (code points; a character the cut splits counts as one) that the budget's 32,768 bytes hold of the file, as minimum, median and maximum, apart for O8 events and the rest (`O8-held-chars` in the `summaries` of `results.json`, a figure that is not a proportion). |
+- **Root `AGENTS.md`**: the file at the repository root named exactly
+  `AGENTS.md` (case-sensitive), or a symlink there to a file inside the
+  repository; a broken symlink counts as none.
+- **Received by Claude**: `map` gives the file delivery `launch` or
+  `import` at session start, with no approval needed and inside the
+  repository (imports are expanded at launch); a symlink and its target are
+  one file (section 5). This is a file-level test: a copy of a file's text
+  in another received file does not make the file received.
+- **Left out**: every repository-level outcome counts the measured
+  repositories outside its denominator by reason (`ineligibleWhy` in
+  `results.json`), so each denominator below can be checked against the
+  measured count.
+
+| Id | Metric (as `study/census/detectors.mjs` computes it) | In `results.json` |
+|---|---|---|
+| **O1-content** (Claude headline) | Root launch. A = the root `AGENTS.md`'s lines (split at CR LF, CR or LF), each trimmed with every run of Unicode whitespace (CR, tab and no-break space included) collapsed to one space, kept when at least 20 characters (code points) long, deduplicated; text inside code fences counts. R = the lines of A that are equal to a line, normalised and filtered the same way, of a file Claude receives at root launch. Event: R/\|A\| < 0.5. Denominator: repositories with a root `AGENTS.md` whose root launch was measured and whose \|A\| > 0. \|A\| = 0 is counted apart from the other reasons a repository is left out (no root `AGENTS.md`, root launch not measured), as "no line of 20 or more characters". A byte-copy `CLAUDE.md` gives R = \|A\|. | `O1-content` |
+| O1-content-shingle (sensitivity) | As O1-content, but a line of A counts as received when at least 0.8 of its distinct 8-word shingles (words: runs of non-whitespace) are among the shingles of the received files (each file's own shingles; a file under 8 words is one shingle); a line under 8 words counts when, whitespace collapsed, it is a substring of one received file's text, whitespace collapsed. Same denominator. | `O1-content-shingle` |
+| **O1-file** | Root launch: the root `AGENTS.md` is not received by Claude, for any reason, recorded in the row (`o1file.cause`: `shadowed` when rule `claude.agents-default` leaves it out, as a `CLAUDE.md`-family file that neither imports nor links it does; `external-import` when it arrives only through an import that needs approval; `absent` when `map` lists it nowhere; otherwise the code of the rule that placed it). Denominator: repositories with a root `AGENTS.md` whose root launch was measured. | `O1-file` |
+| **O2** (headless import) | At least one type-2 launch directory from which Claude, headless, does not receive the root `AGENTS.md`, for any reason (for example an import that resolves outside the launch directory, with no approval recorded). File level, like O1-file. Denominator: every repository with a root `AGENTS.md`, with or without type-2 directories. Also reported: the same over type-2 and type-3 directories (`O2-types123`; despite its name, type 1, the root launch, is never part of O2), and among repositories with at least one measured type-2 directory (`O2-given-type2`). | `O2`, `O2-types123`, `O2-given-type2` |
+| **P1** (Codex headline) | A (repository, launch directory) pair of types 1 and 2 where `map` reports `codex.cut`, `codex.no-budget` or `codex.empty-override` (Codex 0.159.2 rules, 32,768-byte budget). Per pair (`P1-pairs`; denominator: every measured type-1 and type-2 pair) and per repository with at least one such pair (`P1-repos`; denominator: every repository with at least one measured type-1 or type-2 pair); also over types 1 to 3 (`P1-pairs-types123`, `P1-repos-types123`, with type-3 pairs added to both numerator and denominator). Pair intervals ignore clustering within a repository; the repository-level figure is the one with a valid interval. | `P1-pairs`, `P1-repos`, `P1-pairs-types123`, `P1-repos-types123` |
+| O4 | At root launch, at least one `AGENTS.md` below the root (a file named exactly `AGENTS.md` in any directory but the root, other than a `.claude/AGENTS.md` at any depth; a broken symlink counts) of which Codex keeps no byte (it is not on Codex's chain with kept bytes above 0) and which Claude does not receive. Denominator: every repository whose root launch was measured, with or without a nested `AGENTS.md`. | `O4` |
+| O5 | At least one `map` warning at root launch, after the symlink rule (`O5-any-root-warning`); also as `map` printed them (`O5-any-root-warning-map`), and among repositories with no reconstructed file (section 5) that is a working symlink (`O5-any-root-warning-no-links`). By code: one row for every `warn` code in the Findings table of `docs/rules.md`, 0/n included, plus any other code that occurs, both after the symlink rule (`O5-root:<code>`) and as printed (`O5-root-map:<code>`). Denominator: every measured repository (a repository whose root launch was not measured counts as having no root warning). | `O5-any-root-warning`, `O5-any-root-warning-map`, `O5-any-root-warning-no-links`, `O5-root:<code>`, `O5-root-map:<code>` |
+| O6 | At root launch, `map` raises `claude.words-not-import`, after the symlink rule: some `AGENTS.md` is switched off (`claude.agents-shadowed`), and a `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` that loads at launch or on read (nested ones included) contains the text `AGENTS.md` (case-sensitive, anywhere in the file, so also inside a longer name) and imports no file named `AGENTS.md` (an `@AGENTS.md` inside a code span or fenced block is not an import). A file whose whole trimmed text is one relative path to an existing file is not an O6 event: `map` raises `claude.link-as-text` for it instead (rule `claude.symlink`), and it is counted under O5 as `O5-root:claude.link-as-text`. Also as `map` printed it, before the symlink rule (`O6-map`). Denominator: every repository whose root launch was measured. | `O6`, `O6-map` |
+| O7 | Repositories with at least one file of section 5's list (an instruction file, settings file, rule or `.codex/config.toml`; import targets aside) that is a symlink (tree mode `120000`; `O7`), with at least one such link that is broken (`O7-broken`), and with a root `CLAUDE.md`-family link to `AGENTS.md` (`O7-root-link-to-agents`: the risk that a Windows checkout writes it as a text file; the census writes links as copies, so `claude.link-as-text` never fires for these). Denominator: every measured repository. | `O7`, `O7-broken`, `O7-root-link-to-agents` |
+| O8 | The root `AGENTS.md`'s CJK share: of its characters (code points) that are not Unicode whitespace, the share that are CJK; event at 0.1 or more. CJK characters are the code points in U+1100–11FF, U+2E80–2FDF, U+3040–30FF, U+3100–318F, U+31A0–31BF, U+31F0–31FF, U+3400–4DBF, U+4E00–9FFF, U+A960–A97F, U+AC00–D7FF, U+F900–FAFF, U+FF66–FF9F and U+20000–3134F; that is, Han with its radicals and compatibility ideographs, kana with halfwidth katakana, Hangul with its jamo, and Bopomofo (CJK punctuation and fullwidth Latin are not counted). Denominator: every repository with a non-empty root `AGENTS.md` (a file of whitespace only has share 0). Also, over the same repositories, those whose root `AGENTS.md` is longer than Codex's 32,768-byte budget (`O8-over-budget`); and, among those, the characters (code points; a character the cut splits counts as one) that the budget's 32,768 bytes hold of the file, as minimum, median and maximum, apart for O8 events and the rest (`O8-held-chars` in the `summaries` of `results.json`, a figure that is not a proportion). | `O8`, `O8-over-budget`, `O8-held-chars` |
 
 Codex's share of the root `AGENTS.md` is reported beside O1-content, over
 O1-content's repositories, in bytes: the bytes of the root `AGENTS.md` that
@@ -267,22 +314,40 @@ with a different instrument, not blind tests, and are labelled that way):
 | H3-pairs | S-main, P1-pairs | 1% to 5% | as H1b |
 | **H3-repos** (primary) | S-main, P1-repos | 1% to 8% | as H1b |
 
-O4 to O8, Codex's share of the root `AGENTS.md`, the type-3 variants and O2
-over types 1-3 are secondary and have no decision rule.
+Each rule compares the interval's bounds as `results.json` holds them,
+rounded to 6 decimal places, with the pre-stated values. A bound equal to
+a pre-stated value reaches it: H1 is confirmed at a lower bound of exactly
+0.2, and a hit may touch either end of its range; refuted and miss need a
+bound strictly beyond. With a redraw (section 4), the redrawn sample
+decides; after a `map` fix (section 1 item 1), the frozen build decides.
+
+Every other figure in `results.json` is secondary and has no decision
+rule: O1-content-shingle, Codex's share of the root `AGENTS.md`,
+O2-types123, O2-given-type2, the type-3 variants of P1, O4 to O8, and
+K3's per-repository input (section 8).
 
 ## 8. Instrument checks
 
-A failing check stops the study (or the cell), not the report: the failure
-is reported as found.
+K1, K2, K3 and K7 have pass rules: a failure stops the study, and is
+reported as found. K8, K9 and K10 act on one battery or one trial, as their
+rules say (an instrument fault, a void trial). K4, K5 and K6 are validity
+estimates with no pass threshold: each is reported as found, with its
+Wilson 95% interval, and stops nothing. Each of their disagreements is
+adjudicated in the open as `map` (a `map` defect), as the other side (the
+renderer, the capture or the reader) or as the rules (`docs/rules.md` is
+silent or ambiguous). A disagreement adjudicated `map` is appended to
+Deviations with the outcomes it could move, and section 1 item 1 applies: a
+fixed build is run over the same samples and both results are reported,
+the frozen build's verdicts standing as registered.
 
 | Check | What | Pass rule |
 |---|---|---|
-| K1 known answers | Every fixture (`test/fixtures/*` and `study/census/known-answer-fixtures/*`), with an answer derived by hand from `docs/rules.md` (`study/census/known-answers.json`), through the census pipeline with only the network replaced (`study/census/known-answer.mjs`) | n/n, every fixture answered, and no known `map` defect listed |
-| K2 planted faults | Each of the 16 outcome detectors and pipeline steps switched off in turn (`study/census/plant-census-faults.mjs`); the faster in-process runner must first reproduce the CLI's K1 row for row | every plant makes K1 lose a fixture it passed; none "not exercised" |
-| K3 census consistency | The regex version of O1-file (a root `CLAUDE.md` whose text lacks `@AGENTS.md`) in S-main, against the frame's own proportion (K3.claude - K3.claudeImport) / \|S\| (`study/census/consistency.mjs`) | the census proportion lies inside the sample's Wilson 95% interval |
-| K4 map vs Codex's renderer | For every sampled (repository, launch directory) pair of types 1 and 2, the `agents_md.instructions` block of `codex debug prompt-input` 0.159.2 against `map`'s predicted bytes, rendered twice each with a throwaway `CODEX_HOME`, no credentials, proxies at a closed port, and a fresh control token (`study/census/codex-check.mjs`) | k/n byte-exact reported, expected at least 98%; every mismatch listed and explained; renders that differ, lose the token, render for another directory or change shape are instrument faults, listed and counted against k |
-| K5 map vs Claude (live, $0) | 25 measured repositories by seeded draw within strata: 12 where the root `AGENTS.md` is shadowed at root launch, 8 importers from a type-2 directory where O2 fires, 5 without a root `CLAUDE.md`-family file (`study/census/k5-select.mjs`); 2 capture runs each | agreement k/n over decided cells, reported |
-| K6 blind second reader | A fresh reader derives delivery by hand for 30 (repository, launch directory) pairs from `docs/rules.md` alone: 30 measured repositories by seeded draw, then one type-1 or type-2 launch directory in each; sheets carry the files and never `map`'s answers, and the key taken from the census rows is hashed before the reader starts (`study/handcheck/PROTOCOL.md`) | x/30 reported, and per agent, with Wilson intervals; every disagreement adjudicated in the open (reader, map or rules) |
+| K1 known answers | Every fixture (`test/fixtures/*` and `study/census/known-answer-fixtures/*`), with an answer derived by hand from `docs/rules.md` (`study/census/known-answers.json`), through the census pipeline with only the network replaced (`study/census/known-answer.mjs`) | n/n: every fixture has an answer and every answer a fixture, and every fixture matches its answer (`k1Verdict`). A fixture listed as a known `map` defect still fails, and `prereg.mjs stamp` refuses while any is listed |
+| K2 planted faults | Each of the 16 plants of `study/census/lib/plants.mjs` switched off in turn (`study/census/plant-census-faults.mjs`): the 11 outcome detectors (O1-content, O1-content-shingle, O1-file, O2, P1, O4, O5, O6, O7, O8 and K3's input) and 5 pipeline steps (import targets, symlinks, type-2 launch directories, type-3 launch directories, the symlink correction). First, `map` in process (the census's runner) must reproduce the spawned CLI's K1 result fixture for fixture | every plant acts at least once and makes K1 lose a fixture it passed without plants (exit 0); a plant that never acts, or a difference between the two runners, is an instrument failure (exit 2); a plant K1 does not catch fails K2 (exit 1) |
+| K3 census consistency | The regex version of O1-file (a root `CLAUDE.md` whose text, or link text for a symlink, lacks `@AGENTS.md`; every measured repository counts) in S-main's rows in use (`K3-regex-O1-file` in `results.json`), against the frame's own proportion (K3.claude - K3.claudeImport) / \|S\| (`study/census/consistency.mjs`; `checks.K3`) | the census proportion lies inside the sample's Wilson 95% interval |
+| K4 map vs Codex's renderer | For every sampled (repository, launch directory) pair of types 1 and 2 in the rows in use, the `agents_md.instructions` block of `codex debug prompt-input` 0.159.2 against `map`'s predicted bytes, rendered twice each with a throwaway `CODEX_HOME`, no credentials, proxies at a closed port, and a fresh control token (`study/census/codex-check.mjs`) | A validity estimate, no pass threshold: k/n byte-exact with its Wilson interval (`checks.K4`), reported as found. The registered expectation is at least 98% (`k4.expectedAtLeast`); `results.json` says whether k/n reached it (`checks.K4.expectationMet`), and falling short stops nothing. Every mismatch is listed and adjudicated; renders that differ, lose the token, render for another directory or change shape are instrument faults, listed and counted in n but not in k |
+| K5 map vs Claude (live, $0) | 25 measured repositories from the rows in use, by a draw with the study seed within strata, each stratum drawn in turn (stream `K5\|<stratum>`) from the repositories not drawn yet: 12 where O1-file fires (launched at the root), 8 where O2 fires (launched from the first type-2 directory where it fires), and 5 whose root `AGENTS.md` Claude receives at root launch and whose root holds no `CLAUDE.md`-family file (launched at the root) (`study/census/k5-select.mjs`); 2 capture runs each through `ctxreach verify` | A validity estimate, no pass threshold: agreement k/n over decided cells, as `ctxreach verify` scores them, with its Wilson interval, reported as found. Every disagreement is adjudicated (`map`, the capture, or the rules) |
+| K6 blind second reader | A fresh reader derives delivery by hand for 30 (repository, launch directory) pairs from `docs/rules.md` alone: 30 measured repositories from the rows in use, by seeded draw, then one type-1 or type-2 launch directory in each; sheets carry the files and never `map`'s answers, and the key taken from the census rows is hashed before the reader starts (`study/handcheck/PROTOCOL.md`) | A validity estimate, no pass threshold: x/30 pairs, and per agent, each with its Wilson interval, reported as found. Every disagreement adjudicated in the open (reader, `map` or rules) |
 | K7 GET only | Every network request goes through one client that refuses any other method before sending and counts the refusals (`study/census/lib/client.mjs`) | every script prints "non-GET attempts: 0" |
 | K8 planted pass | Before every conformance battery, a wrong budget (`--codex-max-bytes 30000`), a wrong mode or a reversed order run | must DISAGREE; a battery whose planted pass agrees is an instrument fault |
 | K9 positive control | A must-appear token in a `.claude/rules/` file at the launch directory of every Claude trial, and a decoy no rule loads | a missing control voids the trial; decoy 0/N |
@@ -394,10 +459,14 @@ before every billed batch.
 
 - Proportions only, each with a Wilson 95% interval (z = 1.959963984540054);
   printed as "k/n (x%, [lo, hi])". No significance tests between frames.
+  `results.json` holds p and both bounds rounded to 6 decimal places, and
+  the verdicts are taken on those rounded bounds (section 7).
 - Raw, blob-deduplicated and owner-capped variants for every outcome; the
   raw variant decides the hypotheses.
-- Never pooled across frames, agent versions or operating systems; every
-  figure carries its agent version, operating system and date.
+- Never pooled across frames, draws, builds, agent versions or operating
+  systems (`analyze.mjs` refuses such rows, sections 1 and 4); every figure
+  carries its agent versions, operating system and date (`frames` and
+  `generatedAt` in `results.json`).
 - Behavioural cells: per arm, both fractions, with Wilson bounds beside
   them (0/10 means at most 27.8%; 10/10 at least 72.2%; 0/5 at most 43.4%).
 - Every number on the site and in the write-up is rendered from
@@ -405,10 +474,13 @@ before every billed batch.
   typed by hand.
 - Wording: Codex claims read "as rendered by `codex debug prompt-input`
   <version>; the model was not run". Capture claims read "delivered to the
-  model endpoint (custom base URL)". Census claims about Claude read
-  "predicted by ctxreach map for Claude Code <version>, a fresh machine;
-  checked live in K5 as k/n". openai/codex#41499 reads "not reproduced on
-  Windows 0.159.2 with a key form shown to apply".
+  model endpoint (custom base URL, gateway path)", as in section 9. Census
+  claims about Claude read "predicted by ctxreach map for Claude Code
+  <version> on a fresh machine with default settings, not a live run;
+  checked live in K5 as k/n". `results.json` carries the Codex and census
+  wordings (`wording`), and `cells.json` the capture and echo wordings of
+  section 9. openai/codex#41499 reads "not reproduced on Windows 0.159.2
+  with a key form shown to apply".
 - Pilot data is cited as pilot. No repository is named for a defect.
 - **Opt-out.** Repository owners can opt out by opening an issue on
   github.com/Shivansh2904/ctxreach; there is no email address to write to.
@@ -423,7 +495,10 @@ before every billed batch.
   unauthenticated Sourcegraph searches, all through the GET-only client:
   three hosts only, one request at a time, a User-Agent naming the
   project, conditional requests, and waits as long as `retry-after` or the
-  rate-limit reset asks. No GitHub search API. About 9,000 core GETs in all.
+  rate-limit reset asks. No GitHub search API. About 3,600 core API GETs in
+  all (about 2.45 per repository in the pilot dry runs, for 1,485
+  repositories), plus raw file reads, which do not count against the core
+  limit; a projection, not a result (`study/census/README.md`).
 - Credentials: GitHub REST GETs run through the GitHub CLI,
   `gh api -X GET --include <endpoint>`, which authenticates itself from its
   own login. ctxreach never reads, copies or stores a token (the client
@@ -533,15 +608,28 @@ scripts read the sample sizes from it.
 
 1. `node study/census/seed.mjs` prints the seed.
 2. `sample.mjs --seed-from-tag prereg-v1` draws S-main, then S-imp with
-   `--exclude` S-main.
+   `--exclude` S-main (its first draw).
 3. K1 and K2 on the frozen build; K7 printed by every script.
 4. `run-census.mjs --expect-dist {{stamp:dist.digest}}` over S-main and
-   S-imp, with `--codex-bin` for K4; K3 from the rows and the frozen counts.
-5. Lab cells at $0 (B1, B2, B3, B4, B6, K5), then billed (M1, E0, B7).
-6. K6 by a fresh reader: `study/handcheck/handcheck.mjs draw` with the
+   S-imp, with `--codex-bin` (Codex 0.159.2) for K4, each sample into its
+   own rows file.
+5. `analyze.mjs` over the rows. A sample it marks `redrawRequired` is
+   redrawn once (section 4: `sample.mjs --seed-offset 1`, S-imp again
+   excluding S-main's first draw), run with `run-census.mjs` into a rows
+   file of its own, and `analyze.mjs` is run again with both draws' rows.
+   K3 from the rows in use and the frozen counts.
+6. Lab cells at $0 (B1, B2, B3, B4, B6, K5, drawn from the rows in use),
+   then billed (M1, E0, B7).
+7. K6 by a fresh reader: `study/handcheck/handcheck.mjs draw` with the
    seed, `sheets`, the reader's answers, then `score` and the adjudication
-   (`study/handcheck/PROTOCOL.md`).
-7. `analyze.mjs` writes `results.json`; deviations are appended below.
+   (`study/handcheck/PROTOCOL.md`). K4, K5 and K6 adjudications of `map`
+   go to Deviations (section 8).
+8. `analyze.mjs` writes the final `results.json`; deviations are appended
+   below.
+9. A script written after the tag fills the headline sentence of section 0
+   from `results.json` and `cells-results.json`. It only reads those two
+   files, is committed before it is run, and its output is not edited by
+   hand.
 
 ## Deviations
 

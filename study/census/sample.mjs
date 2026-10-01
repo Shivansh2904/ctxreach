@@ -10,6 +10,8 @@
 //   node study/census/sample.mjs --frame S.tsv --n 1100 --stream S-main --seed-from-tag prereg-v1 --out S-main.tsv
 //   node study/census/sample.mjs --frame S.tsv --n 20 --stream PILOT --seed <8 hex> --label pilot --out pilot.tsv
 // Options: --exclude <sample.tsv> (repeatable), --seed-offset 1 (the one pre-registered redraw).
+// A study sample is refused with a seed offset other than 0 (draw 1) or 1 (draw 2), and with an
+// exclusion other than the registered one's first draw. The header records the draw and the offset.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -66,21 +68,47 @@ export function sampleHeader(text) {
   );
 }
 
+/** A study sample is drawn once (seed offset 0, draw 1) and redrawn at most once (offset 1, draw 2). */
+export const STUDY_SEED_OFFSETS = [0, 1];
+
 /**
  * Why a study sample may not be drawn as asked, from the registry of
  * study/PREREG.md: the stream must be a registered sample, n its registered
- * size, and every sample it must exclude given as a study sample of that
- * stream. Returns a list of problems (empty when fine).
+ * size, the seed offset 0 (draw 1) or 1 (the one redraw, draw 2), and the
+ * samples it excludes exactly the registered ones, each as the study sample's
+ * first draw (S-imp, and its redraw, exclude the S-main draw S-imp was first
+ * drawn against; a redrawn S-main is counted against it, not excluded).
+ * Returns a list of problems (empty when fine).
  */
-export function registeredProblems(registry, { stream, n, excludeHeaders = [] }) {
+export function registeredProblems(registry, { stream, n, offset = 0, excludeHeaders = [] }) {
   const reg = registry?.samples?.[stream];
   if (!reg) return [`${stream} is not a registered sample (${Object.keys(registry?.samples ?? {}).join(", ")})`];
   const problems = [];
   if (n !== reg.n) problems.push(`${stream} is registered with n = ${reg.n}, not ${n}`);
-  for (const other of reg.exclude ?? [])
-    if (!excludeHeaders.some((h) => h.stream === other && h.label === "study"))
-      problems.push(`${stream} must exclude the study sample ${other} (--exclude its TSV)`);
+  if (!STUDY_SEED_OFFSETS.includes(offset))
+    problems.push(
+      `a study sample is drawn with --seed-offset 0 (draw 1) or 1 (the one redraw, draw 2), not ${offset} (study/PREREG.md section 4)`,
+    );
+  const required = reg.exclude ?? [];
+  for (const h of excludeHeaders) {
+    if (h.label !== "study" || !required.includes(h.stream))
+      problems.push(
+        `${stream} excludes ${required.length ? `only the study sample${required.length > 1 ? "s" : ""} ${required.join(", ")}` : "nothing"}; --exclude ${h.stream ?? "(no stream)"} (label ${h.label ?? "none"}) is not registered`,
+      );
+    else if (h.draw !== "1")
+      problems.push(
+        `${stream} excludes ${h.stream}'s first draw (draw=1), the one it was first drawn against; ${h.stream}'s draw=${h.draw ?? "(none)"} is counted against it, not excluded`,
+      );
+  }
+  for (const other of required)
+    if (!excludeHeaders.some((h) => h.stream === other && h.label === "study" && h.draw === "1"))
+      problems.push(`${stream} must exclude the study sample ${other}'s first draw (--exclude its draw=1 TSV)`);
   return problems;
+}
+
+/** The header line of a sample TSV: who drew it, which draw it is, from what. */
+export function sampleHeaderText({ label, stream, seed, offset, n, frame, frameSha256, excluded }) {
+  return `label=${label} stream=${stream} draw=${Number(offset) + 1} seed=${seed} seedOffset=${offset} n=${n} frame=${frame} frameSha256=${frameSha256} excluded=${excluded}`;
 }
 
 export function sampleTsv(rows, header) {
@@ -112,24 +140,38 @@ function main(args) {
     );
     return 2;
   }
+  const offset = Number(opt("--seed-offset") ?? 0);
+  if (!Number.isInteger(offset) || offset < 0) {
+    console.error(`--seed-offset must be a whole number of at least 0, not ${opt("--seed-offset")}`);
+    return 2;
+  }
   if (label === "study") {
     const problems = registeredProblems(loadRegistry(), {
       stream,
       n,
+      offset,
       excludeHeaders: excludes.map((f) => sampleHeader(readFileSync(f, "utf8"))),
     });
     if (problems.length) {
-      console.error(`refusing: ${problems.join("; ")} (study/PREREG.md, section 12)`);
+      console.error(`refusing: ${problems.join("; ")} (study/PREREG.md, sections 4 and 12)`);
       return 2;
     }
   }
   if (tag) seed = seedFromTag(tag).seed;
-  const offset = Number(opt("--seed-offset") ?? 0);
   if (offset) seed = offsetSeed(seed, offset);
   const frameText = readFileSync(frameFile, "utf8");
   const exclude = new Set(excludes.flatMap((f) => readSample(readFileSync(f, "utf8")).map((r) => r.repo)));
   const rows = drawSample(readFrame(frameText), { n, seed, stream, exclude });
-  const header = `label=${label} stream=${stream} seed=${seed}${offset ? ` (offset ${offset})` : ""} n=${rows.length} frame=${path.basename(frameFile)} frameSha256=${sha256(Buffer.from(frameText))} excluded=${exclude.size}`;
+  const header = sampleHeaderText({
+    label,
+    stream,
+    seed,
+    offset,
+    n: rows.length,
+    frame: path.basename(frameFile),
+    frameSha256: sha256(Buffer.from(frameText)),
+    excluded: exclude.size,
+  });
   const text = sampleTsv(rows, header);
   writeFileSync(out, text);
   console.log(header);

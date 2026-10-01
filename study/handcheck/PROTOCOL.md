@@ -5,13 +5,15 @@ by hand for 30 (repository, launch directory) pairs of the census from
 `docs/rules.md` alone. It checks two things at once: that `map` computes
 what the rules say, and that the rules, as written, are enough to say it. It
 is reported as x/30 with every disagreement adjudicated in the open. It is
-run once, after the census and on the frozen build (step 6 of PREREG.md
+run once, after the census and on the frozen build (step 7 of PREREG.md
 section 13); it never changes a census row.
 
 ## 1. Draw (`handcheck.mjs draw`)
 
-- Pool: every measured S-main and S-imp row without a fault that has a
-  type-1 or type-2 launch directory.
+- Pool: every measured S-main and S-imp row in use without a fault that
+  has a type-1 or type-2 launch directory. A redrawn sample's first draw is
+  not in use (PREREG.md section 4); `handcheck.mjs` leaves it out of the rows
+  it reads.
 - Stage 1: 30 repositories by the seeded shuffle of `study/census/lib/prng.mjs`
   with the study seed and stream `K6|repos`, in canonical (sorted) order.
 - Stage 2: one type-1 or type-2 launch directory in each, uniformly, stream
@@ -60,7 +62,8 @@ section 13); it never changes a census row.
   the bytes kept). An unanswered or malformed field is a disagreement.
 - Reported: x/30 pairs, and per agent (Claude k/30, Codex k/30), each with
   its Wilson 95% interval, from `k6-results.json`.
-- There is no pass threshold: K6 is reported as found.
+- K6 is a validity estimate with no pass threshold (PREREG.md section 8):
+  it is reported as found and stops nothing.
 
 ## 5. Adjudication, in the open
 
@@ -71,7 +74,7 @@ verdict and a reason:
 | Verdict | Meaning | What follows |
 |---|---|---|
 | reader | the reader misapplied a rule | the rule id is cited; nothing changes |
-| map | `map` disagrees with the rule as written | a map defect: appended to PREREG.md's deviations, with the census outcomes it could move |
+| map | `map` disagrees with the rule as written | a map defect: appended to PREREG.md's deviations, with the census outcomes it could move; PREREG.md section 1 item 1 applies (a fixed build is run over the same samples and both results are reported, the frozen build's verdicts standing) |
 | rules | `docs/rules.md` is silent or ambiguous | the rule text is fixed after the study; the case is listed |
 
 Adjudication names pair ids and paths inside the repository, never the

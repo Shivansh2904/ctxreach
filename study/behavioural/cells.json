@@ -37,7 +37,7 @@
     },
     "echo": {
       "billed": true,
-      "wording": "echoed by the model in a first-party session (an echo proves delivery, not compliance)",
+      "wording": "echoed by the model in a first-party session; an echo proves delivery, not compliance",
       "args": [
         "probe",
         "--agent",

@@ -15,20 +15,27 @@
 //     [--min-free-gb 2] [--expect-dist <digest>]
 // A study run takes its seed from the prereg tag (--seed-from-tag prereg-v1): the
 // same seed draws a repository's type-2 and type-3 directories when it has more
-// than the caps. A typed --seed <hex8> is for --label pilot only.
+// than the caps. A typed --seed <hex8> is for --label pilot only. A study run
+// also needs a study sample whose stream is --frame-name and whose draw (1, or
+// the redraw 2) was drawn with the tag's seed (+ 1 for the redraw), and Codex
+// for K4 (--codex-bin) at the registered version. Every row records its draw,
+// its sample's SHA-256, the build's digest, the Codex version and the platform,
+// so analyze.mjs can refuse rows that would pool them; a rows file holds one
+// sample's rows only (a redraw goes to its own file).
 // Exit: 0 done; 1 some units had instrument faults; 2 a precondition failed; 3 a non-GET attempt was counted.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { codexVersion } from "./codex-check.mjs";
+import { codexVersion, codexVersionProblem } from "./codex-check.mjs";
 import { distDigest } from "./dist-digest.mjs";
 import { GetOnlyClient, installFetchGuard } from "./lib/client.mjs";
 import { crossCheckedRunner, inProcessMapRunnerFromDist, spawnMapRunner } from "./lib/maprun.mjs";
 import { sha256 } from "./lib/paths.mjs";
-import { checkSeed } from "./lib/prng.mjs";
+import { checkSeed, offsetSeed } from "./lib/prng.mjs";
+import { loadRegistry } from "./lib/registry.mjs";
 import { ancestorInstructionFiles, freeBytes, freshHomes, runUnit } from "./pipeline.mjs";
-import { readSample } from "./sample.mjs";
+import { readSample, sampleHeader } from "./sample.mjs";
 import { seedFromTag } from "./seed.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -63,6 +70,27 @@ export async function ghPreflight(client) {
 }
 
 /**
+ * Why a study run may not use this sample (study/PREREG.md section 4): it
+ * must be a study sample of the stream the rows will be labelled with, draw 1
+ * or its one redraw (draw 2), drawn with the tag's seed (+ 1 for the redraw).
+ * Returns a list of problems (empty when fine).
+ */
+export function studySampleProblems(header, { frameName, seed }) {
+  const problems = [];
+  if (header.label !== "study") problems.push(`the sample is not a study sample (label=${header.label ?? "none"})`);
+  if (header.stream !== frameName)
+    problems.push(`--frame-name ${frameName} is not the sample's stream ${header.stream ?? "(none)"}`);
+  const draw = Number(header.draw);
+  if (draw !== 1 && draw !== 2)
+    problems.push(`the sample's draw ${header.draw ?? "(none)"} is not draw 1 or its one redraw, draw 2`);
+  else if (header.seed !== offsetSeed(seed, draw - 1))
+    problems.push(
+      `draw ${draw} is drawn with seed ${offsetSeed(seed, draw - 1)} (the tag's seed${draw === 2 ? " + 1" : ""}), but the sample says ${header.seed ?? "(none)"}`,
+    );
+  return problems;
+}
+
+/**
  * Run the census. `map` runs in this process from the built library
  * (dist/index.js, the chunk dist/cli.js calls), and every `cliCheckEvery`th
  * unit (default 25) each launch directory is also run through the spawned
@@ -92,6 +120,30 @@ export async function runCensus(o) {
   }
   checkSeed(seed);
 
+  // The sample: one draw of one stream. A study run takes only a study sample
+  // of its own stream, drawn with the tag's seed (draw 1) or seed + 1 (draw 2).
+  const sampleText = readFileSync(o.sample, "utf8");
+  const sampleSha = sha256(Buffer.from(sampleText));
+  const header = sampleHeader(sampleText);
+  const draw = header.draw === undefined ? 1 : Number(header.draw);
+  const sampleProblems = label === "study" ? studySampleProblems(header, { frameName: o.frameName, seed }) : [];
+  if (label !== "study" && draw !== 1 && draw !== 2)
+    sampleProblems.push(`the sample's draw ${header.draw} is not draw 1 or its one redraw, draw 2`);
+  if (label === "study" && !o.codexBin)
+    sampleProblems.push("a study run renders every type-1 and type-2 pair with Codex for check K4 (--codex-bin)");
+  if (sampleProblems.length) {
+    log(`refusing: ${sampleProblems.join("; ")} (study/PREREG.md, sections 4 and 8)`);
+    return { code: 2 };
+  }
+  // A rows file holds one sample's rows: a redraw repeats the first draw's unit ids, which would read as done.
+  const others = readRows(o.out).filter((r) => r.sampleSha256 !== sampleSha);
+  if (others.length) {
+    log(
+      `refusing: ${o.out} holds ${others.length} row(s) of another sample (or rows that name no sample); a redraw or another sample goes to its own rows file`,
+    );
+    return { code: 2 };
+  }
+
   // Preconditions.
   const workDir = path.resolve(o.work);
   mkdirSync(workDir, { recursive: true });
@@ -112,9 +164,17 @@ export async function runCensus(o) {
     log(`refusing: dist digest ${dist.digest} is not the frozen build ${o.expectDist}`);
     return { code: 2 };
   }
+  // K4's renderer: a study run uses the registered Codex version only (study/PREREG.md section 1).
+  const codex = o.codexBin ? await (o.codexVersionOf ?? codexVersion)(o.codexBin) : null;
+  if (label === "study") {
+    const problem = codexVersionProblem(codex, loadRegistry().codexVersion);
+    if (problem) {
+      log(`refusing: ${problem} (study/PREREG.md section 1)`);
+      return { code: 2 };
+    }
+  }
   const homes = freshHomes(workDir);
 
-  const sampleText = readFileSync(o.sample, "utf8");
   const units = readSample(sampleText).map((u) => ({ ...u, frame: o.frameName }));
   const done = new Set(readRows(o.out).map((r) => r.id));
   const todo = units.filter((u) => !done.has(u.id)).slice(0, o.limit > 0 ? o.limit : undefined);
@@ -147,9 +207,8 @@ export async function runCensus(o) {
       ? crossCheckedRunner(primary, reference, { pick: () => checkThisUnit, stats: mapCheck })
       : primary;
   const started = new Date();
-  const codex = o.codexBin ? await codexVersion(o.codexBin) : null;
   log(
-    `${label} census of ${o.frameName}: ${todo.length} to do (${done.size} already done) of ${units.length}; ` +
+    `${label} census of ${o.frameName} (draw ${draw}): ${todo.length} to do (${done.size} already done) of ${units.length}; ` +
       `map in process from ${o.mapRunner ? "an injected runner" : path.dirname(cli)} (dist ${dist.digest.slice(0, 12)})` +
       (reference && every > 0 ? `, checked against the CLI every ${every} units` : ", not checked against the CLI") +
       `, Claude Code ${claudeVersion} modelled` +
@@ -174,7 +233,13 @@ export async function runCensus(o) {
         seed,
         codexBin: o.codexBin,
       });
+      // What analyze.mjs needs to keep draws, samples, builds, versions and platforms apart.
       row.label = label;
+      row.draw = draw;
+      row.sampleSha256 = sampleSha;
+      row.dist = dist.digest;
+      row.codexVersion = codex;
+      row.platform = process.platform;
       appendFileSync(o.out, JSON.stringify(row) + "\n");
       const bytes = (row.files ?? []).reduce((n, f) => n + (f.size ?? 0), 0);
       maxBytes = Math.max(maxBytes, bytes);
@@ -196,8 +261,9 @@ export async function runCensus(o) {
     schema: "ctxreach.study-run/v1",
     label,
     frame: o.frameName,
+    draw,
     sample: path.basename(o.sample),
-    sampleSha256: sha256(Buffer.from(sampleText)),
+    sampleSha256: sampleSha,
     seed,
     seedFrom: o.seedFromTag ?? "typed (pilot)",
     startedAt: started.toISOString(),

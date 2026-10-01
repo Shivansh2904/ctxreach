@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { rowsInUse } from "./lib/draws.mjs";
 import { draw } from "./lib/prng.mjs";
 
 export const K5_STRATA = [
@@ -31,6 +32,18 @@ export const K5_STRATA = [
     launch: () => ".",
   },
 ];
+
+/** Census rows from JSONL files: the rows in use (a redrawn sample's first draw is left out, study/PREREG.md section 4). */
+export function readRowFiles(files) {
+  return rowsInUse(
+    files.flatMap((f) =>
+      readFileSync(f, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l)),
+    ),
+  );
+}
 
 export function selectK5(rows, seed) {
   const usable = rows
@@ -57,13 +70,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.error("usage: node study/census/k5-select.mjs --rows rows.jsonl [...] --seed HEX8 [--out k5.tsv]");
     process.exit(2);
   }
-  const rows = files.flatMap((f) =>
-    readFileSync(f, "utf8")
-      .split("\n")
-      .filter(Boolean)
-      .map((l) => JSON.parse(l)),
-  );
-  const picked = selectK5(rows, args[seedAt + 1]);
+  const picked = selectK5(readRowFiles(files), args[seedAt + 1]);
   const tsv = picked.map((p) => [p.stratum, p.repo, p.commit, p.launchDir].join("\t")).join("\n") + "\n";
   if (outAt >= 0) writeFileSync(args[outAt + 1], tsv);
   process.stdout.write(tsv);

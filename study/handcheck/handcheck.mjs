@@ -23,6 +23,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync,
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GetOnlyClient } from "../census/lib/client.mjs";
+import { rowsInUse } from "../census/lib/draws.mjs";
 import { reconstruct } from "../census/recon.mjs";
 import {
   adjudicationSheet,
@@ -41,12 +42,15 @@ const ROOT = path.join(HERE, "..", "..");
 export const RULES = path.join(ROOT, "docs", "rules.md");
 export const BRIEF = path.join(HERE, "READER-BRIEF.md");
 
+/** Census rows from JSONL files: the rows in use (a redrawn sample's first draw is left out, study/PREREG.md section 4). */
 export function readRowFiles(files) {
-  return files.flatMap((f) =>
-    readFileSync(f, "utf8")
-      .split("\n")
-      .filter(Boolean)
-      .map((l) => JSON.parse(l)),
+  return rowsInUse(
+    files.flatMap((f) =>
+      readFileSync(f, "utf8")
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l)),
+    ),
   );
 }
 

@@ -2,9 +2,14 @@
 // outcome is a proportion k/n with a Wilson 95% interval, per frame, in three
 // variants: raw; deduplicated by the root AGENTS.md's blob (one row per blob,
 // the first drawn); and at most 5 repositories per owner (the first 5 drawn).
-// Frames are never pooled. Hypotheses get the pre-registered verdicts. Each
-// repository-level outcome counts the repositories it leaves out by reason
-// (`ineligibleWhy`); the figures that are not proportions are in `summaries`.
+// Frames are never pooled, and neither are two draws of one frame: a redrawn
+// sample replaces its first draw for every figure, verdict and check, and the
+// first draw is reported under `<frame>-draw1` (lib/draws.mjs, which refuses
+// rows that would pool draws, samples, builds, versions or platforms).
+// Hypotheses get the pre-registered verdicts, taken on the bounds as written
+// here (rounded to 6 decimal places). Each repository-level outcome counts the
+// repositories it leaves out by reason (`ineligibleWhy`); the figures that are
+// not proportions are in `summaries`.
 //
 // Usage: node study/census/analyze.mjs --rows rows-S-main.jsonl [--rows rows-S-imp.jsonl] \
 //          [--k3 K3.manifest.json] [--frame-manifest S.manifest.json] --out results.json [--label study|pilot]
@@ -14,6 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { k3Check } from "./consistency.mjs";
 import { CODEX_BUDGET, O1_EVENT_SHARE } from "./detectors.mjs";
+import { lostShare, REDRAW_OVER, splitDraws } from "./lib/draws.mjs";
 import { sha256 } from "./lib/paths.mjs";
 import { decideBound, decideRange, wilson } from "./lib/stats.mjs";
 import { MAX_TYPE2_DIRS } from "./recon.mjs";
@@ -124,9 +130,9 @@ export const HYPOTHESES = [
 ];
 
 export const OWNER_CAP = 5;
-/** A frame that loses more than this share of its draws (exclusions and faulty rows) is redrawn once, with seed + 1. */
-export const REDRAW_OVER = 0.1;
-/** K4's expected share of byte-exact pairs. */
+/** A sample that loses more than this share of its draws (exclusions and faulty rows) is redrawn once, with seed + 1. */
+export { REDRAW_OVER };
+/** K4's expected share of byte-exact pairs: registered, and reported as met or not; not a pass threshold. */
 export const K4_EXPECTED = 0.98;
 
 /** The three variants of a frame's usable rows. */
@@ -258,14 +264,22 @@ export function decide(h, o) {
   return h.rule === "bound" ? decideBound(w, h.bound) : decideRange(w, h.lo, h.hi);
 }
 
-/** K4 over every rendered pair: exact k/n, every mismatch listed. */
+/**
+ * K4 over every rendered pair of the given rows: exact k/n with its Wilson
+ * interval, whether k/n reached the registered expectation (a validity
+ * estimate: falling short stops nothing), the Codex versions that rendered,
+ * and every mismatch listed.
+ */
 export function k4Summary(rows) {
-  const pairs = rows.flatMap((r) => (r.k4?.pairs ?? []).map((p) => ({ repo: r.repo, commit: r.commit, ...p })));
+  const rendered = rows.filter((r) => (r.k4?.pairs ?? []).length);
+  const pairs = rendered.flatMap((r) => r.k4.pairs.map((p) => ({ repo: r.repo, commit: r.commit, ...p })));
   if (!pairs.length) return null;
   const exact = pairs.filter((p) => p.verdict === "EXACT").length;
   return {
     ...fraction(exact, pairs.length),
     expectedAtLeast: K4_EXPECTED,
+    expectationMet: exact / pairs.length >= K4_EXPECTED,
+    codexVersions: [...new Set(rendered.map((r) => r.codexVersion ?? null))],
     faults: pairs.filter((p) => p.verdict === "FAULT").length,
     mismatches: pairs
       .filter((p) => p.verdict !== "EXACT")
@@ -281,23 +295,39 @@ export function k4Summary(rows) {
   };
 }
 
+const usable = (rows) => rows.filter((r) => r.status === "measured" && !(r.faults ?? []).length);
+
+/**
+ * Throws (from lib/draws.mjs) on rows that would pool two draws of a frame,
+ * two samples, builds, agent versions or platforms, or a unit twice.
+ */
 export function analyze({ rowSets, k3Manifest, label = "study" }) {
-  const byFrame = new Map();
-  for (const r of rowSets.flatMap((s) => s.rows)) {
-    if (!byFrame.has(r.frame)) byFrame.set(r.frame, []);
-    byFrame.get(r.frame).push(r);
-  }
+  const sets = splitDraws(rowSets.flatMap((s) => s.rows));
+  const inUse = sets.filter((s) => !s.supersededBy);
   const frames = {};
   const outcomes = [];
   const summaries = [];
-  for (const [frame, rows] of byFrame) {
-    const measured = rows.filter((r) => r.status === "measured" && !(r.faults ?? []).length);
+  for (const { name: frame, frame: sampled, draw, rows, replaces, supersededBy } of sets) {
+    const measured = usable(rows);
     const faulted = rows.filter((r) => r.status === "measured" && (r.faults ?? []).length);
     const excluded = rows.filter((r) => r.status === "excluded");
     const reasons = {};
     for (const r of excluded) reasons[r.exclusion] = (reasons[r.exclusion] ?? 0) + 1;
-    const share = rows.length ? (excluded.length + faulted.length) / rows.length : 0;
+    const share = lostShare(rows);
+    // Repositories this sample shares with the other samples in use (S-imp against a redrawn S-main): counted, not excluded.
+    const repos = new Set(rows.map((r) => r.repo));
+    const sharedRepos = supersededBy
+      ? undefined
+      : Object.fromEntries(
+          inUse
+            .filter((o) => o.name !== frame)
+            .map((o) => [o.name, new Set(o.rows.map((r) => r.repo).filter((r) => repos.has(r))).size]),
+        );
     frames[frame] = {
+      frame: sampled,
+      draw,
+      ...(replaces ? { replaces } : {}),
+      ...(supersededBy ? { supersededBy } : {}),
       drawn: rows.length,
       measured: measured.length,
       excluded: excluded.length,
@@ -310,10 +340,15 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
         ...fraction(measured.filter((r) => (r.launch?.t2Total ?? 0) > MAX_TYPE2_DIRS).length, measured.length),
         cap: MAX_TYPE2_DIRS,
       },
-      redrawRequired: share > REDRAW_OVER,
+      // Only a first draw can be redrawn, and only once.
+      redrawRequired: draw === 1 && share > REDRAW_OVER,
       claudeVersions: [...new Set(measured.map((r) => r.claudeVersion))],
       mapVersions: [...new Set(measured.map((r) => r.mapVersion))],
+      codexVersions: [...new Set(rows.map((r) => r.codexVersion ?? null))],
+      dists: [...new Set(rows.map((r) => r.dist ?? null))],
+      platforms: [...new Set(rows.map((r) => r.platform ?? null))],
       labels: [...new Set(rows.map((r) => r.label ?? label))],
+      ...(sharedRepos ? { sharedRepos } : {}),
     };
     outcomes.push(...frameOutcomes(frame, measured));
     summaries.push(...frameSummaries(frame, measured));
@@ -324,11 +359,10 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
     const o = find(h.frame, h.outcome);
     return { ...h, estimate: o ? { k: o.k, n: o.n, p: o.p, lo: o.lo, hi: o.hi } : null, verdict: decide(h, o) };
   });
-  const checks = { K4: k4Summary(rowSets.flatMap((s) => s.rows)) };
-  if (k3Manifest && byFrame.has("S-main")) {
-    const rows = byFrame.get("S-main").filter((r) => r.status === "measured" && !(r.faults ?? []).length);
-    checks.K3 = k3Check(rows, k3Manifest);
-  }
+  // The checks read the rows in use: a redrawn sample's first draw is left out of K3 and K4, as of every verdict.
+  const checks = { K4: k4Summary(inUse.flatMap((s) => s.rows)) };
+  const sMain = inUse.find((s) => s.name === "S-main");
+  if (k3Manifest && sMain) checks.K3 = k3Check(usable(sMain.rows), k3Manifest);
   return {
     schema: "ctxreach.study-results/v1",
     label,
@@ -341,7 +375,8 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
     checks,
     wording: {
       codex: "as rendered by `codex debug prompt-input` <version>; the model was not run",
-      claude: "predicted by ctxreach map for Claude Code <version>, default settings, a fresh machine; not a live run",
+      claude:
+        "predicted by ctxreach map for Claude Code <version> on a fresh machine with default settings, not a live run; checked live in K5 as k/n",
       pairs:
         "intervals on (repository, launch directory) pairs ignore clustering within a repository; the repository-level figure is the one with a valid interval",
     },
@@ -375,7 +410,13 @@ function main(args) {
   const k3 = opt("--k3") ? JSON.parse(readFileSync(opt("--k3"), "utf8")) : undefined;
   const frameManifest = opt("--frame-manifest") ? JSON.parse(readFileSync(opt("--frame-manifest"), "utf8")) : undefined;
   const k3Manifest = k3 && frameManifest ? { ...k3, frameRepos: frameManifest.repos } : k3;
-  const results = analyze({ rowSets, k3Manifest, label: opt("--label") ?? "study" });
+  let results;
+  try {
+    results = analyze({ rowSets, k3Manifest, label: opt("--label") ?? "study" });
+  } catch (err) {
+    console.error(`refusing: ${err.message} (study/PREREG.md, sections 1 and 4)`);
+    return 2;
+  }
   writeFileSync(out, JSON.stringify(results, null, 2) + "\n");
   for (const h of results.hypotheses)
     console.log(
@@ -383,9 +424,12 @@ function main(args) {
     );
   for (const [f, s] of Object.entries(results.frames))
     console.log(
-      `${f}: ${s.measured} measured, ${s.excluded} excluded ${JSON.stringify(s.exclusions)}, ${s.withFaults} with faults, type-2 capped ${s.type2Capped.k}/${s.type2Capped.n}${s.redrawRequired ? " -- over 10% lost: the pre-registered redraw applies" : ""}`,
+      `${f}: draw ${s.draw}${s.supersededBy ? ` (superseded by the redraw, ${s.supersededBy})` : ""}, ${s.measured} measured, ${s.excluded} excluded ${JSON.stringify(s.exclusions)}, ${s.withFaults} with faults, type-2 capped ${s.type2Capped.k}/${s.type2Capped.n}${s.redrawRequired ? " -- over 10% lost: the pre-registered redraw applies" : ""}`,
     );
-  if (results.checks.K4) console.log(`K4: ${results.checks.K4.k}/${results.checks.K4.n} pairs byte-exact`);
+  if (results.checks.K4)
+    console.log(
+      `K4: ${results.checks.K4.k}/${results.checks.K4.n} pairs byte-exact (expected at least ${K4_EXPECTED * 100}%: ${results.checks.K4.expectationMet ? "met" : "not met"}; a validity estimate, not a pass threshold)`,
+    );
   if (results.checks.K3) console.log(`K3: ${results.checks.K3.pass ? "pass" : "FAIL"} (${results.checks.K3.explain})`);
   return 0;
 }

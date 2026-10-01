@@ -66,6 +66,18 @@ export async function codexVersion(codexBin) {
   return r.code === 0 ? r.stdout.trim() : `unknown (exit ${r.code})`;
 }
 
+/**
+ * Why what `codex --version` printed (for example "codex-cli 0.159.2") is not
+ * the registered Codex version `pin` (study/PREREG.md section 1), or
+ * undefined when it is. The version is the last word printed.
+ */
+export function codexVersionProblem(printed, pin) {
+  const m = /(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$/.exec(printed ?? "");
+  if (!m) return `codex --version printed ${JSON.stringify(printed ?? null)}, not a version`;
+  if (m[1] !== pin) return `codex --version reports ${m[1]}, not the registered ${pin}`;
+  return undefined;
+}
+
 /** Run the renderer once. The single place to swap in another renderer. */
 export async function render({ codexBin, cwd, codexHome, prompt }) {
   const [cmd, args] = codexCommand(codexBin, ["debug", "prompt-input", prompt]);

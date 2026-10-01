@@ -3,7 +3,7 @@
 // import them directly and drive them with local transports, the in-process
 // CLI and fake agents. No test reaches the network or runs a real agent.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
@@ -1274,6 +1274,78 @@ describe("drawing the sample", () => {
   }, 60_000);
 });
 
+describe("the one redraw (study/PREREG.md section 4)", () => {
+  const registry = prereg.readRegistry(readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8"));
+  const mainHeader = (draw: string) => ({ label: "study", stream: "S-main", draw, seed: "0badc0de", n: "1100" });
+
+  it("draws a study sample only as draw 1 (offset 0) or its one redraw (offset 1)", () => {
+    expect(sample.registeredProblems(registry, { stream: "S-main", n: 1100, offset: 0 })).toEqual([]);
+    expect(sample.registeredProblems(registry, { stream: "S-main", n: 1100, offset: 1 })).toEqual([]);
+    for (const offset of [2, -1, 0.5])
+      expect(
+        sample.registeredProblems(registry, { stream: "S-main", n: 1100, offset }).join("\n"),
+        String(offset),
+      ).toMatch(/--seed-offset 0 \(draw 1\) or 1 \(the one redraw, draw 2\)/);
+  });
+
+  it("makes S-imp, and its redraw, exclude S-main's first draw only: a redrawn S-main is counted, not excluded", () => {
+    const ok = { stream: "S-imp", n: 385 };
+    expect(sample.registeredProblems(registry, { ...ok, excludeHeaders: [mainHeader("1")] })).toEqual([]);
+    expect(sample.registeredProblems(registry, { ...ok, offset: 1, excludeHeaders: [mainHeader("1")] })).toEqual([]);
+    // The redrawn S-main instead of, or beside, the first draw.
+    expect(
+      sample.registeredProblems(registry, { ...ok, offset: 1, excludeHeaders: [mainHeader("2")] }).join("\n"),
+    ).toMatch(/S-main's first draw/);
+    expect(
+      sample.registeredProblems(registry, { ...ok, excludeHeaders: [mainHeader("1"), mainHeader("2")] }).join("\n"),
+    ).toMatch(/counted against it, not excluded/);
+    // A header without a draw, a pilot sample, and an exclusion nobody registered.
+    expect(
+      sample.registeredProblems(registry, { ...ok, excludeHeaders: [{ ...mainHeader("1"), draw: undefined }] }),
+    ).not.toEqual([]);
+    expect(
+      sample.registeredProblems(registry, { ...ok, excludeHeaders: [{ ...mainHeader("1"), label: "pilot" }] }),
+    ).not.toEqual([]);
+    expect(
+      sample.registeredProblems(registry, { stream: "S-main", n: 1100, excludeHeaders: [mainHeader("1")] }).join("\n"),
+    ).toMatch(/S-main excludes nothing/);
+  });
+
+  it("writes the draw and the seed offset into the sample's header", () => {
+    const line = sample.sampleHeaderText({
+      label: "study",
+      stream: "S-imp",
+      seed: "0badc0df",
+      offset: 1,
+      n: 385,
+      frame: "S-imp.tsv",
+      frameSha256: "f".repeat(64),
+      excluded: 1100,
+    });
+    const header = sample.sampleHeader(sample.sampleTsv([], line));
+    expect(header).toMatchObject({ label: "study", stream: "S-imp", draw: "2", seed: "0badc0df", seedOffset: "1" });
+    expect(sample.sampleHeader(sample.sampleTsv([], sample.sampleHeaderText({ ...header, offset: 0 }))).draw).toBe("1");
+  });
+
+  it("refuses a study --seed-offset other than 0 or 1 before drawing", () => {
+    const dir = tmp("offset");
+    const frameFile = path.join(dir, "S.tsv");
+    writeFileSync(frameFile, `o/r\t${"a".repeat(40)}\tAGENTS.md\t1\n`);
+    const r = spawnSync(
+      process.execPath,
+      [
+        path.join(ROOT, "study", "census", "sample.mjs"),
+        ...["--frame", frameFile, "--n", "1100", "--stream", "S-main", "--seed-from-tag", "prereg-v1"],
+        ...["--seed-offset", "2", "--out", path.join(dir, "out.tsv")],
+      ],
+      { encoding: "utf8" },
+    );
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/refusing: .*--seed-offset 0 \(draw 1\) or 1/);
+    expect(existsSync(path.join(dir, "out.tsv"))).toBe(false);
+  });
+});
+
 describe("the pre-registration (study/PREREG.md)", () => {
   const text = readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8");
   const registry = prereg.readRegistry(text);
@@ -1341,6 +1413,123 @@ describe("the pre-registration (study/PREREG.md)", () => {
     for (const doc of [...docs, "README.md", "study/behavioural/README.md"])
       expect(email.exec(readFileSync(path.join(ROOT, ...doc.split("/")), "utf8"))?.[0] ?? null, doc).toBe(null);
     expect(email.test("write to someone@example.org")).toBe(true);
+  });
+
+  /** The text of one numbered section ("## 7. ..." up to the next "## "), whitespace collapsed. */
+  const section = (n: number) => {
+    const from = text.indexOf(`\n## ${n}. `);
+    const to = text.indexOf("\n## ", from + 1);
+    expect(from, `section ${n}`).toBeGreaterThan(0);
+    return text.slice(from, to).replace(/\s+/g, " ");
+  };
+
+  it("names every figure analyze.mjs writes, and analyze.mjs writes every figure it names", () => {
+    const rows = Array.from({ length: 3 }, (_, i) => ({
+      frame: "S-main",
+      id: `S-main-${i}`,
+      index: i,
+      repo: `o${i}/r`,
+      owner: `o${i}`,
+      status: "measured",
+      faults: [],
+      blobs: { rootAgents: `b${i}` },
+      launch: { t2: [], t2Total: 0, t3: [], t3Total: 0 },
+      pairs: [{ dir: ".", type: 1, codex: { chain: [] } }],
+      outcomes: {
+        o1content: { eligible: true, event: false, share: 1 },
+        o1contentShingle: { eligible: true, event: false },
+        o1file: { eligible: true, event: false },
+        o2: { eligible: true, t2Dirs: 0, event: false, eventDirs: [], eventT123: false, t3EventDirs: [] },
+        p1: { pairs: 1, eventDirs: [], repoEvent: false, pairsT3: 0, t3EventDirs: [], repoEventT123: false },
+        o4: { eligible: true, event: false },
+        o5: { rootWarn: [], rootWarnMap: [], anyWarn: [], linkAffected: false },
+        o6: { eligible: true, event: false },
+        o7: { links: 0, broken: 0, event: false, rootLinkToAgents: false },
+        o8: { eligible: true, event: false, bytes: 1, effectiveChars: 1 },
+        k3: { eligible: true, event: false },
+      },
+    }));
+    const res = analyze.analyze({ rowSets: [{ file: "r", sha256: "x", rows }] });
+    const generic = (id: string) => id.replace(/^(O5-root(?:-map)?):.*$/, "$1:<code>");
+    const written = new Set([...res.outcomes, ...res.summaries].map((o: { id: string }) => generic(o.id)));
+    // Sections 6 to 8 name figures in backticks: O1-content, P1-repos, O5-root:<code>, K3-regex-O1-file, ...
+    const prose = [6, 7, 8].map(section).join(" ");
+    const named = new Set(
+      [...prose.matchAll(/`((?:O|P|K)\d[A-Za-z0-9-]*(?::[a-z<>.-]+)?)`/g)].map((m) => generic(m[1]!)),
+    );
+    expect([...named].filter((id) => !written.has(id)).sort(), "named in PREREG.md, not written").toEqual([]);
+    expect([...written].filter((id) => !named.has(id)).sort(), "written, not named in PREREG.md").toEqual([]);
+  });
+
+  it("states O8's CJK characters as the code tests them, code point for code point", () => {
+    const o8 = section(7);
+    const listed = /CJK characters are the code points in ([^;]+);/.exec(o8)?.[1];
+    expect(listed).toBeDefined();
+    const ranges = listed!
+      .replace(/ and /g, ", ")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((r) => {
+        const m = /^U\+([0-9A-F]{4,5})–([0-9A-F]{4,5})$/.exec(r);
+        expect(m, r).not.toBeNull();
+        return [parseInt(m![1]!, 16), parseInt(m![2]!, 16)] as const;
+      });
+    const inText = (cp: number) => ranges.some(([lo, hi]) => cp >= lo && cp <= hi);
+    const wrong: string[] = [];
+    for (let cp = 0; cp <= 0x10ffff; cp++)
+      if (norm.CJK.test(String.fromCodePoint(cp)) !== inText(cp)) wrong.push(cp.toString(16));
+    expect(wrong.slice(0, 10)).toEqual([]);
+    // Whitespace is left out of the denominator, as the text says.
+    expect(norm.cjkShare("漢 a　\n")).toBe(0.5);
+  });
+
+  it("uses one wording per instrument in section 9, section 10, cells.json and results.json", () => {
+    const cells = JSON.parse(readFileSync(path.join(ROOT, "study", "behavioural", "cells.json"), "utf8"));
+    const capture = "delivered to the model endpoint (custom base URL, gateway path)";
+    const echo = "echoed by the model in a first-party session; an echo proves delivery, not compliance";
+    expect(cells.instruments.capture.wording.startsWith(capture)).toBe(true);
+    expect(cells.instruments.echo.wording).toBe(echo);
+    for (const n of [9, 10]) expect(section(n), `section ${n}`).toContain(`"${capture}"`);
+    expect(section(9)).toContain(`"${echo}"`);
+    expect(section(10)).not.toMatch(/model endpoint \(custom base URL\)"/);
+    const res = analyze.analyze({ rowSets: [] });
+    for (const [agent, wording] of Object.entries(res.wording as Record<string, string>))
+      if (agent !== "pairs") expect(section(10), agent).toContain(`"${wording}"`);
+  });
+
+  it("says which checks stop the study and which are validity estimates, as the code has them", () => {
+    const s8 = section(8);
+    expect(s8).toContain(
+      "K4, K5 and K6 are validity estimates with no pass threshold: each is reported as found, with its Wilson 95% interval, and stops nothing.",
+    );
+    const rowOf = (k: string) => {
+      const from = s8.indexOf(`| ${k} `);
+      const next = s8.indexOf("| K", from + 3);
+      return s8.slice(from, next > 0 ? next : undefined);
+    };
+    for (const k of ["K4", "K5", "K6"]) expect(rowOf(k), k).toMatch(/a validity estimate, no pass threshold/i);
+    for (const k of ["K1", "K2", "K3", "K7"]) expect(rowOf(k), k).not.toMatch(/validity estimate/);
+    expect(s8).toContain("`checks.K4.expectationMet`");
+    expect(analyze.k4Summary([{ repo: "a", k4: { pairs: [{ dir: ".", verdict: "EXACT" }] } }])).toHaveProperty(
+      "expectationMet",
+      true,
+    );
+  });
+
+  it("orders the main session's work as the scripts require: study-v1 is tagged before the stamp", () => {
+    const readme = readFileSync(path.join(ROOT, "study", "census", "README.md"), "utf8");
+    const order = readme.slice(readme.indexOf("## Order in the main session"));
+    const at = (s: string) => {
+      const i = order.indexOf(s);
+      expect(i, s).toBeGreaterThan(0);
+      return i;
+    };
+    expect(at("git tag study-v1")).toBeLessThan(at("npm run build"));
+    expect(at("npm run build")).toBeLessThan(at("node study/prereg.mjs stamp"));
+    expect(at("node study/prereg.mjs stamp")).toBeLessThan(at("git tag prereg-v1"));
+    expect(at("git tag prereg-v1")).toBeLessThan(at("node study/census/seed.mjs"));
+    expect(order).toContain("--seed-offset 1");
   });
 
   it("holds a placeholder for every tag-time value and no other", () => {
@@ -1443,12 +1632,17 @@ describe("the pre-registration (study/PREREG.md)", () => {
     expect(sample.registeredProblems(registry, { stream: "S-imp", n: 385 })[0]).toMatch(
       /must exclude the study sample S-main/,
     );
-    const header = sample.sampleHeader("# label=study stream=S-main seed=0badc0de n=1100\n0\tS-main-0000\to/r\tabc\n");
-    expect(header).toMatchObject({ label: "study", stream: "S-main", n: "1100" });
+    const header = sample.sampleHeader(
+      "# label=study stream=S-main draw=1 seed=0badc0de seedOffset=0 n=1100\n0\tS-main-0000\to/r\tabc\n",
+    );
+    expect(header).toMatchObject({ label: "study", stream: "S-main", draw: "1", n: "1100" });
     expect(sample.registeredProblems(registry, { stream: "S-imp", n: 385, excludeHeaders: [header] })).toEqual([]);
     expect(
       sample.registeredProblems(registry, { stream: "S-imp", n: 385, excludeHeaders: [{ ...header, label: "pilot" }] }),
-    ).toHaveLength(1);
+    ).toEqual([
+      "S-imp excludes only the study sample S-main; --exclude S-main (label pilot) is not registered",
+      "S-imp must exclude the study sample S-main's first draw (--exclude its draw=1 TSV)",
+    ]);
   });
 });
 
@@ -1459,7 +1653,7 @@ describe("the census run, analysis and K3", () => {
     "codex-over-cap",
     "census-o2-package-claude",
   ];
-  async function census(extraRepos: unknown[] = [], extraUnits: string[] = []) {
+  async function census(extraRepos: unknown[] = [], extraUnits: string[] = [], header = "label=test") {
     const repos = [
       ...names.map((n) =>
         local.localRepo(
@@ -1477,7 +1671,7 @@ describe("the census run, analysis and K3", () => {
       repo: `fixture/${n}`,
       commit: local.fixtureCommit(n),
     }));
-    writeFileSync(sampleFile, sample.sampleTsv(units, "label=test"));
+    writeFileSync(sampleFile, sample.sampleTsv(units, header));
     const out = path.join(dir, "rows.jsonl");
     const logs: string[] = [];
     const args = {
@@ -1763,20 +1957,89 @@ describe("the census run, analysis and K3", () => {
     });
   });
 
+  /** A study run's options: the seed from a stand-in tag, Codex for K4 reporting the registered version. */
+  const studyRun = (args: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+    ...args,
+    label: "study",
+    seed: undefined,
+    seedFromTag: "prereg-v1",
+    seedResolver: (tag: string) => ({ tag, commit: `0badc0de${"0".repeat(32)}`, seed: "0badc0de" }),
+    codexBin: FAKE_CODEX,
+    codexVersionOf: async () => "codex-cli 0.159.2",
+    ...extra,
+  });
+  const studyHeader = (fields = "") =>
+    `label=study stream=S-main draw=1 seed=0badc0de seedOffset=0 n=4 frame=S.tsv ${fields}`.trim();
+
   it("takes a study run's seed from the prereg tag, which also seeds the type-2 and type-3 draws", async () => {
-    const { args, logs } = await census();
+    const { args, logs } = await census([], [], studyHeader());
     expect((await runCensus.runCensus({ ...args, label: "study" })).code).toBe(2);
     expect(logs.join("\n")).toMatch(/a study run takes its seed from the prereg tag/);
-    const tagged = await runCensus.runCensus({
-      ...args,
-      label: "study",
-      seed: undefined,
-      seedFromTag: "prereg-v1",
-      seedResolver: (tag: string) => ({ tag, commit: `0badc0de${"0".repeat(32)}`, seed: "0badc0de" }),
-    });
+    const tagged = await runCensus.runCensus(studyRun(args));
     expect(tagged.code).toBe(0);
-    expect(tagged.manifest).toMatchObject({ seed: "0badc0de", seedFrom: "prereg-v1" });
+    expect(tagged.manifest).toMatchObject({ seed: "0badc0de", seedFrom: "prereg-v1", codex: "codex-cli 0.159.2" });
+  }, 120_000);
+
+  it("stamps every row with its draw, sample, build, Codex version and platform, and keeps a rows file to one sample", async () => {
+    const { args, out, logs, dir } = await census();
+    expect((await runCensus.runCensus(args)).code).toBe(0);
+    const sampleSha = createHash("sha256").update(readFileSync(args.sample)).digest("hex");
+    for (const r of runCensus.readRows(out))
+      expect(r).toMatchObject({
+        draw: 1,
+        sampleSha256: sampleSha,
+        dist: "injected runner (tests)",
+        codexVersion: null,
+        platform: process.platform,
+      });
+    // Another sample (here the redraw) into the same rows file: its ids would read as done, so it is refused.
+    const redraw = path.join(dir, "redraw.tsv");
+    writeFileSync(redraw, readFileSync(args.sample, "utf8").replace("label=test", "label=test draw=2"));
+    const again = await runCensus.runCensus({ ...args, sample: redraw });
+    expect(again.code).toBe(2);
+    expect(logs.join("\n")).toMatch(/refusing: .*rows\.jsonl holds 4 row\(s\) of another sample/);
   }, 60_000);
+
+  it("refuses a study run on another sample, stream or seed, without Codex, or with another Codex", async () => {
+    const refused = async (header: string, extra: Record<string, unknown> = {}) => {
+      const { args, logs, out } = await census([], [], header);
+      const r = await runCensus.runCensus(studyRun(args, extra));
+      expect(runCensus.readRows(out), header).toEqual([]);
+      return r.code === 2 ? logs.join("\n") : `exit ${r.code}`;
+    };
+    expect(await refused(studyHeader().replace("label=study", "label=pilot"))).toMatch(/not a study sample/);
+    expect(await refused(studyHeader().replace("stream=S-main", "stream=S-imp"))).toMatch(
+      /--frame-name S-main is not the sample's stream S-imp/,
+    );
+    expect(await refused(studyHeader().replace("seed=0badc0de", "seed=0badc0df"))).toMatch(
+      /draw 1 is drawn with seed 0badc0de/,
+    );
+    expect(await refused(studyHeader().replace("draw=1", "draw=3"))).toMatch(/draw 3/);
+    expect(await refused(studyHeader(), { codexBin: undefined })).toMatch(/--codex-bin/);
+    expect(await refused(studyHeader(), { codexVersionOf: async () => "codex-cli 0.160.0" })).toMatch(
+      /codex --version reports 0\.160\.0, not the registered 0\.159\.2/,
+    );
+    // The fake renderer, asked for real: it is not the registered Codex.
+    expect(await refused(studyHeader(), { codexVersionOf: undefined })).toMatch(/0\.0\.0-fake, not the registered/);
+  }, 60_000);
+
+  it("runs the redraw as draw 2 with the tag's seed + 1, and records the Codex version on every row", async () => {
+    const header = studyHeader().replace("draw=1 seed=0badc0de seedOffset=0", "draw=2 seed=0badc0df seedOffset=1");
+    const { args, out } = await census([], [], header);
+    expect((await runCensus.runCensus(studyRun(args))).code).toBe(0);
+    const rows = runCensus.readRows(out);
+    expect(rows).toHaveLength(4);
+    for (const r of rows) expect(r).toMatchObject({ frame: "S-main", draw: 2, codexVersion: "codex-cli 0.159.2" });
+  }, 120_000);
+
+  it("reads the registered Codex version from what `codex --version` prints", () => {
+    expect(k4.codexVersionProblem("codex-cli 0.159.2", "0.159.2")).toBeUndefined();
+    expect(k4.codexVersionProblem("codex-cli 0.159.2\n", "0.159.2")).toBeUndefined();
+    expect(k4.codexVersionProblem("codex-cli 0.159.20", "0.159.2")).toMatch(/0\.159\.20, not the registered 0\.159\.2/);
+    expect(k4.codexVersionProblem("codex-cli 0.0.0-fake", "0.159.2")).toMatch(/0\.0\.0-fake/);
+    expect(k4.codexVersionProblem("unknown (exit 1)", "0.159.2")).toMatch(/not a version/);
+    expect(k4.codexVersionProblem(null, "0.159.2")).toMatch(/not a version/);
+  });
 
   it("flags a frame for the redraw when over 10% is lost, and leaves faulty rows out", () => {
     const base = { frame: "S-main", status: "measured", faults: [], outcomes: {} };
@@ -1850,6 +2113,146 @@ describe("the census run, analysis and K3", () => {
     expect(d.files.map((f: { path: string }) => f.path)).toEqual(["cli.js", "sub/x.js"]);
     writeFileSync(path.join(dir, "cli.js"), "A");
     expect(digest.distDigest(dir).digest).not.toBe(d.digest);
+  });
+});
+
+describe("analysis never pools two draws, builds or versions (study/PREREG.md sections 1 and 4)", () => {
+  type Row = Record<string, unknown>;
+  /** A row as run-census stamps it: an event on O1-content when `event`, excluded when `excluded`. */
+  function row(frame: string, draw: number, i: number, o: { event?: boolean; excluded?: boolean; repo?: string } = {}) {
+    const stamp = {
+      id: `${frame}-${String(i).padStart(4, "0")}`,
+      frame,
+      draw,
+      index: i,
+      repo: o.repo ?? `${frame}-d${draw}-owner${i}/repo`,
+      owner: `${frame}-d${draw}-owner${i}`,
+      sampleSha256: `${frame}-draw${draw}-sample`,
+      dist: "frozen",
+      codexVersion: "codex-cli 0.159.2",
+      platform: "win32",
+    };
+    if (o.excluded) return { ...stamp, status: "excluded", exclusion: "fork" };
+    return {
+      ...stamp,
+      status: "measured",
+      faults: [],
+      claudeVersion: "2.1.285",
+      mapVersion: "1.0.0",
+      blobs: { rootAgents: `blob-${frame}-${draw}-${i}` },
+      launch: { t2: [], t2Total: 0, t3: [], t3Total: 0 },
+      pairs: [{ dir: ".", type: 1, codex: { chain: [{ path: "AGENTS.md", bytes: 100, kept: 100 }] } }],
+      k4: { pairs: [{ dir: ".", verdict: "EXACT" }] },
+      outcomes: {
+        o1content: { eligible: true, a: 4, r: o.event ? 1 : 4, share: o.event ? 0.25 : 1, event: !!o.event },
+        o1contentShingle: { eligible: true, a: 4, r: 4, share: 1, event: false },
+        o1file: { eligible: true, event: false },
+        o2: { eligible: true, t2Dirs: 0, event: false, eventDirs: [], eventT123: false, t3EventDirs: [] },
+        p1: { pairs: 1, eventDirs: [], repoEvent: false, pairsT3: 0, t3EventDirs: [], repoEventT123: false },
+        o4: { eligible: true, nested: 0, notPreloaded: 0, event: false },
+        o5: { rootWarn: [], rootWarnMap: [], anyWarn: [], linkAffected: false },
+        o6: { eligible: true, event: false },
+        o7: { links: 0, broken: 0, event: false, rootLinkToAgents: false },
+        o8: { eligible: true, cjkShare: 0, event: false, bytes: 100, chars: 100, effectiveChars: 100 },
+        k3: { eligible: true, rootClaude: false, event: false },
+      },
+    };
+  }
+  /** Draw 1 of S-main: 10 rows, 2 excluded (20% lost, so the redraw applies), 1 event among the 8 measured. */
+  const draw1 = () => Array.from({ length: 10 }, (_, i) => row("S-main", 1, i, { excluded: i < 2, event: i === 2 }));
+  /** Draw 2 of S-main: 10 rows, all measured, 6 events. */
+  const draw2 = () => Array.from({ length: 10 }, (_, i) => row("S-main", 2, i, { event: i < 6 }));
+  const run = (...sets: Row[][]) =>
+    analyze.analyze({ rowSets: sets.map((rows, i) => ({ file: `rows-${i}.jsonl`, sha256: "x", rows })) });
+  const get = (res: { outcomes: { id: string; frame: string; variant: string }[] }, frame: string, id: string) =>
+    res.outcomes.find((o) => o.frame === frame && o.id === id && o.variant === "raw");
+
+  it("lets the redraw replace the first draw for every figure and verdict, and reports the first under its own name", () => {
+    const res = run(draw1(), draw2());
+    expect(get(res, "S-main", "O1-content")).toMatchObject({ k: 6, n: 10 });
+    expect(get(res, "S-main-draw1", "O1-content")).toMatchObject({ k: 1, n: 8 });
+    expect(res.frames["S-main"]).toMatchObject({ frame: "S-main", draw: 2, replaces: "S-main-draw1", drawn: 10 });
+    expect(res.frames["S-main"].redrawRequired).toBe(false);
+    expect(res.frames["S-main-draw1"]).toMatchObject({
+      frame: "S-main",
+      draw: 1,
+      supersededBy: "S-main",
+      drawn: 10,
+      excluded: 2,
+      redrawRequired: true,
+    });
+    const h1 = res.hypotheses.find((h: { id: string }) => h.id === "H1");
+    expect(h1.estimate).toMatchObject({ k: 6, n: 10 });
+    // K4 reads the rows in use only: 10 pairs, not 18.
+    expect(res.checks.K4).toMatchObject({ k: 10, n: 10 });
+    // Given in the other order, the same result.
+    expect(run(draw2(), draw1()).outcomes).toEqual(res.outcomes);
+  });
+
+  it("refuses what would pool two draws, two samples, builds, versions or platforms, or a unit twice", () => {
+    const refuse = (sets: Row[][], why: RegExp) => expect(() => run(...sets), String(why)).toThrow(why);
+    refuse([draw2()], /draw 2 \(the redraw\) without the draw 1 it replaces/);
+    const fine = Array.from({ length: 10 }, (_, i) => row("S-main", 1, i, { excluded: i === 0 }));
+    refuse([fine, draw2()], /draw 1 lost 10%, not over 10%: the redraw does not apply/);
+    refuse([draw1(), draw1()], /S-main draw 1: unit S-main-0000 appears twice/);
+    refuse([draw1(), draw2().map((r) => ({ ...r, draw: 3 }))], /draw 3/);
+    const one = (key: string, value: unknown, measuredOnly = false) =>
+      draw1().map((r, i) => (i === 5 && (!measuredOnly || r.status === "measured") ? { ...r, [key]: value } : r));
+    refuse([one("sampleSha256", "another")], /S-main draw 1: rows of more than one sampleSha256/);
+    refuse([one("dist", "fixed build")], /more than one dist/);
+    refuse([one("codexVersion", "codex-cli 0.160.0")], /more than one codexVersion/);
+    refuse([one("platform", "linux")], /more than one platform/);
+    refuse([one("claudeVersion", "2.1.280", true)], /more than one claudeVersion/);
+    refuse([one("mapVersion", "1.0.1", true)], /more than one mapVersion/);
+    refuse([draw1(), draw2(), Array.from({ length: 3 }, (_, i) => row("S-main-draw1", 1, i))], /two frames named/);
+    // Excluded rows carry no agent versions; that is not a second version.
+    expect(() => run(draw1())).not.toThrow();
+  });
+
+  it("counts S-imp's overlap with a redrawn S-main instead of excluding it", () => {
+    const imp = Array.from({ length: 5 }, (_, i) =>
+      row("S-imp", 1, i, i < 2 ? { repo: `S-main-d2-owner${i}/repo` } : {}),
+    );
+    const res = run(draw1(), draw2(), imp);
+    expect(res.frames["S-imp"].sharedRepos).toEqual({ "S-main": 2 });
+    expect(res.frames["S-main"].sharedRepos).toEqual({ "S-imp": 2 });
+    // The superseded draw is not compared: it decides nothing.
+    expect(res.frames["S-main-draw1"].sharedRepos).toBeUndefined();
+    expect(get(res, "S-imp", "O1-content")).toMatchObject({ n: 5 });
+  });
+
+  it("carries the Codex version into results.json, per frame and for K4, and says whether K4 met its expectation", () => {
+    const res = run(draw1());
+    expect(res.frames["S-main"]).toMatchObject({ codexVersions: ["codex-cli 0.159.2"], dists: ["frozen"] });
+    expect(res.checks.K4).toMatchObject({
+      k: 8,
+      n: 8,
+      expectedAtLeast: 0.98,
+      expectationMet: true,
+      codexVersions: ["codex-cli 0.159.2"],
+    });
+    const pairs = (exact: number, n: number) => [
+      {
+        repo: "a/a",
+        codexVersion: "v",
+        k4: { pairs: Array.from({ length: n }, (_, i) => ({ dir: `${i}`, verdict: i < exact ? "EXACT" : "OFF" })) },
+      },
+    ];
+    expect(analyze.k4Summary(pairs(49, 50)).expectationMet).toBe(true);
+    expect(analyze.k4Summary(pairs(48, 50)).expectationMet).toBe(false);
+  });
+
+  it("gives K5 and K6 the rows in use: a redrawn sample's first draw is left out", () => {
+    const dir = tmp("in-use");
+    const files = [draw1(), draw2()].map((rows, i) => {
+      const f = path.join(dir, `rows-${i}.jsonl`);
+      writeFileSync(f, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+      return f;
+    });
+    for (const rows of [k6cli.readRowFiles(files), k5.readRowFiles(files)]) {
+      expect(rows).toHaveLength(10);
+      expect(new Set(rows.map((r: { draw: number }) => r.draw))).toEqual(new Set([2]));
+    }
   });
 });
 
