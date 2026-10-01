@@ -8,7 +8,7 @@ the harness against a fake instrument only.
 | Cell | Fixture (twin) | Arms x trials | Instrument | Rule (fractions of usable trials) |
 |---|---|---|---|---|
 | B1 | `b1-ancestor` | trap 10 (ancestor `.claude/CLAUDE.md` above the git root), control 10 | capture | confirmed if trap AGENTS.md <= 0.1, trap ancestor token >= 0.9, control AGENTS.md >= 0.9 |
-| B2 (headline) | `b2-home` | warm-up 1 (P0-a), A0 10, A1 10, A2 10, A3 5, A4 5 | capture, scratch home | confirmed if A1 <= 0.1 and A2 >= 0.9 and A0 >= 0.9; refuted if A1 >= 0.9; else inconclusive; P0-a failing means B2 is not run as registered |
+| B2 (headline) | `b2-home` | warm-up 1 (P0-a), A0 10, A1 10, A2 10, A3 5, A4 5 | capture, scratch home | confirmed if A1 <= 0.1 and A2 >= 0.9 and A0 >= 0.9; refuted if A1 >= 0.9; else inconclusive; P0-a failing means B2 is not run as registered; A3 and A4 are reported only and move no verdict |
 | B3 | `b3-external-import` (`-twin`) | subdir 10, root 5 | capture | confirmed if subdir root AGENTS.md <= 0.1, subdir package AGENTS.md >= 0.9, root root AGENTS.md >= 0.8 |
 | B4 | `b4-link-as-text` (`-twin`) | trap 5 | capture | confirmed if AGENTS.md <= 0.2 |
 | B6 | `b6-ancestor-rules` (paths twin arm) | trap 5 | capture (+ hook when lane L3 records it) | confirmed if the ancestor rule >= 0.8 |
@@ -42,8 +42,12 @@ An arm with fewer usable trials than 80% of those planned is
 
 It runs the instrument once (`--trials 1`), reads what the instrument
 observed, and scores the trial: **void** if the control token is missing,
-the decoy token is present, `system/init.plugins` lacks
-`agents-md@builtin`, or `system/init.model` is not the pin; otherwise each
+the decoy token is present, the instrument saved no `system/init` event,
+`system/init.plugins` lacks `agents-md@builtin` (2.1.285 lists it as
+`cc-plugin-agents-md@builtin`; both are accepted), `system/init.model` is not
+the pin, or `system/init.cwd` is not the launch directory in the
+instrument's copy of the repository (the copy as the instrument's
+`manifest.json` records it; PREREG.md section 8, K10); otherwise each
 observable counts as seen when any of its tokens is. Files planted outside
 the trial folder are removed after every trial, so no arm inherits another
 arm's home file (the dry run caught exactly that: A0 read 0/10 until this

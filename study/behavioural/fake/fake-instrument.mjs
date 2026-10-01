@@ -9,7 +9,9 @@
 // Usage: node fake-instrument.mjs <verify|probe> [the real command's flags]
 // FAKE_INSTRUMENT_MODE: "ok" (default); "no-home-shadow" (the home file does
 // not count as an ancestor: what a refuted B2 looks like); "drop-control";
-// "echo-decoy"; "silent" (saves nothing).
+// "echo-decoy"; "wrong-cwd" (the session reports a cwd outside the launch
+// directory, which K10 voids); "silent" (saves nothing). Like the real
+// commands, it records its copy of the repository in manifest.json.
 
 import { randomBytes } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -101,11 +103,17 @@ if (mode === "echo-decoy") text += "\n" + read(path.join(launch, "ctxreach-cell-
 const init = {
   type: "system",
   subtype: "init",
-  cwd: launch,
+  cwd: mode === "wrong-cwd" ? base : launch,
   model,
   claude_code_version: "0.0.0-fake",
   plugins: [{ name: "agents-md", source: "agents-md@builtin" }],
 };
+// Where the copy is, as the real commands' manifest.json records it (this fake does not redact paths).
+const launchRel = path.relative(repo, from).split(path.sep).join("/") || ".";
+writeFileSync(
+  path.join(save, "manifest.json"),
+  JSON.stringify({ schema: "fake", command, repo: copy, launchDir: launchRel }) + "\n",
+);
 if (command === "verify") {
   const body = JSON.stringify({
     model,
@@ -122,7 +130,6 @@ if (command === "verify") {
     init,
     { type: "assistant", message: { content: [{ type: "text", text: tokens.join("\n") || "NONE" }] } },
   ];
-  writeFileSync(path.join(save, "manifest.json"), JSON.stringify({ schema: "fake" }) + "\n");
   writeFileSync(path.join(save, "trial-1.jsonl"), events.map((e) => JSON.stringify(e)).join("\n") + "\n");
 }
 rmSync(base, { recursive: true, force: true });

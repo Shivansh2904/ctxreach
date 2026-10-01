@@ -1450,6 +1450,7 @@ describe("the pre-registration (study/PREREG.md)", () => {
       blobs: { rootAgents: `b${i}` },
       launch: { t2: [], t2Total: 0, t3: [], t3Total: 0 },
       pairs: [{ dir: ".", type: 1, codex: { chain: [] } }],
+      k4: { pairs: [{ dir: ".", verdict: "EXACT" }] },
       outcomes: {
         o1content: { eligible: true, event: false, share: 1 },
         o1contentShingle: { eligible: true, event: false },
@@ -1492,8 +1493,23 @@ describe("the pre-registration (study/PREREG.md)", () => {
     walk(res);
     const flat = text.replace(/\s+/g, " ");
     const named = [...flat.matchAll(/`([A-Za-z][A-Za-z0-9]*)` in `results\.json`/g)].map((m) => m[1]!);
-    expect(named).toEqual(expect.arrayContaining(["redrawRequired", "sharedRepos", "type2Capped", "ineligibleWhy"]));
+    expect(named).toEqual(
+      expect.arrayContaining([
+        "redrawRequired",
+        "sharedRepos",
+        "type2Capped",
+        "ineligibleWhy",
+        // The redraw's deciding statistic and the draw's size, by name (section 4).
+        "excludedShare",
+        "drawn",
+        "rowsGiven",
+        "complete",
+      ]),
+    );
     expect(named.filter((k) => !keys.has(k) && k !== "sharedRepos")).toEqual([]);
+    // The deciding statistic is registered over the sample's n, in the Redraw bullet itself.
+    const redraw = section(4).slice(section(4).indexOf("**Redraw.**"));
+    expect(redraw).toMatch(/`excludedShare` in `results\.json`, over `sampleN`/);
     // sharedRepos is written only beside another sample in use.
     const imp = threeRows().map((r) => ({ ...r, frame: "S-imp", id: `S-imp-${r.index}` }));
     const both = analyze.analyze({ rowSets: [{ file: "r", sha256: "x", rows: [...threeRows(), ...imp] }] });
@@ -1613,6 +1629,15 @@ describe("the pre-registration (study/PREREG.md)", () => {
     for (const k of ["K4", "K5", "K6"]) expect(rowOf(k), k).toMatch(/a validity estimate, no pass threshold/i);
     for (const k of ["K1", "K2", "K3", "K7"]) expect(rowOf(k), k).not.toMatch(/validity estimate/);
     expect(s8).toContain("`checks.K4.expectationMet`");
+    // K4 is the one figure taken over two frames: said so, with each frame's own beside it.
+    expect(rowOf("K4")).toContain("K4 is a single figure over both frames");
+    expect(rowOf("K4")).toContain("`checks.K4.byFrame`");
+    expect(section(7)).toContain("K4 is the one figure taken over both frames (section 8)");
+    // Where each K10 assert applies, as the code applies it.
+    const k10 = rowOf("K10");
+    for (const where of ["`scoreTrial`", "`ctxreach verify`", "`codex-check.mjs`", "`manifest.json`"])
+      expect(k10, where).toContain(where);
+    expect(k10).toContain("lab trial whose instrument saved no `system/init` event is void");
     expect(analyze.k4Summary([{ repo: "a", k4: { pairs: [{ dir: ".", verdict: "EXACT" }] } }])).toHaveProperty(
       "expectationMet",
       true,
@@ -1632,6 +1657,51 @@ describe("the pre-registration (study/PREREG.md)", () => {
     expect(at("node study/prereg.mjs stamp")).toBeLessThan(at("git tag prereg-v1"));
     expect(at("git tag prereg-v1")).toBeLessThan(at("node study/census/seed.mjs"));
     expect(order).toContain("--seed-offset 1");
+  });
+
+  it("reports B2's arms A3 and A4 only: no rule names them, and they move no verdict", () => {
+    expect(section(9)).toContain(
+      "B2's arms A3 and A4 are reported only, as fractions with Wilson bounds; they move no verdict: no rule names them, and B2 is decided on A0, A1 and A2 alone, whatever A3 and A4 show or however few of their trials are usable.",
+    );
+    const b2 = registry.cells.B2;
+    const named = new Set([...b2.confirm, ...b2.refute].map((c: string[]) => c[0]));
+    expect(named.has("A3") || named.has("A4")).toBe(false);
+    const arm = (k: number, planned = 10, usable = planned) => ({
+      observe: { agents: { k, n: usable } },
+      usable,
+      planned,
+    });
+    const base = { A0: arm(10), A1: arm(1), A2: arm(10) };
+    for (const [a1, verdict] of [
+      [1, "confirmed"],
+      [9, "refuted"],
+      [5, "inconclusive"],
+    ] as const)
+      for (const extra of [{}, { A3: arm(5, 5), A4: arm(0, 5) }, { A3: arm(0, 5, 1), A4: arm(5, 5, 0) }])
+        expect(cellsLib.decideCell({ id: "B2", ...b2 }, { ...base, A1: arm(a1), ...extra }), `${a1}`).toBe(verdict);
+  });
+
+  it("lets the frozen build's verdicts stand after a map fix, the fixed build's results beside them as a dated deviation", () => {
+    const rule =
+      "the frozen build's verdicts stand, and the fixed build's results are reported beside them as a dated deviation";
+    for (const n of [1, 7, 8]) expect(section(n).toLowerCase(), `section ${n}`).toContain(rule);
+    expect(text).not.toContain("the frozen build's verdicts standing as registered");
+  });
+
+  it("words the Codex headline as map's prediction checked against Codex's own renderer, with K4's figure", () => {
+    // The headline is a block quote: its line markers are not part of the sentence.
+    const s0 = section(0).replace(/ > /g, " ");
+    expect(s0).toContain(
+      "in j/m launch directories Codex cuts or drops a chain file, as predicted by map and checked byte-for-byte against Codex's own `debug prompt-input` renderer (K4: k/n).",
+    );
+    expect(s0).not.toContain("as rendered by Codex's own");
+    // Which k/n follows "K4:", since the first sentence has a k/n of its own.
+    expect(s0).toContain("The k/n after K4 is check K4's single figure over both frames");
+    // Section 10 words census claims about Codex as the headline does, and results.json carries that wording.
+    const res = analyze.analyze({ rowSets: [] });
+    expect(res.wording.codexCensus).toBe(
+      "as predicted by map and checked byte-for-byte against Codex's own `debug prompt-input` renderer (K4: k/n)",
+    );
   });
 
   it("holds a placeholder for every tag-time value and no other", () => {
@@ -1664,7 +1734,10 @@ describe("the pre-registration (study/PREREG.md)", () => {
     git("tag", "study-v1");
     const dist = path.join(repo, "dist");
     mkdirSync(dist);
-    writeFileSync(path.join(dist, "cli.js"), "// built\n");
+    // A build prints its package.json version, as dist/cli.js --version does.
+    const built = (version: string) =>
+      writeFileSync(path.join(dist, "cli.js"), `console.log(${JSON.stringify(version)});\n`);
+    built("1.0.0");
     const frames = path.join(repo, "frames");
     mkdirSync(frames);
     const freeze = (frame: string, label = "study") => {
@@ -1720,6 +1793,15 @@ describe("the pre-registration (study/PREREG.md)", () => {
     freeze("S", "pilot");
     expect(problemsWith()).toMatch(/frame S: labelled pilot, not study/);
     freeze("S");
+    expect(problemsWith()).toBe("");
+    // dist/ built at another version than the tag's package.json: not the frozen build.
+    built("0.9.0");
+    expect(problemsWith()).toMatch(
+      /dist\/cli\.js --version prints 0\.9\.0, not 1\.0\.0 \(study-v1's package\.json\): dist\/ was not built from the frozen sources/,
+    );
+    writeFileSync(path.join(dist, "cli.js"), "process.exit(3);\n");
+    expect(problemsWith()).toMatch(/dist\/cli\.js --version failed/);
+    built("1.0.0");
     expect(problemsWith()).toBe("");
     git("tag", "-d", "study-v1");
     expect(problemsWith()).toMatch(/tag study-v1 does not exist/);
@@ -2456,6 +2538,52 @@ describe("analysis never pools two draws, builds or versions (study/PREREG.md se
     expect(get(res, "S-imp", "O1-content")).toMatchObject({ n: 5 });
   });
 
+  it("gives K4 as one figure over both frames in use, with each frame's own k/n beside it", () => {
+    // S-imp: 5 rows, 2 of them repositories also in the redrawn S-main, one render off.
+    const imp = Array.from({ length: 5 }, (_, i) => ({
+      ...row("S-imp", 1, i, i < 2 ? { repo: `S-main-d2-owner${i}/repo` } : {}),
+      sampleN: 5,
+      ...(i === 4 ? { k4: { pairs: [{ dir: ".", verdict: "OFF", offBy: 1, firstDiff: 0, faults: [] }] } } : {}),
+    }));
+    const res = run(draw1(), draw2(), imp);
+    // A repository drawn into both samples is rendered, and counted, once in each: 10 + 5 pairs, not 13.
+    expect(res.checks.K4).toMatchObject({ k: 14, n: 15 });
+    expect(res.checks.K4.byFrame).toEqual({
+      "S-main": expect.objectContaining({ k: 10, n: 10 }),
+      "S-imp": expect.objectContaining({ k: 4, n: 5 }),
+    });
+    // The split reads the rows in use only: the superseded first draw has no K4 figure.
+    expect(res.checks.K4.byFrame).not.toHaveProperty("S-main-draw1");
+    // Each frame's figure carries its own interval, as the single figure does.
+    expect(res.checks.K4.byFrame["S-imp"]).toEqual(
+      expect.objectContaining({ p: 0.8, lo: expect.any(Number), hi: expect.any(Number) }),
+    );
+    // The single figure never pools two builds, Codex versions, platforms or labels: such frames are analysed apart.
+    for (const [key, value] of [
+      ["dist", "fixed build"],
+      ["codexVersion", "codex-cli 0.160.0"],
+      ["platform", "linux"],
+      ["label", "pilot"],
+    ] as const)
+      expect(
+        () =>
+          run(
+            draw1(),
+            draw2(),
+            imp.map((r) => ({ ...r, [key]: value })),
+          ),
+        key,
+      ).toThrow(new RegExp(`the frames in use differ in ${key} .*K4 is one figure over both frames`));
+    // The superseded first draw feeds no K4 figure, so it is not compared.
+    expect(() =>
+      run(
+        draw1().map((r) => ({ ...r, platform: "linux" })),
+        draw2(),
+        imp,
+      ),
+    ).not.toThrow();
+  });
+
   it("carries the Codex version into results.json, per frame and for K4, and says whether K4 met its expectation", () => {
     const res = run(draw1());
     expect(res.frames["S-main"]).toMatchObject({ codexVersions: ["codex-cli 0.159.2"], dists: ["frozen"] });
@@ -2576,14 +2704,19 @@ describe("behavioural cells: layout, scoring and decisions", () => {
 
   it("voids a trial without its control, with the decoy, without the plugin or on another model", () => {
     const b1 = cell("B1");
+    const stage = path.join(tmp("stage"), "repo");
     const trial = {
       control: "CTXR-c0000000",
       decoy: "CTXR-d0000000",
       tokens: { "AGENTS.md": ["CTXR-a0000001", "CTXR-a0000002"], "@ancestor": ["CTXR-e0000000"] },
+      repo: stage,
+      launchDir: stage,
     };
-    const init = { plugins: ["agents-md@builtin"], model: "pin" };
+    // The instrument's copy, as its manifest.json records it (redacted), and the session's cwd inside it.
+    const copy = { repo: "C:\\ctxreach-probe\\repo", launchDir: "." };
+    const init = { plugins: ["agents-md@builtin"], model: "pin", cwd: "C:\\ctxreach-probe\\repo" };
     const score = (tokens: string[], i = init) =>
-      cellsLib.scoreTrial({ cell: b1, trial, obs: { tokens: new Set(tokens), init: i, files: 1 }, pin: "pin" });
+      cellsLib.scoreTrial({ cell: b1, trial, obs: { tokens: new Set(tokens), init: i, copy, files: 1 }, pin: "pin" });
     expect(score(["CTXR-c0000000", "CTXR-a0000001"])).toMatchObject({
       status: "usable",
       seen: { agents: true, ancestor: false },
@@ -2591,11 +2724,89 @@ describe("behavioural cells: layout, scoring and decisions", () => {
     });
     expect(score(["CTXR-a0000001"]).reasons).toEqual(["positive control not seen"]);
     expect(score(["CTXR-c0000000", "CTXR-d0000000"]).reasons).toEqual(["decoy seen"]);
-    expect(score(["CTXR-c0000000"], { plugins: [], model: "pin" }).status).toBe("void");
-    expect(score(["CTXR-c0000000"], { plugins: ["agents-md@builtin"], model: "other" }).reasons[0]).toMatch(
-      /not the pinned pin/,
-    );
+    expect(score(["CTXR-c0000000"], { ...init, plugins: [] }).reasons).toEqual([
+      "agents-md@builtin not in system/init.plugins",
+    ]);
+    expect(score(["CTXR-c0000000"], { ...init, model: "other" }).reasons).toEqual(["model other, not the pinned pin"]);
     expect(score(["CTXR-c0000000", "CTXR-12345678"]).unknownTokens).toEqual(["CTXR-12345678"]);
+  });
+
+  it("voids a trial whose session ran outside its launch directory, or that cannot say where it ran (K10)", () => {
+    const b3 = cell("B3");
+    const stage = path.join(tmp("stage"), "repo");
+    const trial = {
+      control: "CTXR-c0000000",
+      decoy: "CTXR-d0000000",
+      tokens: {},
+      repo: stage,
+      launchDir: path.join(stage, "packages", "api"),
+    };
+    const copy = { repo: "C:\\ctxreach-probe\\repo", launchDir: "packages/api" };
+    const init = (cwd?: string) => ({ plugins: ["agents-md@builtin"], model: "pin", ...(cwd ? { cwd } : {}) });
+    const score = (obs: Record<string, unknown>) =>
+      cellsLib.scoreTrial({
+        cell: b3,
+        trial,
+        obs: { tokens: new Set(["CTXR-c0000000"]), files: 1, ...obs },
+        pin: "pin",
+      });
+    // In the launch directory of the copy: usable, whatever the case or the separator.
+    expect(score({ init: init("C:\\ctxreach-probe\\repo\\packages\\api"), copy }).status).toBe("usable");
+    expect(score({ init: init("c:/ctxreach-probe/repo/packages/api/"), copy }).status).toBe("usable");
+    // Anywhere else: at the copy's root (the planted fault), or in the staging folder instead of the copy.
+    expect(score({ init: init("C:\\ctxreach-probe\\repo"), copy }).reasons).toEqual([
+      "the session ran in C:\\ctxreach-probe\\repo, not the launch directory C:\\ctxreach-probe\\repo\\packages\\api (system/init.cwd)",
+    ]);
+    expect(score({ init: init(trial.launchDir), copy }).status).toBe("void");
+    // A copy on a POSIX machine is compared as POSIX paths.
+    const posix = { repo: "/tmp/ctxreach-probe/repo", launchDir: "packages/api" };
+    expect(score({ init: init("/tmp/ctxreach-probe/repo/packages/api"), copy: posix }).status).toBe("usable");
+    expect(score({ init: init("/tmp/ctxreach-probe/repo/Packages/api"), copy: posix }).status).toBe("void");
+    // What cannot be checked voids the trial too: no cwd, no copy recorded, no system/init event at all.
+    expect(score({ init: init(), copy }).reasons).toEqual(["system/init gives no cwd"]);
+    expect(score({ init: init("C:\\ctxreach-probe\\repo\\packages\\api") }).reasons[0]).toMatch(
+      /the instrument recorded no copy of the repository \(manifest\.json repo\)/,
+    );
+    expect(score({ copy }).reasons).toEqual(["no system/init event: the session asserts (K10) cannot be made"]);
+  });
+
+  it("scores real Claude Code 2.1.285 recordings of `ctxreach verify` usable, and voids them launched elsewhere (K10)", () => {
+    const recorded = path.join(ROOT, "test", "recorded", "verify");
+    const dirs = readdirSync(recorded).filter((d) => d.startsWith("claude-"));
+    expect(dirs.length).toBeGreaterThanOrEqual(3);
+    for (const d of dirs) {
+      const dir = path.join(recorded, d);
+      const m = JSON.parse(readFileSync(path.join(dir, "manifest.json"), "utf8"));
+      const obs = cellsLib.readObservation("capture", dir);
+      // 2.1.285 lists the built-in as cc-plugin-agents-md@builtin.
+      expect(m.cliVersion, d).toBe("2.1.285");
+      expect(obs.init.plugins, d).toContain("cc-plugin-agents-md@builtin");
+      const stage = path.join(tmp("stage"), "repo");
+      const at = (launch: string) => ({
+        control: m.controlToken,
+        decoy: "CTXR-d0000000",
+        tokens: {},
+        repo: stage,
+        launchDir: launch === "." ? stage : path.join(stage, ...launch.split("/")),
+      });
+      const score = (launch: string) =>
+        cellsLib.scoreTrial({ cell: { observe: {} }, trial: at(launch), obs, pin: m.claude.model });
+      expect(score(m.launchDir), d).toMatchObject({ status: "usable", reasons: [] });
+      // The same session, scored as if it had been asked to launch from another directory.
+      const other = m.launchDir === "." ? "packages/api" : ".";
+      expect(score(other).reasons.join("; "), d).toMatch(/the session ran in .*, not the launch directory/);
+    }
+  });
+
+  it("reads the instrument's copy from its manifest.json", () => {
+    const dir = tmp("obs");
+    writeFileSync(
+      path.join(dir, "manifest.json"),
+      JSON.stringify({ schema: "ctxreach.verify-recording/v1", repo: "C:\\ctxreach-probe\\repo", launchDir: "." }),
+    );
+    expect(cellsLib.readObservation("capture", dir).copy).toEqual({ repo: "C:\\ctxreach-probe\\repo", launchDir: "." });
+    writeFileSync(path.join(dir, "manifest.json"), "not json");
+    expect(cellsLib.readObservation("capture", dir).copy).toBeUndefined();
   });
 
   it("decides B2 by its rule: confirmed, refuted, inconclusive, insufficient, or a failed precondition", () => {
@@ -2708,6 +2919,17 @@ describe("behavioural harness dry run (fake instrument, no agent)", () => {
     const r = dry(["B4"], "drop-control");
     expect(verdicts(r)).toEqual({ B4: "insufficient" });
     expect(r.results[0].arms.trap).toMatchObject({ ran: 1, usable: 0, void: 1 });
+  }, 120_000);
+
+  it("voids every trial whose session ran outside its launch directory (K10, planted)", () => {
+    const r = dry(["B3"], "wrong-cwd");
+    expect(verdicts(r)).toEqual({ B3: "insufficient" });
+    for (const a of ["subdir", "root"]) expect(r.results[0].arms[a], a).toMatchObject({ usable: 0 });
+    const trials = readFileSync(path.join(r.out, "trials.jsonl"), "utf8").trim().split(String.fromCharCode(10));
+    for (const t of trials.map((l) => JSON.parse(l)))
+      expect(t.reasons.join("; "), t.key).toMatch(
+        /the session ran in .*, not the launch directory .* \(system\/init\.cwd\)/,
+      );
   }, 120_000);
 
   it("resumes: a second run adds no trials", () => {
@@ -3147,5 +3369,120 @@ describe("K5: scoring the live runs (k5-score.mjs)", () => {
     const saved = JSON.parse(readFileSync(path.join(dir, "k5-results.json"), "utf8"));
     expect(saved.agreement).toMatchObject({ k: 3, n: 3 });
     expect(saved.selectionSha256).toBe(createHash("sha256").update(tsv).digest("hex"));
+  });
+});
+
+describe("K5 and K6 draw with the study seed from the prereg tag (study/PREREG.md section 8)", () => {
+  /** 40 measured rows of one complete S-main draw: 20 shadowed, 10 importers, 10 without a CLAUDE.md. */
+  const rows = Array.from({ length: 40 }, (_, i) => ({
+    frame: "S-main",
+    id: `S-main-${i}`,
+    index: i,
+    sampleN: 40,
+    repo: `o${String(i).padStart(2, "0")}/r`,
+    commit: "c",
+    status: "measured",
+    faults: [],
+    files: [{ path: "AGENTS.md" }, ...(i < 30 ? [{ path: "CLAUDE.md" }] : [])],
+    pairs: [
+      { dir: ".", type: 1 },
+      { dir: "pkg", type: 2 },
+    ],
+    outcomes: { o1file: { eligible: true, event: i < 20 }, o2: { event: i >= 20 && i < 30, eventDirs: ["pkg"] } },
+  }));
+  const rowsFile = () => {
+    const file = path.join(tmp("k5k6"), "rows.jsonl");
+    writeFileSync(file, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+    return file;
+  };
+  /** A stand-in for seedFromTag: the tag's commit gives seed 0badc0de. */
+  const tagged = (tag: string) => ({ tag, commit: `0badc0de${"0".repeat(32)}`, seed: "0badc0de", prereg: "" });
+  const quiet = { log: () => undefined, err: () => undefined };
+
+  it("takes a study draw's seed from the tag and refuses a typed one; a typed seed is for a pilot draw", () => {
+    expect(seed.drawSeed({ label: "study", seedFromTag: "prereg-v1" }, tagged)).toEqual({
+      seed: "0badc0de",
+      from: `prereg-v1 (0badc0de${"0".repeat(32)})`,
+    });
+    expect(() => seed.drawSeed({ label: "study", seed: "0badc0de" }, tagged)).toThrow(
+      /a study draw takes its seed from the prereg tag \(--seed-from-tag prereg-v1\); a typed --seed is for --label pilot only/,
+    );
+    expect(() => seed.drawSeed({ label: "study" }, tagged)).toThrow(/--seed-from-tag prereg-v1/);
+    expect(() => seed.drawSeed({ label: "pilot", seed: "cf72741e", seedFromTag: "prereg-v1" }, tagged)).toThrow(
+      /one of --seed-from-tag and --seed/,
+    );
+    expect(seed.drawSeed({ label: "pilot", seed: "cf72741e" }, tagged)).toEqual({
+      seed: "cf72741e",
+      from: "typed (pilot)",
+    });
+    expect(() => seed.drawSeed({ label: "pilot", seed: "cf72741" }, tagged)).toThrow();
+    expect(() => seed.drawSeed({ label: "test", seed: "cf72741e" }, tagged)).toThrow(/--label study or pilot/);
+    // Before the tag exists, no study seed (the real resolver).
+    expect(() => seed.drawSeed({ label: "study", seedFromTag: "no-such-tag-here" })).toThrow(/does not exist/);
+  });
+
+  it("K5: k5-select.mjs draws with the tag's seed, and refuses a typed seed for a study draw", () => {
+    const file = rowsFile();
+    const dir = path.dirname(file);
+    const out = path.join(dir, "k5.tsv");
+    expect(
+      k5.main(["--rows", file, "--seed-from-tag", "prereg-v1", "--out", out], { seedResolver: tagged, ...quiet }),
+    ).toBe(0);
+    const want = k5.selectK5(k5.readRowFiles([file]), "0badc0de");
+    expect(want).toHaveLength(25);
+    expect(readFileSync(out, "utf8")).toBe(
+      want.map((p: Record<string, string>) => [p.id, p.stratum, p.repo, p.commit, p.launchDir].join("\t")).join("\n") +
+        "\n",
+    );
+    // A typed seed: refused for a study draw, before anything is drawn or written.
+    const typed = path.join(dir, "typed.tsv");
+    const cli = spawnSync(
+      process.execPath,
+      [path.join(ROOT, "study", "census", "k5-select.mjs"), "--rows", file, "--seed", "0badc0de", "--out", typed],
+      { encoding: "utf8" },
+    );
+    expect(cli.status).toBe(2);
+    expect(cli.stderr).toMatch(/refusing: a study draw takes its seed from the prereg tag/);
+    expect(existsSync(typed)).toBe(false);
+    // A pilot draw may take a typed seed.
+    expect(k5.main(["--rows", file, "--seed", "cf72741e", "--label", "pilot", "--out", typed], quiet)).toBe(0);
+    expect(existsSync(typed)).toBe(true);
+  });
+
+  it("K6: handcheck.mjs draw draws with the tag's seed and the registered n, and refuses a typed seed for a study draw", () => {
+    const file = rowsFile();
+    const dir = path.dirname(file);
+    const out = path.join(dir, "pairs.json");
+    const drawn = k6cli.drawCommand(["--rows", file, "--seed-from-tag", "prereg-v1", "--out", out], {
+      seedResolver: tagged,
+    });
+    expect(drawn).toMatchObject({ seed: "0badc0de", from: `prereg-v1 (0badc0de${"0".repeat(32)})` });
+    expect(JSON.parse(readFileSync(out, "utf8"))).toEqual(k6.drawPairs(k6cli.readRowFiles([file]), "0badc0de", 30));
+    expect(() =>
+      k6cli.drawCommand(["--rows", file, "--seed-from-tag", "prereg-v1", "--n", "15", "--out", out], {
+        seedResolver: tagged,
+      }),
+    ).toThrow(/a study draw is of the registered 30 pairs, not 15/);
+    const typed = path.join(dir, "typed.json");
+    const cli = spawnSync(
+      process.execPath,
+      [
+        path.join(ROOT, "study", "handcheck", "handcheck.mjs"),
+        "draw",
+        "--rows",
+        file,
+        "--seed",
+        "0badc0de",
+        "--out",
+        typed,
+      ],
+      { encoding: "utf8" },
+    );
+    expect(cli.status).toBe(1);
+    expect(cli.stderr).toMatch(/a study draw takes its seed from the prereg tag/);
+    expect(existsSync(typed)).toBe(false);
+    expect(
+      k6cli.drawCommand(["--rows", file, "--seed", "cf72741e", "--label", "pilot", "--n", "5", "--out", typed]).pairs,
+    ).toHaveLength(5);
   });
 });

@@ -14,6 +14,12 @@ import path from "node:path";
 import { wilson } from "../census/lib/stats.mjs";
 
 export const TOKEN = /CTXR-[0-9a-f]{8}/g;
+/**
+ * The built-in AGENTS.md plugin as system/init.plugins lists it: Claude Code
+ * 2.1.280 as `agents-md@builtin`, 2.1.285 (the study's pin) as
+ * `cc-plugin-agents-md@builtin`; `ctxreach verify` accepts the same two.
+ */
+export const AGENTS_MD_PLUGINS = ["agents-md@builtin", "cc-plugin-agents-md@builtin"];
 export const CONTROL_RULE = ".claude/rules/ctxreach-cell-control.md";
 export const DECOY = "ctxreach-cell-decoy.md";
 const INSTRUCTION =
@@ -136,15 +142,34 @@ function initOf(e) {
 }
 
 /**
+ * The instrument's copy of the repository, as its `manifest.json` records it
+ * (`ctxreach verify` and `ctxreach probe` both write one): `repo`, the copy's
+ * path as it appears in the trial files (a placeholder in a redacted
+ * recording), and `launchDir`, relative to it. Undefined when there is none.
+ */
+function copyOf(saveDir) {
+  const file = path.join(saveDir, "manifest.json");
+  if (!existsSync(file)) return undefined;
+  try {
+    const m = JSON.parse(readFileSync(file, "utf8"));
+    return typeof m.repo === "string" && m.repo ? { repo: m.repo, launchDir: m.launchDir } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * What the instrument observed, from its saved files:
  * - echo: the probe recording's trial transcripts (the model's own words);
  * - capture: every recorded POST to /v1/messages (what reached the endpoint),
- *   plus any stream-json init event saved beside it.
+ *   plus any stream-json init event saved beside it;
+ * - both: the copy of the repository the session ran in (`manifest.json`).
  */
 export function readObservation(instrument, saveDir) {
   const tokens = new Set();
   let init;
   if (!existsSync(saveDir)) return { tokens, init, files: 0 };
+  const copy = copyOf(saveDir);
   const files = walk(saveDir).filter((f) => f.endsWith(".jsonl"));
   for (const rel of files) {
     for (const e of jsonLines(path.join(saveDir, ...rel.split("/")))) {
@@ -160,18 +185,57 @@ export function readObservation(instrument, saveDir) {
       }
     }
   }
-  return { tokens, init, files: files.length };
+  return { tokens, init, files: files.length, ...(copy ? { copy } : {}) };
 }
 
-/** Score one trial against the harness's tokens. */
+/**
+ * K10's cwd assert (study/PREREG.md section 8): the session ran in the
+ * trial's launch directory, in the instrument's copy of the repository. The
+ * instrument copies the staging repository and launches from the same
+ * relative directory, so the expected cwd is the copy's path (from its
+ * manifest.json) joined with the launch directory relative to the staging
+ * repository; paths are compared as the copy's platform spells them (Windows:
+ * either separator, any case). Returns the reason the trial is void, or
+ * undefined.
+ */
+function cwdProblem(trial, obs) {
+  const cwd = obs.init.cwd;
+  if (typeof cwd !== "string" || !cwd) return "system/init gives no cwd";
+  const copy = obs.copy?.repo;
+  if (typeof copy !== "string" || !copy)
+    return "the instrument recorded no copy of the repository (manifest.json repo), so the session's cwd cannot be checked";
+  const rel = path.relative(trial.repo, trial.launchDir).split(path.sep).filter(Boolean);
+  const win = /^[A-Za-z]:[\\/]|^\\\\/.test(copy);
+  const api = win ? path.win32 : path.posix;
+  const expected = api.join(copy, ...rel);
+  const key = (p) => {
+    const r = api.normalize(p).replace(/[\\/]+$/, "");
+    return win ? r.toLowerCase() : r;
+  };
+  if (key(cwd) !== key(expected))
+    return `the session ran in ${cwd}, not the launch directory ${expected} (system/init.cwd)`;
+  return undefined;
+}
+
+/**
+ * Score one trial against the harness's tokens. A trial is void when the
+ * control is missing, the decoy is seen, or a session assert of K10 fails:
+ * `agents-md@builtin` in system/init.plugins, the pinned model (live runs),
+ * and the session's cwd at the launch directory. A trial whose instrument
+ * saved no system/init event is void too: none of those asserts can be made.
+ */
 export function scoreTrial({ cell, trial, obs, pin }) {
   const reasons = [];
   if (obs.files === 0) reasons.push("the instrument saved no observation");
   if (!obs.tokens.has(trial.control)) reasons.push("positive control not seen");
   if (obs.tokens.has(trial.decoy)) reasons.push("decoy seen");
-  if (obs.init) {
-    if (!obs.init.plugins.includes("agents-md@builtin")) reasons.push("agents-md@builtin not in system/init.plugins");
+  if (!obs.init) reasons.push("no system/init event: the session asserts (K10) cannot be made");
+  else {
+    if (!obs.init.plugins.some((p) => AGENTS_MD_PLUGINS.includes(p)))
+      reasons.push("agents-md@builtin not in system/init.plugins");
     if (pin && obs.init.model !== pin) reasons.push(`model ${obs.init.model}, not the pinned ${pin}`);
+    const where = cwdProblem(trial, obs);
+    if (where) reasons.push(where);
   }
   const seen = {};
   const partial = {};

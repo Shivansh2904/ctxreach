@@ -9,7 +9,8 @@
 // runs `ctxreach verify` (2 capture trials) on each (repository, launch
 // directory), and k5-score.mjs turns those runs into k5-results.json.
 //
-// Usage: node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <hex8> [--out k5.tsv]
+// Usage: node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed-from-tag prereg-v1 [--out k5.tsv]
+// The seed comes from the prereg tag; a typed --seed <hex8> is refused unless --label pilot.
 // The TSV's columns: id, stratum, repo, commit, launch directory.
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -17,6 +18,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { rowsInUse } from "./lib/draws.mjs";
 import { draw } from "./lib/prng.mjs";
+import { drawSeed } from "./seed.mjs";
 
 export const K5_STRATA = [
   { name: "shadowed", n: 12, pick: (r) => r.outcomes.o1file?.event === true, launch: () => "." },
@@ -74,18 +76,44 @@ export function selectK5(rows, seed) {
   return out.map((p, i) => ({ id: `K5-${String(i + 1).padStart(2, "0")}`, ...p }));
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const args = process.argv.slice(2);
+/**
+ * The command line. A study draw takes the seed from the prereg tag
+ * (`--seed-from-tag prereg-v1`) and refuses a typed `--seed`, which is for a
+ * pilot draw (`--label pilot`) only (seed.mjs drawSeed). Returns the exit
+ * code: 0 drawn, 2 refused or misused. `seedResolver` stands in for
+ * seedFromTag in tests.
+ */
+export function main(args, { seedResolver, log = (l) => process.stdout.write(l), err = (l) => console.error(l) } = {}) {
+  const opt = (name) => {
+    const i = args.indexOf(name);
+    return i >= 0 ? args[i + 1] : undefined;
+  };
   const files = args.flatMap((a, i) => (a === "--rows" ? [args[i + 1]] : []));
-  const seedAt = args.indexOf("--seed");
-  const outAt = args.indexOf("--out");
-  if (!files.length || seedAt < 0) {
-    console.error("usage: node study/census/k5-select.mjs --rows rows.jsonl [...] --seed HEX8 [--out k5.tsv]");
-    process.exit(2);
+  if (!files.length) {
+    err(
+      "usage: node study/census/k5-select.mjs --rows rows.jsonl [...] (--seed-from-tag prereg-v1 | --seed HEX8 --label pilot) [--out k5.tsv]",
+    );
+    return 2;
   }
-  const picked = selectK5(readRowFiles(files), args[seedAt + 1]);
+  let seed, from;
+  try {
+    ({ seed, from } = drawSeed(
+      { label: opt("--label") ?? "study", seed: opt("--seed"), seedFromTag: opt("--seed-from-tag") },
+      seedResolver,
+    ));
+  } catch (e) {
+    err(`refusing: ${e.message} (study/PREREG.md section 8, K5)`);
+    return 2;
+  }
+  const picked = selectK5(readRowFiles(files), seed);
   const tsv = picked.map((p) => [p.id, p.stratum, p.repo, p.commit, p.launchDir].join("\t")).join("\n") + "\n";
-  if (outAt >= 0) writeFileSync(args[outAt + 1], tsv);
-  process.stdout.write(tsv);
-  for (const s of K5_STRATA) console.error(`${s.name}: ${picked.filter((p) => p.stratum === s.name).length}/${s.n}`);
+  if (opt("--out")) writeFileSync(opt("--out"), tsv);
+  log(tsv);
+  err(`seed ${seed} from ${from}`);
+  for (const s of K5_STRATA) err(`${s.name}: ${picked.filter((p) => p.stratum === s.name).length}/${s.n}`);
+  return 0;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = main(process.argv.slice(2));
 }

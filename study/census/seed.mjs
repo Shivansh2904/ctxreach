@@ -10,6 +10,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkSeed } from "./lib/prng.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -53,6 +54,31 @@ export function seedFromTag(tag = "prereg-v1", cwd = ROOT) {
       `${tag} (${commit}): study/PREREG.md still holds ${left.length} placeholder(s) (${left.slice(0, 3).join(", ")}); run study/prereg.mjs stamp before tagging`,
     );
   return { tag, commit, seed: commit.slice(0, 8), prereg };
+}
+
+/**
+ * The seed of a draw made after the census (K5's repositories, K6's pairs):
+ * for a study draw, the tag's seed (`--seed-from-tag prereg-v1`), as
+ * sample.mjs and run-census.mjs take it; a typed `--seed` only for a pilot
+ * draw (`--label pilot`), so a mistyped seed can never draw a study set.
+ * Returns { seed, from }; throws on a typed seed for a study draw, on both or
+ * neither, on another label, and when the tag gives no seed. `resolve` is
+ * seedFromTag (tests pass a stand-in).
+ */
+export function drawSeed({ label = "study", seed, seedFromTag: tag }, resolve = seedFromTag) {
+  if (label !== "study" && label !== "pilot") throw new Error(`--label study or pilot, not ${label}`);
+  if (seed !== undefined && tag !== undefined)
+    throw new Error("give one of --seed-from-tag and --seed (with --label pilot), not both");
+  if (tag === undefined) {
+    if (label === "study")
+      throw new Error(
+        "a study draw takes its seed from the prereg tag (--seed-from-tag prereg-v1); a typed --seed is for --label pilot only",
+      );
+    if (seed === undefined) throw new Error("give --seed HEX8 for a pilot draw");
+    return { seed: checkSeed(seed), from: "typed (pilot)" };
+  }
+  const tagged = resolve(tag);
+  return { seed: checkSeed(tagged.seed), from: `${tag} (${tagged.commit})` };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

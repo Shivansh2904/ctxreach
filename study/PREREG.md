@@ -32,13 +32,18 @@ written after the tag (section 13, step 9) and only reads those two files:
 > Same repo, different instructions. In k/n (x%, [lo, hi]) of public
 > repositories with an AGENTS.md, Claude Code starts with under half of that
 > file's text; in j/m launch directories Codex cuts or drops a chain file, as
-> rendered by Codex's own `debug prompt-input`. And a personal
+> predicted by map and checked byte-for-byte against Codex's own
+> `debug prompt-input` renderer (K4: k/n). And a personal
 > `~/.claude/CLAUDE.md` switched AGENTS.md off in a/u vs b/v runs depending
 > only on where the repository lives.
 
-- k/n is outcome `O1-content` in frame S-main (raw), with its Wilson 95%
-  interval.
+- k/n in the first sentence is outcome `O1-content` in frame S-main (raw),
+  with its Wilson 95% interval.
 - j/m is outcome `P1-pairs` in S-main (raw).
+- The k/n after K4 is check K4's single figure over both frames (section
+  8): its byte-exact pairs over its rendered pairs, `checks.K4` in
+  `results.json`; not its per-frame split, and not the k/n of the first
+  sentence.
 - u and v are the usable trials of cell B2 arms A1 and A2 (section 9: void
   trials are not counted); a and b are those of them in which the root
   `AGENTS.md` did not reach the model endpoint.
@@ -54,17 +59,21 @@ written after the tag (section 13, step 9) and only reads those two files:
    the dependencies locked in that commit's `package-lock.json`.
    The build's fingerprint (SHA-256 of every file in `dist/`, then SHA-256
    of that listing; `node study/census/dist-digest.mjs`) is
-   `{{stamp:dist.digest}}`. A study census run names it with
+   `{{stamp:dist.digest}}`. `node study/prereg.mjs stamp` refuses to stamp
+   unless the working tree's `src/`, `package.json`, `package-lock.json`,
+   `tsup.config.ts` and `tsconfig.json` equal the tag's and
+   `dist/cli.js --version` prints the version of the tag's `package.json`;
+   `dist/` is built by `npm run build` right before the stamp
+   (`study/census/README.md`). A study census run names the build with
    `--expect-dist <digest>`: `run-census.mjs` refuses a study run without
    the flag or with another digest than this one, and any run on another
    build than the one it names; every census row records its build's
    digest. A `map` defect found after the freeze (by K4, K5 or K6, section 8, or in
-   any other way) is appended to Deviations and fixed in a new build. The
-   new build is run over the same samples; each build's rows are analysed by
-   their own `analyze.mjs` run (it refuses rows of two builds in one frame),
-   and both results are reported. The frozen build's results stay the
-   registered ones and decide the verdicts; the fixed build's are reported
-   beside them as that deviation's result.
+   any other way) is appended to Deviations, dated, and fixed in a new
+   build. The new build is run over the same samples; each build's rows are
+   analysed by their own `analyze.mjs` run (it refuses rows of two builds
+   in one frame). The frozen build's verdicts stand, and the fixed build's
+   results are reported beside them as a dated deviation.
 2. **Agent versions.** Claude Code **2.1.285** is modelled by `map`
    (`--claude-version`; a study census run refuses any other value) and
    pinned for the lab cells (a scratch install run
@@ -183,8 +192,14 @@ repositories are kept (others are counted).
 - **Redraw.** A sample that loses more than 10% of its draws (excluded rows
   and rows with a fault, over the n units drawn: the sample's size as its
   header records it, which `run-census.mjs` stamps on every row as
-  `sampleN`; `redrawRequired` in `results.json`) is redrawn once, with the
-  same stream and n and seed + 1
+  `sampleN`) is redrawn once. The share it is decided on is
+  `excludedShare` in `results.json`, over `sampleN` (despite its name, it
+  counts the rows with a fault as well as the excluded ones), and a draw 1
+  over 10% is marked `redrawRequired` in `results.json`; beside them each
+  frame gives its n as `drawn` in `results.json`, its rows as `rowsGiven`
+  in `results.json`, and whether every unit has its row as `complete` in
+  `results.json` (always true for a study draw, which is refused
+  otherwise). The redraw uses the same stream and n and seed + 1
   (the seed as a 32-bit number plus 1, modulo 2^32, as 8 hex digits;
   `sample.mjs --seed-offset 1`): S-main from the whole frame S, and S-imp
   from S-imp less the S-main draw it was first drawn against (S-main's first
@@ -285,7 +300,9 @@ Every outcome is a proportion k/n with a Wilson 95% interval, per frame, in
 three variants: **raw**; **deduplicated** by the root `AGENTS.md` blob (the
 first drawn row per blob); and **owner-capped** (at most 5 repositories per
 owner, the first drawn). Frames, draws, builds, versions and operating
-systems are never pooled. Terms used below:
+systems are never pooled. K4 is the one figure taken over both frames
+(section 8): a check, not an outcome, reported with each frame's own k/n
+beside it. Terms used below:
 
 - **Root `AGENTS.md`**: the file at the repository root named exactly
   `AGENTS.md` (case-sensitive), or a symlink there to a file inside the
@@ -341,8 +358,9 @@ a pre-stated value reaches it: H1 is confirmed at a lower bound of exactly
 0.2, and a hit may touch either end of its range; refuted and miss need a
 bound strictly beyond. When the frame has no such outcome, or its n is 0,
 there is no interval and the verdict is `no-data`, none of the words
-above. With a redraw (section 4), the redrawn sample decides; after a
-`map` fix (section 1 item 1), the frozen build decides.
+above. With a redraw (section 4), the redrawn sample decides. After a
+`map` fix (section 1 item 1), the frozen build's verdicts stand, and the
+fixed build's results are reported beside them as a dated deviation.
 
 Every other figure in `results.json` is secondary and has no decision
 rule: O1-content-shingle, Codex's share of the root `AGENTS.md`,
@@ -360,21 +378,22 @@ adjudicated in the open as `map` (a `map` defect), as the other side (the
 renderer, the capture or the reader) or as the rules (`docs/rules.md` is
 silent or ambiguous). A disagreement adjudicated `map` is appended to
 Deviations with the outcomes it could move, and section 1 item 1 applies: a
-fixed build is run over the same samples and both results are reported,
-the frozen build's verdicts standing as registered.
+fixed build is run over the same samples; the frozen build's verdicts
+stand, and the fixed build's results are reported beside them as a dated
+deviation.
 
 | Check | What | Pass rule |
 |---|---|---|
 | K1 known answers | Every fixture (`test/fixtures/*` and `study/census/known-answer-fixtures/*`), with an answer derived by hand from `docs/rules.md` (`study/census/known-answers.json`), through the census pipeline with only the network replaced (`study/census/known-answer.mjs`) | n/n: every fixture has an answer and every answer a fixture, and every fixture matches its answer (`k1Verdict`). A fixture listed as a known `map` defect still fails, and `prereg.mjs stamp` refuses while any is listed |
 | K2 planted faults | Each of the 16 plants of `study/census/lib/plants.mjs` switched off in turn (`study/census/plant-census-faults.mjs`): the 11 outcome detectors (O1-content, O1-content-shingle, O1-file, O2, P1, O4, O5, O6, O7, O8 and K3's input) and 5 pipeline steps (import targets, symlinks, type-2 launch directories, type-3 launch directories, the symlink correction). First, `map` in process (the census's runner) must reproduce the spawned CLI's K1 result fixture for fixture | every plant acts at least once and makes K1 lose a fixture it passed without plants (exit 0); a plant that never acts, or a difference between the two runners, is an instrument failure (exit 2); a plant K1 does not catch fails K2 (exit 1) |
 | K3 census consistency | The regex version of O1-file (a root `CLAUDE.md` whose text, or link text for a symlink, lacks `@AGENTS.md`; every measured repository counts) in S-main's rows in use (`K3-regex-O1-file` in `results.json`), against the frame's own proportion (K3.claude - K3.claudeImport) / \|S\| (`study/census/consistency.mjs`; `checks.K3`) | the census proportion lies inside the sample's Wilson 95% interval |
-| K4 map vs Codex's renderer | For every sampled (repository, launch directory) pair of types 1 and 2 in the rows in use that have no fault (a row with a fault is not used, section 4; K4's own render faults, below, are recorded on its pairs and are not row faults), the `agents_md.instructions` block of `codex debug prompt-input` 0.159.2 against `map`'s predicted bytes, rendered twice each with a throwaway `CODEX_HOME`, no credentials, proxies at a closed port, and a fresh control token (`study/census/codex-check.mjs`) | A validity estimate, no pass threshold: k/n byte-exact with its Wilson interval (`checks.K4`), reported as found. The registered expectation is at least 98% (`k4.expectedAtLeast`); `results.json` says whether k/n reached it (`checks.K4.expectationMet`), and falling short stops nothing. Every mismatch is listed and adjudicated; renders that differ, lose the token, render for another directory or change shape are instrument faults, listed and counted in n but not in k |
-| K5 map vs Claude (live, $0) | 25 measured repositories from the rows in use that have no fault, by a draw with the study seed within strata, each stratum drawn in turn (stream `K5\|<stratum>`) from the repositories not drawn yet, each repository once (one in two samples is one repository, with its row from the first sample by name that qualifies): 12 where O1-file fires (launched at the root), 8 where O2 fires (launched from the first type-2 directory where it fires), and 5 whose root `AGENTS.md` Claude receives at root launch and whose root holds no `CLAUDE.md`-family file (launched at the root) (`study/census/k5-select.mjs`, which numbers them K5-01 to K5-25); one `ctxreach verify --agent claude --json` run each with 2 capture trials, on Claude Code 2.1.285 | A validity estimate, no pass threshold: agreement k/n over decided cells, as `ctxreach verify` scores them, summed over the runs, with its Wilson interval, written to `k5-results.json` by `study/census/k5-score.mjs` (which refuses a missing run, another agent, instrument or Claude Code version, and another number of trials; a run voided by an instrument fault is listed and left out of n), reported as found. Every disagreement is adjudicated (`map`, the capture, or the rules) |
-| K6 blind second reader | A fresh reader derives delivery by hand for 30 (repository, launch directory) pairs from `docs/rules.md` alone: 30 measured repositories from the rows in use, by seeded draw, then one type-1 or type-2 launch directory in each; sheets carry the files and never `map`'s answers, and the key taken from the census rows is hashed before the reader starts (`study/handcheck/PROTOCOL.md`) | A validity estimate, no pass threshold: x/30 pairs, and per agent, each with its Wilson interval, reported as found. Every disagreement adjudicated in the open (reader, `map` or rules) |
+| K4 map vs Codex's renderer | For every sampled (repository, launch directory) pair of types 1 and 2 in the rows in use that have no fault (a row with a fault is not used, section 4; K4's own render faults, below, are recorded on its pairs and are not row faults), the `agents_md.instructions` block of `codex debug prompt-input` 0.159.2 against `map`'s predicted bytes, rendered twice each with a throwaway `CODEX_HOME`, no credentials, proxies at a closed port, and a fresh control token (`study/census/codex-check.mjs`) | A validity estimate, no pass threshold: k/n byte-exact with its Wilson interval (`checks.K4`), reported as found. K4 is a single figure over both frames: one k/n over the pairs of S-main's and S-imp's rows in use, so a repository drawn into both samples is rendered, and counted, once in each; each frame's own k/n, with its Wilson interval, is reported beside it (`checks.K4.byFrame`) and decides nothing. `analyze.mjs` refuses frames in use that differ in build, Codex version or platform, so the single figure pools none of them. The registered expectation is at least 98% (`k4.expectedAtLeast`), on the single figure; `results.json` says whether k/n reached it (`checks.K4.expectationMet`), and falling short stops nothing. Every mismatch is listed and adjudicated; renders that differ, lose the token, render for another directory or change shape are instrument faults, listed and counted in n but not in k |
+| K5 map vs Claude (live, $0) | 25 measured repositories from the rows in use that have no fault, by a draw with the study seed (`k5-select.mjs --seed-from-tag prereg-v1`, which refuses a typed seed for a study draw) within strata, each stratum drawn in turn (stream `K5\|<stratum>`) from the repositories not drawn yet, each repository once (one in two samples is one repository, with its row from the first sample by name that qualifies): 12 where O1-file fires (launched at the root), 8 where O2 fires (launched from the first type-2 directory where it fires), and 5 whose root `AGENTS.md` Claude receives at root launch and whose root holds no `CLAUDE.md`-family file (launched at the root) (`study/census/k5-select.mjs`, which numbers them K5-01 to K5-25); one `ctxreach verify --agent claude --json` run each with 2 capture trials, on Claude Code 2.1.285 | A validity estimate, no pass threshold: agreement k/n over decided cells, as `ctxreach verify` scores them, summed over the runs, with its Wilson interval, written to `k5-results.json` by `study/census/k5-score.mjs` (which refuses a missing run, another agent, instrument or Claude Code version, and another number of trials; a run voided by an instrument fault is listed and left out of n), reported as found. Every disagreement is adjudicated (`map`, the capture, or the rules) |
+| K6 blind second reader | A fresh reader derives delivery by hand for 30 (repository, launch directory) pairs from `docs/rules.md` alone: 30 measured repositories from the rows in use, by a draw with the study seed (`handcheck.mjs draw --seed-from-tag prereg-v1`, which refuses a typed seed, or another number of pairs, for a study draw), then one type-1 or type-2 launch directory in each; sheets carry the files and never `map`'s answers, and the key taken from the census rows is hashed before the reader starts (`study/handcheck/PROTOCOL.md`) | A validity estimate, no pass threshold: x/30 pairs, and per agent, each with its Wilson interval, reported as found. Every disagreement adjudicated in the open (reader, `map` or rules) |
 | K7 GET only | Every network request goes through one client that refuses any other method before sending and counts the refusals (`study/census/lib/client.mjs`) | every script prints "non-GET attempts: 0" |
 | K8 planted pass | Before every conformance battery, a wrong budget (`--codex-max-bytes 30000`), a wrong mode or a reversed order run | must DISAGREE; a battery whose planted pass agrees is an instrument fault |
 | K9 positive control | A must-appear token in a `.claude/rules/` file at the launch directory of every Claude trial, and a decoy no rule loads | a missing control voids the trial; decoy 0/N |
-| K10 session asserts | `system/init.plugins` contains `agents-md@builtin`; `system/init.model` equals the pin; the rendered `cwd` equals the launch directory; `CODEX_HOME` inside the sandbox | a failed assert voids the trial |
+| K10 session asserts | Four asserts, each where it applies. (a) `system/init.plugins` contains `agents-md@builtin` (Claude Code 2.1.285 lists it as `cc-plugin-agents-md@builtin`; both spellings are accepted) and (b) `system/init.model` equals the pin: every Claude Code session, that is every lab-cell trial (`study/behavioural/lib.mjs` `scoreTrial`; the model on live runs) and every K5 run (`ctxreach verify`). (c) The session's `cwd` equals the launch directory: the same sessions; `scoreTrial` compares `system/init.cwd` with the launch directory in the instrument's copy of the repository, as the instrument's `manifest.json` records the copy, and `ctxreach verify` makes the same comparison for K5. A Codex render (K4) must be for its launch directory, or it is an instrument fault (K4 above). (d) `CODEX_HOME` is a throwaway folder, never the user's: every Codex render, where it holds by construction (`codex-check.mjs` gives each K4 render a fresh folder in the unit's own work folder; `ctxreach verify --agent codex`, for C1 to C6, refuses to start without one inside its copy) | a failed assert voids the trial: a lab trial in `scoreTrial`; in a K5 run, `ctxreach verify` makes the trial a fault, which voids the run, and a voided run is left out of K5's n. A lab trial whose instrument saved no `system/init` event is void, since (a) to (c) cannot be made |
 
 **What K1 covers.** K1's 55 answers cover 49 distinct inputs. K1 serves a
 fixture's `repo/` folder (and its `tree.json`, if any) with empty homes,
@@ -437,13 +456,18 @@ cells (fixtures, arms, tokens, observables and rules), and
 `study/behavioural/run-cells.mjs` runs them. Every trial is one instrument
 run on a fresh copy with the harness's own tokens at the head and tail of
 each instruction file, a positive control and a decoy. A trial is **void**
-when the control is missing, the decoy is echoed, or a session assert fails;
-void trials are reported and never replaced. Thresholds are fractions of
-usable trials; an arm with fewer than 80% of its planned trials usable is
-**insufficient**. A cell without a refute rule whose confirm rule is not
+when the control is missing, the decoy is echoed, or a session assert fails
+(K10, section 8); void trials are reported and never replaced. Thresholds
+are fractions of usable trials; an arm with fewer than 80% of its planned
+trials usable is **insufficient**, and a cell with such an arm in one of
+its rules is insufficient. A cell without a refute rule whose confirm rule is not
 met is reported **not confirmed** (`not-confirmed` in `cells-results.json`),
 never **refuted**. Only B2 has a refute rule, so only B2 can be refuted; B1,
 B3, B4 and B6 are confirmed or not confirmed (or insufficient).
+B2's arms A3 and A4 are reported only, as fractions with Wilson bounds;
+they move no verdict: no rule names them, and B2 is decided on A0, A1 and
+A2 alone, whatever A3 and A4 show or however few of their trials are
+usable.
 
 | Cell | Arms x trials | Instrument | Rule (fractions of usable trials) |
 |---|---|---|---|
@@ -494,7 +518,9 @@ before every billed batch.
 - Raw, blob-deduplicated and owner-capped variants for every outcome; the
   raw variant decides the hypotheses.
 - Never pooled across frames, draws, builds, agent versions or operating
-  systems (`analyze.mjs` refuses such rows, sections 1 and 4); every figure
+  systems (`analyze.mjs` refuses such rows, sections 1 and 4), save check
+  K4's single figure over both frames, which has each frame's own beside it
+  (section 8); every figure
   carries its agent versions, operating system and date (`frames` and
   `generatedAt` in `results.json`).
 - Behavioural cells: per arm, both fractions, with Wilson bounds beside
@@ -505,8 +531,12 @@ before every billed batch.
   `k5-results.json` (`study/census/k5-score.mjs`) or `k6-results.json`
   (`study/handcheck/handcheck.mjs score`); none is typed by hand. The k/n of
   the census wording below is K5's, from `k5-results.json`.
-- Wording: Codex claims read "as rendered by `codex debug prompt-input`
-  <version>; the model was not run". Capture claims read "delivered to the
+- Wording: claims about what a Codex render showed (K4's mismatches, C1 to
+  C6) read "as rendered by `codex debug prompt-input` <version>; the model
+  was not run". Census claims about Codex read, as the headline does, "as
+  predicted by map and checked byte-for-byte against Codex's own
+  `debug prompt-input` renderer (K4: k/n)", with K4's single figure.
+  Capture claims read "delivered to the
   model endpoint (custom base URL, gateway path)", as in section 9. Census
   claims about Claude read "predicted by ctxreach map for Claude Code
   <version> on a fresh machine with default settings, not a live run;
@@ -679,14 +709,14 @@ check` fails when this block does not hold every tag-time value once.
    excluding S-main's first draw), run with `run-census.mjs` into a rows
    file of its own, and `analyze.mjs` is run again with both draws' rows.
    K3 from the rows in use and the frozen counts.
-6. Lab cells at $0 (B1, B2, B3, B4, B6), and K5: `k5-select.mjs` from the
-   rows in use, one `ctxreach verify` run per drawn repository, then
-   `k5-score.mjs` writes `k5-results.json`. Then the billed cells (M1, E0,
-   B7).
-7. K6 by a fresh reader: `study/handcheck/handcheck.mjs draw` with the
-   seed, `sheets`, the reader's answers, then `score` and the adjudication
-   (`study/handcheck/PROTOCOL.md`). K4, K5 and K6 adjudications of `map`
-   go to Deviations (section 8).
+6. Lab cells at $0 (B1, B2, B3, B4, B6), and K5: `k5-select.mjs` with
+   `--seed-from-tag prereg-v1` from the rows in use, one `ctxreach verify`
+   run per drawn repository, then `k5-score.mjs` writes `k5-results.json`.
+   Then the billed cells (M1, E0, B7).
+7. K6 by a fresh reader: `study/handcheck/handcheck.mjs draw` with
+   `--seed-from-tag prereg-v1`, `sheets`, the reader's answers, then
+   `score` and the adjudication (`study/handcheck/PROTOCOL.md`). K4, K5
+   and K6 adjudications of `map` go to Deviations (section 8).
 8. `analyze.mjs` writes the final `results.json`; deviations are appended
    below, and `node study/prereg.mjs check --tagged` passes.
 9. A script written after the tag fills the headline sentence of section 0

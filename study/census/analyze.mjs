@@ -303,7 +303,9 @@ const usable = (rows) => rows.filter((r) => r.status === "measured" && !(r.fault
 /**
  * Throws (from lib/draws.mjs) on rows that would pool two draws of a frame,
  * two samples, builds, agent versions or platforms, on a unit given twice, and
- * on a study draw with fewer rows than the n drawn.
+ * on a study draw with fewer rows than the n drawn; and on frames in use that
+ * differ in build, Codex version, platform or label, which K4's one figure
+ * over both frames would pool.
  */
 export function analyze({ rowSets, k3Manifest, label = "study" }) {
   const sets = splitDraws(
@@ -371,7 +373,26 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
   });
   // The checks read the usable rows in use: a redrawn sample's first draw is left out of K3 and K4, as of every
   // verdict, and so is a row with a fault (K4's own render faults are on the row's k4 pairs, not row faults).
+  // K4 is the one figure taken over both frames (a repository drawn into both samples is rendered, and counted,
+  // once in each); each frame's own k/n is reported beside it (`byFrame`) and decides nothing. Since it pools the
+  // frames in use, they must share one build, Codex version, platform and label (lib/draws.mjs holds each frame
+  // to one of each); frames that differ are analysed apart.
+  for (const key of ["dist", "codexVersion", "platform", "label"]) {
+    const of = (r) => r[key] ?? (key === "label" ? label : null);
+    const values = [...new Set(inUse.flatMap((s) => s.rows.map((r) => JSON.stringify(of(r)))))];
+    if (values.length > 1)
+      throw new Error(
+        `the frames in use differ in ${key} (${values.join(", ")}): K4 is one figure over both frames, so frames of two of them are analysed apart`,
+      );
+  }
   const checks = { K4: k4Summary(inUse.flatMap((s) => usable(s.rows))) };
+  if (checks.K4)
+    checks.K4.byFrame = Object.fromEntries(
+      inUse.flatMap((s) => {
+        const own = k4Summary(usable(s.rows));
+        return own ? [[s.name, { k: own.k, n: own.n, p: own.p, lo: own.lo, hi: own.hi, faults: own.faults }]] : [];
+      }),
+    );
   const sMain = inUse.find((s) => s.name === "S-main");
   if (k3Manifest && sMain) checks.K3 = k3Check(usable(sMain.rows), k3Manifest);
   return {
@@ -386,6 +407,8 @@ export function analyze({ rowSets, k3Manifest, label = "study" }) {
     checks,
     wording: {
       codex: "as rendered by `codex debug prompt-input` <version>; the model was not run",
+      codexCensus:
+        "as predicted by map and checked byte-for-byte against Codex's own `debug prompt-input` renderer (K4: k/n)",
       claude:
         "predicted by ctxreach map for Claude Code <version> on a fresh machine with default settings, not a live run; checked live in K5 as k/n",
       pairs:
@@ -439,7 +462,11 @@ function main(args) {
     );
   if (results.checks.K4)
     console.log(
-      `K4: ${results.checks.K4.k}/${results.checks.K4.n} pairs byte-exact (expected at least ${K4_EXPECTED * 100}%: ${results.checks.K4.expectationMet ? "met" : "not met"}; a validity estimate, not a pass threshold)`,
+      `K4: ${results.checks.K4.k}/${results.checks.K4.n} pairs byte-exact over both frames (expected at least ${K4_EXPECTED * 100}%: ${results.checks.K4.expectationMet ? "met" : "not met"}; a validity estimate, not a pass threshold); per frame ${Object.entries(
+        results.checks.K4.byFrame,
+      )
+        .map(([f, s]) => `${f} ${s.k}/${s.n}`)
+        .join(", ")}`,
     );
   if (results.checks.K3) console.log(`K3: ${results.checks.K3.pass ? "pass" : "FAIL"} (${results.checks.K3.explain})`);
   return 0;

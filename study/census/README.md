@@ -17,11 +17,11 @@ prints its count of non-GET attempts at the end (check K7).
 | `codex-check.mjs` | Check K4: `codex debug prompt-input` against `map`'s predicted bytes, twice per pair, throwaway `CODEX_HOME` |
 | `pipeline.mjs` | One unit end to end, then deletes the reconstruction; K1 uses the same function |
 | `run-census.mjs` | Runs a sample, serial and resumable, with the seed from the `prereg-v1` tag; `map` in process from the built library, checked against the spawned CLI on every 25th unit of the sample, by position, so a resumed run checks the same units (a difference is a fault on the row); api.github.com through `gh api`; refuses under an instruction file, on low disk, with another build than `--expect-dist`, when `gh api rate_limit` does not answer, on a sample whose header's n is not its number of units, and for a study run on a sample of another stream or seed, without `--expect-dist` or with another digest than the tag stamps, with another `--claude-version` than the registered one, without `--codex-bin`, with a Codex other than the registered version, while PREREG.md differs from the tagged copy above its Deviations heading, or into a rows file holding another sample's rows; every row records its draw, sample and its n (`sampleN`), build, Codex version and platform |
-| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, each outcome's left-out repositories by reason, the figures that are not proportions (`summaries`), and the registered verdicts; a draw's lost share is over its n, a redrawn sample replaces its first draw, which is reported as `<frame>-draw1`, and `lib/draws.mjs` refuses rows that would pool draws, samples, builds, versions or platforms, and a study draw with rows for fewer units than its n; rows with a fault are left out of every figure, K3 and K4 |
+| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, each outcome's left-out repositories by reason, the figures that are not proportions (`summaries`), and the registered verdicts; a draw's lost share is over its n, a redrawn sample replaces its first draw, which is reported as `<frame>-draw1`, and `lib/draws.mjs` refuses rows that would pool draws, samples, builds, versions or platforms, and a study draw with rows for fewer units than its n; rows with a fault are left out of every figure, K3 and K4; K4 is one figure over both frames in use, with each frame's own beside it (`checks.K4.byFrame`), so frames in use that differ in build, Codex version, platform or label are refused |
 | `known-answer.mjs` | Check K1: every fixture with a hand-derived answer (`known-answers.json`) through the pipeline, network replaced by local files, `map` in process as in the census (`--spawn` for the CLI) |
 | `plant-census-faults.mjs` | Check K2: each detector and pipeline step switched off in turn; K1 must fail each time |
 | `consistency.mjs` | Check K3: the regex version of O1-file in the sample against the frame's own proportion |
-| `k5-select.mjs` | Draws K5's 25 repositories (K5-01 to K5-25) from the measured rows in use without faults (a redrawn sample's first draw is left out; a repository in two samples is drawn once) |
+| `k5-select.mjs` | Draws K5's 25 repositories (K5-01 to K5-25) from the measured rows in use without faults (a redrawn sample's first draw is left out; a repository in two samples is drawn once), with the seed from the `prereg-v1` tag; a typed `--seed` is refused unless `--label pilot` |
 | `k5-score.mjs` | Check K5's figure: one `ctxreach verify --agent claude --trials 2 --json` output per drawn repository (`<dir>/K5-xx.json`) to `k5-results.json`, agreement k/n over decided cells with its Wilson interval, per stratum, disagreements by id and void runs; refuses a missing run, another agent, instrument, Claude Code version or number of trials |
 | `dist-digest.mjs` | The build's fingerprint for the `study-v1` freeze |
 | `time-map.mjs` | Times `map` per launch directory, spawned CLI against in process, over the pilot fixtures (`--k1`, `--synthetic N` for more) and compares every pair of answers |
@@ -49,7 +49,7 @@ also lists the answer fields no answer pins).
 ```
 # the tool commit is final: tag it, then build dist/ from exactly those sources
 git tag study-v1        # prereg.mjs stamp refuses without it, or if src/, package*.json, tsup or tsconfig differ from it
-npm run build
+npm run build           # prereg.mjs stamp refuses a dist/cli.js whose --version is not study-v1's package.json version
 node study/census/known-answer.mjs                          # K1: n/n
 node study/census/plant-census-faults.mjs                   # K2: all caught
 node study/census/frame.mjs --frame S --label study         # and S-imp, S-ci, K3
@@ -73,10 +73,10 @@ node study/census/run-census.mjs --sample S-main-draw2.tsv --frame-name S-main \
 node study/census/analyze.mjs --rows rows-S-main.jsonl --rows rows-S-main-draw2.jsonl --rows rows-S-imp.jsonl \
   --k3 <K3.manifest.json> --frame-manifest <S.manifest.json> --out results.json   # S-main = the redraw; S-main-draw1 reported apart
 # K5 from the rows in use, then one ctxreach verify run per drawn repository, saved as C:/ctxr-k5/verify/K5-xx.json:
-node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <seed> --out C:/ctxr-k5/k5.tsv
+node study/census/k5-select.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed-from-tag prereg-v1 --out C:/ctxr-k5/k5.tsv
 node study/census/k5-score.mjs --selection C:/ctxr-k5/k5.tsv --verify C:/ctxr-k5/verify --out C:/ctxr-k5/k5-results.json
 # K6 after the census (study/handcheck/PROTOCOL.md):
-node study/handcheck/handcheck.mjs draw --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <seed> --out C:/ctxr-k6/pairs.json
+node study/handcheck/handcheck.mjs draw --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed-from-tag prereg-v1 --out C:/ctxr-k6/pairs.json
 node study/handcheck/handcheck.mjs sheets --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --pairs C:/ctxr-k6/pairs.json --out C:/ctxr-k6
 # a fresh reader fills C:/ctxr-k6/reader/answers/, then:
 node study/handcheck/handcheck.mjs score --out C:/ctxr-k6

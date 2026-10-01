@@ -20,7 +20,8 @@
 //       tag does not exist yet)
 //   node study/prereg.mjs stamp --study-tag study-v1 --frames <dir> [--dist dist] [--write]
 //       compute every stamp (refusing a pilot frame, an invalid frame, a TSV
-//       whose hash moved, a build not made from the tagged sources, or a known
+//       whose hash moved, sources that differ from the tag, a dist/cli.js
+//       whose --version is not the tag's package.json version, or a known
 //       map defect) and, with --write, put them into PREREG.md
 // Exit: 0 fine; 1 a problem was found; 2 usage.
 
@@ -263,10 +264,31 @@ export function stampValues({
       );
     }
   }
+  const dist = distDir ?? path.join(cwd, "dist");
   try {
-    values["dist.digest"] = distDigest(distDir ?? path.join(cwd, "dist")).digest;
+    values["dist.digest"] = distDigest(dist).digest;
   } catch (err) {
     problems.push(`dist: ${err.message}`);
+  }
+  // The build answers with the version it was built from: a dist/ built at another version than the tag's
+  // package.json is not the frozen build. (It cannot tell two builds of one version apart: `npm run build`
+  // right before the stamp, as study/census/README.md orders it, is what makes dist/ the tag's.)
+  if (values["ctxreach.version"] !== undefined) {
+    let printed;
+    try {
+      printed = execFileSync(process.execPath, [path.join(dist, "cli.js"), "--version"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: true,
+        timeout: 60_000,
+      }).trim();
+    } catch (err) {
+      problems.push(`dist/cli.js --version failed (${String(err.message).split("\n")[0]})`);
+    }
+    if (printed !== undefined && printed !== values["ctxreach.version"])
+      problems.push(
+        `dist/cli.js --version prints ${printed || "nothing"}, not ${values["ctxreach.version"]} (${studyTag}'s package.json): dist/ was not built from the frozen sources`,
+      );
   }
   values["node.version"] = process.version;
 

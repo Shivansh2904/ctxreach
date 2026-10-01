@@ -16,6 +16,8 @@ section 13); it never changes a census row.
   it reads.
 - Stage 1: 30 repositories by the seeded shuffle of `study/census/lib/prng.mjs`
   with the study seed and stream `K6|repos`, in canonical (sorted) order.
+  The seed comes from the tag (`--seed-from-tag prereg-v1`); `draw` refuses
+  a typed `--seed`, or another `--n` than 30, unless `--label pilot`.
 - Stage 2: one type-1 or type-2 launch directory in each, uniformly, stream
   `K6|dir|<repo>`. Two stages keep one repository with many launch
   directories from filling the sheet.
@@ -74,7 +76,7 @@ verdict and a reason:
 | Verdict | Meaning | What follows |
 |---|---|---|
 | reader | the reader misapplied a rule | the rule id is cited; nothing changes |
-| map | `map` disagrees with the rule as written | a map defect: appended to PREREG.md's deviations, with the census outcomes it could move; PREREG.md section 1 item 1 applies (a fixed build is run over the same samples and both results are reported, the frozen build's verdicts standing) |
+| map | `map` disagrees with the rule as written | a map defect: appended to PREREG.md's deviations, with the census outcomes it could move; PREREG.md section 1 item 1 applies (a fixed build is run over the same samples; the frozen build's verdicts stand, and the fixed build's results are reported beside them as a dated deviation) |
 | rules | `docs/rules.md` is silent or ambiguous | the rule text is fixed after the study; the case is listed |
 
 Adjudication names pair ids and paths inside the repository, never the

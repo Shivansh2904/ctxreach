@@ -1,7 +1,8 @@
 // Check K6, the blind second reader: draw the pairs, write the reader's
 // folder, score the answers. The protocol is study/handcheck/PROTOCOL.md.
 //
-//   node study/handcheck/handcheck.mjs draw   --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <hex8> --out <k6>/pairs.json
+//   node study/handcheck/handcheck.mjs draw   --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed-from-tag prereg-v1 --out <k6>/pairs.json
+//     (a typed --seed <hex8>, or another --n than the registered 30, only with --label pilot)
 //   node study/handcheck/handcheck.mjs sheets --rows ... --pairs <k6>/pairs.json --out <k6>
 //   node study/handcheck/handcheck.mjs score  --out <k6>
 //   node study/handcheck/handcheck.mjs clean  --out <k6>
@@ -25,11 +26,13 @@ import { fileURLToPath } from "node:url";
 import { GetOnlyClient } from "../census/lib/client.mjs";
 import { rowsInUse } from "../census/lib/draws.mjs";
 import { reconstruct } from "../census/recon.mjs";
+import { drawSeed } from "../census/seed.mjs";
 import {
   adjudicationSheet,
   blankAnswer,
   checkBlind,
   drawPairs,
+  K6_PAIRS,
   keyFor,
   KEY_SCHEMA,
   renderSheet,
@@ -166,18 +169,45 @@ function arg(args, name) {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
+/**
+ * `draw`: the pairs, written to --out. A study draw takes the seed from the
+ * prereg tag (`--seed-from-tag prereg-v1`) and draws the registered number of
+ * pairs; a typed `--seed`, and another `--n`, are for a pilot draw
+ * (`--label pilot`) only. Returns { pairs, seed, from }; throws when refused.
+ * `seedResolver` stands in for seedFromTag in tests.
+ */
+export function drawCommand(args, { seedResolver } = {}) {
+  const rowFiles = args.flatMap((a, i) => (a === "--rows" ? [args[i + 1]] : []));
+  const out = arg(args, "--out");
+  if (!rowFiles.length || !out)
+    throw new Error(
+      "usage: draw --rows rows.jsonl [...] (--seed-from-tag prereg-v1 | --seed HEX8 --label pilot) --out pairs.json",
+    );
+  const label = arg(args, "--label") ?? "study";
+  const { seed, from } = drawSeed(
+    { label, seed: arg(args, "--seed"), seedFromTag: arg(args, "--seed-from-tag") },
+    seedResolver,
+  );
+  const n = Number(arg(args, "--n") ?? K6_PAIRS);
+  if (!Number.isInteger(n) || n < 1)
+    throw new Error(`--n must be a whole number of at least 1, not ${arg(args, "--n")}`);
+  if (label === "study" && n !== K6_PAIRS)
+    throw new Error(`a study draw is of the registered ${K6_PAIRS} pairs, not ${n} (study/PREREG.md section 8, K6)`);
+  const pairs = drawPairs(readRowFiles(rowFiles), seed, n);
+  writeFileSync(out, JSON.stringify(pairs, null, 2) + "\n");
+  return { pairs, seed, from };
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [cmd, ...args] = process.argv.slice(2);
   const rowFiles = args.flatMap((a, i) => (a === "--rows" ? [args[i + 1]] : []));
   const out = arg(args, "--out");
   try {
     if (cmd === "draw") {
-      const seed = arg(args, "--seed");
-      if (!rowFiles.length || !seed || !out)
-        throw new Error("usage: draw --rows rows.jsonl [...] --seed HEX8 --out pairs.json");
-      const pairs = drawPairs(readRowFiles(rowFiles), seed, Number(arg(args, "--n") ?? 30));
-      writeFileSync(out, JSON.stringify(pairs, null, 2) + "\n");
-      console.log(`drew ${pairs.length} pairs (types ${[...new Set(pairs.map((p) => p.type))].sort().join(", ")})`);
+      const { pairs, seed, from } = drawCommand(args);
+      console.log(
+        `drew ${pairs.length} pairs (types ${[...new Set(pairs.map((p) => p.type))].sort().join(", ")}) with seed ${seed} from ${from}`,
+      );
     } else if (cmd === "sheets") {
       const pairsFile = arg(args, "--pairs");
       if (!rowFiles.length || !pairsFile || !out)
