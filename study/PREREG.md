@@ -372,22 +372,29 @@ Project instructions mode other than the default in `claude.modes`), nor an
 ancestor's rules (`claude.rules`, which `map` does not model); the census
 runs the same way and cannot reach them either.
 
-31 answer fields are pinned in 0 of the 55 answers, so a fault that changes
+28 answer fields are pinned in 0 of the 55 answers, so a fault that changes
 only one of them still passes K1. Of these, the ones that feed a figure in
 `results.json`: `k3.eligible`, `o1content.why`, `o1contentShingle.why`,
 `o1file.why`, `o2.t2Dirs`, `o2.why`, `o4.eligible`, `o5.linkAffected`,
-`o6.eligible`, `o7.broken`, `o7.rootLinkToAgents`, `o8.bytes`,
-`o8.effectiveChars`, `o8.why`, `p1.pairs`, `p1.pairsT3`,
+`o6.eligible`, `o7.rootLinkToAgents`, `o8.why`, `p1.pairs`, `p1.pairsT3`,
 `p1.repoEventT123` and `p1.t3EventDirs`. The ones that feed none:
 `k3.importsText`, `o1contentShingle.a`, `o1contentShingle.r`,
 `o1contentShingle.share`, `o1file.cause`, `o1file.shadowers`,
 `o1file.via`, `o2.causes`, `o4.nested`, `o4.notPreloaded`, `o5.anyWarn`,
 `o8.chars` and `o8.cjkShare`. Fields pinned in 1 to 4 answers:
-`o2.eventT123` (2), `o2.t3EventDirs` (2) and `o5.rootWarnMap` (1), which
-`O5-any-root-warning-map`, `O5-root-map:<code>` and `O6-map` read. Codex's
-share of the root `AGENTS.md` (`O1-codex-under-half`,
-`O1-codex-under-all`) reads the root launch's Codex chain from the row
-(`pairs`), which K1 does not compare at all.
+`o2.eventT123` (2) and `o2.t3EventDirs` (2). Every answer pins
+`o5.rootWarnMap`, `o7.broken`, `o8.bytes` and `o8.effectiveChars` (the last
+two where the root `AGENTS.md` exists), but with limits. `o5.rootWarnMap`,
+which `O5-any-root-warning-map`, `O5-root-map:<code>` and `O6-map` read,
+differs from `o5.rootWarn` in one fixture only (`census-o7-symlink`), the
+only fixture with a symlink. `o7.broken` is 0 in every answer, because no
+fixture has a broken link, so a fault that hides broken links still passes
+K1. No fixture's root `AGENTS.md` is both over the budget and an O8 event,
+so the CJK half of `O8-held-chars` has no K1 case. `o8.bytes` and
+`o8.effectiveChars` were counted from the fixture files by a tool outside
+the pipeline. Codex's share of the root `AGENTS.md`
+(`O1-codex-under-half`, `O1-codex-under-all`) reads the root launch's Codex
+chain from the row (`pairs`), which K1 does not compare at all.
 
 ## 9. Behavioural cells
 
