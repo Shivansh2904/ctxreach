@@ -1,6 +1,6 @@
 <!--
-Draft of README.md's first screen, for the integrator (lane L6 drafts, the
-integrator writes README.md last). It is a template: render it with
+Draft of README.md's first screen, for the integrator, who writes README.md
+last. It is a template: render it with
 
   node scripts/writeup.mjs --template site/readme-first-screen.md --data site/data --out <file>
 

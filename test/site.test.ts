@@ -573,6 +573,65 @@ describe("the write-up and the other templates", () => {
   });
 });
 
+describe("names, links and issue numbers in the site, the talk and the workshop", () => {
+  // Every one was checked against the source itself on 2026-10-01: the arXiv
+  // abstract pages' citation_author and citation_title, the post's own page,
+  // `gh api` for each issue and the repository, and the GitHub Pages docs for
+  // the site address. A new link, issue or credited author fails here until
+  // it is checked the same way and added.
+  const LINKS = new Set([
+    "https://github.com/Shivansh2904/ctxreach", // git remote get-url origin; public (gh api repos/...)
+    "https://github.com/Shivansh2904/ctxreach/blob/main/study/PREREG.md", // main:study/PREREG.md (not pushed on 2026-10-01)
+    "https://shivansh2904.github.io/ctxreach/", // Pages' project-site address, <owner>.github.io/<repo> (main's pages.yml)
+    "https://blog.szypowi.cz/p/claude-code-reads-agents.md-only-when-telemetry-is-on/",
+    "https://github.com/openai/codex/issues/13386",
+    "https://github.com/anthropics/claude-code/issues/80580",
+    "https://arxiv.org/abs/2602.14690",
+    "https://arxiv.org/abs/2605.08435",
+    "https://arxiv.org/abs/2602.11988",
+    "https://www.augmentcode.com/blog/how-to-write-good-agents-dot-md-files",
+    "https://code.claude.com/docs/en/memory",
+    "https://learn.chatgpt.com/guides/best-practices",
+  ]);
+  const ISSUES = new Set(["openai/codex#13386", "openai/codex#41499", "anthropics/claude-code#80580"]);
+  /** Credited authors, as the source lists them: the post's author, and each paper's first author. */
+  const AUTHORS: Record<string, string> = {
+    Szypowicz: "P.", // Przemysław Szypowicz (the post's GitHub and LinkedIn links)
+    Galster: "M.", // Matthias Galster, first author of arXiv 2602.14690 and 2605.08435
+    Gloaguen: "T.", // Thibaud Gloaguen, first author of arXiv 2602.11988
+  };
+  const docs = () =>
+    [
+      "site/index.html",
+      ...["site", "talk", "workshop"].flatMap((d) =>
+        readdirSync(path.join(ROOT, d))
+          .filter((f) => f.endsWith(".md"))
+          .map((f) => `${d}/${f}`),
+      ),
+    ].map((rel) => [rel, readFileSync(path.join(ROOT, rel), "utf8")] as const);
+
+  it("links only to sources checked by hand, and credits each author by the initial the source gives", () => {
+    const problems: string[] = [];
+    for (const [rel, text] of docs()) {
+      for (const m of text.matchAll(/https?:\/\/[^\s"'<>`)\]]+/g)) {
+        const url = m[0].replace(/[.,;:]+$/, "");
+        if (!LINKS.has(url)) problems.push(`${rel}: unchecked link ${url}`);
+      }
+      for (const m of text.matchAll(/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+#\d+/g))
+        if (!ISSUES.has(m[0])) problems.push(`${rel}: unchecked issue ${m[0]}`);
+      for (const m of text.matchAll(/(?<![A-Za-z])([A-Z]\.)\s+([A-Z][\p{Ll}-]+)/gu)) {
+        const want = AUTHORS[m[2]!];
+        if (want === undefined) problems.push(`${rel}: unchecked author ${m[0]}`);
+        else if (m[1] !== want) problems.push(`${rel}: ${m[0]}, the source gives ${want} ${m[2]}`);
+      }
+      for (const surname of Object.keys(AUTHORS))
+        for (const m of text.matchAll(new RegExp(`(?<![\\p{L}.])([\\p{L}.]*)\\s*${surname}\\b`, "gu")))
+          if (m[1] !== AUTHORS[surname]) problems.push(`${rel}: "${m[0]}" without the initial ${AUTHORS[surname]}`);
+    }
+    expect(problems).toEqual([]);
+  });
+});
+
 describe("the README demo cast", () => {
   const castFile = path.join(ROOT, "docs", "demo.cast");
   const sidecar = JSON.parse(readFileSync(`${castFile}.json`, "utf8"));

@@ -95,10 +95,10 @@ ctxreach verify --agent codex --repo ../demo --from ../demo/packages/api
 
 For each chain file it prints the bytes `map` predicted and the bytes Codex's
 renderer kept, and EXACT or OFF BY. Without Codex, replay a recorded render:
-any folder under `test/recorded/` whose name starts with `codex-`:
+any folder under `test/recorded/verify/` whose name starts with `codex-`:
 
 ```sh
-ctxreach verify --agent codex --replay test/recorded/<a codex- folder>
+ctxreach verify --agent codex --replay test/recorded/verify/<a codex- folder>
 ```
 
 ## Block six: one line to delete

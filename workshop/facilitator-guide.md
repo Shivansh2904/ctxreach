@@ -105,13 +105,18 @@ Goal: delivery is settled; now, is the content worth delivering?
 
 Discuss, with the sources on screen:
 
-- L. Gloaguen and colleagues, "Evaluating AGENTS.md": instructions are
-  followed, but overall task success did not improve and cost went up.
-- Augment's post on writing good `AGENTS.md` files: the best files were
-  short, and nested docs were often not found.
-- The vendors' own advice: Anthropic's memory docs ask for a short
-  `CLAUDE.md` with concrete, checkable lines; OpenAI's Codex guide says a
-  short, accurate `AGENTS.md` beats a long one.
+- T. Gloaguen and colleagues, "Evaluating AGENTS.md: Are Repository-Level
+  Context Files Helpful for Coding Agents?" (https://arxiv.org/abs/2602.11988):
+  instructions are followed, but overall task success did not improve and
+  cost went up.
+- Augment's post on writing good `AGENTS.md` files
+  (https://www.augmentcode.com/blog/how-to-write-good-agents-dot-md-files):
+  the best files were short, and nested docs were often not found.
+- The vendors' own advice: Anthropic's memory docs
+  (https://code.claude.com/docs/en/memory) ask for a short `CLAUDE.md` with
+  concrete, checkable lines; OpenAI's Codex best practices
+  (https://learn.chatgpt.com/guides/best-practices) say a short, accurate
+  `AGENTS.md` beats a long one.
 
 Say: "Delivery is a precondition, not a benefit."
 

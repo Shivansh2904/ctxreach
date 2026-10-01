@@ -25,7 +25,7 @@ These are the pre-registered figures, filled in by a script from the study's dat
 
 ## Why one file reaches two agents differently
 
-Codex reads one instruction file per directory, from the project root down to the launch directory, and stops at one byte budget for the whole chain. Claude Code, by default, reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` sits on the way; its maintainers have said (anthropics/claude-code#80580) that the home folder's `~/.claude/CLAUDE.md` can count as one of those when the repository lives under the home folder, and cell B2 below tests exactly that. Neither agent preloads files below the launch directory. None of this shows in the session: a file that does not arrive leaves no trace.
+Codex reads one instruction file per directory, from the project root down to the launch directory, and stops at one byte budget for the whole chain. Claude Code, by default, reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` sits on the way. A collaborator on its repository has explained (anthropics/claude-code#80580) that the home folder's `~/.claude/CLAUDE.md` loads as an ancestor project file when the repository lives under the home folder; whether it then switches `AGENTS.md` off is what cell B2 below tests. Neither agent preloads files below the launch directory. None of this shows in the session: a file that does not arrive leaves no trace.
 
 ## What the census measured
 
@@ -59,6 +59,6 @@ Anthropic's `agents_md_load.yielded` telemetry could measure the Claude Code fig
 
 ## Credits
 
-The canary method comes from P. Szypowicz's post on Claude Code reading `AGENTS.md` only with telemetry on. Thanks to the commenters on openai/codex#13386 and the reporters on anthropics/claude-code#80580, to M. Galster's studies of agent configuration in public repositories, and to L. Gloaguen and colleagues, whose evaluation asks the next question: whether the files help once they arrive.
+The canary method comes from P. Szypowicz's post on Claude Code reading `AGENTS.md` only with telemetry on. Thanks to the reporters and commenters on openai/codex#13386 and anthropics/claude-code#80580, to M. Galster and colleagues for their studies of agent configuration in public repositories, and to T. Gloaguen and colleagues, whose evaluation asks the next question: whether the files help once they arrive.
 
 Pre-registration: {{preregTag}} at commit {{preregCommit}}, timestamped by a public issue opened {{preregIssue}}. Every figure, its recording and the command that reproduces it: {{site}}
