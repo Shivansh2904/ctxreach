@@ -1,0 +1,17 @@
+ctxreach map  launch dir: .  repo: <scratch>/tools-scratch/cl/anc/repo
+
+  file                                                                                                                               Claude Code
+  <scratch>/tools-scratch/cl/anc/.claude/CLAUDE.md  launch
+  .claude/rules/style.md                                                                                                             launch
+  AGENTS.md                                                                                                                          no: switched off by <scratch>/tools-scratch/cl/anc/.claude/CLAUDE.md
+
+Claude Code
+  Project instructions  claude-md-or-agents-md  (default)
+  AGENTS.md             not read                (switched off by <scratch>/tools-scratch/cl/anc/.claude/CLAUDE.md)
+  version               2.1.280
+
+  Loaded at launch, in order: <scratch>/tools-scratch/cl/anc/.claude/CLAUDE.md, .claude/rules/style.md
+
+Findings
+  warn  claude AGENTS.md does not reach Claude Code: switched off by <scratch>/tools-scratch/cl/anc/.claude/CLAUDE.md. Import it with @AGENTS.md in a CLAUDE.md, or set Project instructions to claude-md-and-agents-md.
+  info  claude On Claude Code 2.1.280, sessions on Amazon Bedrock or with telemetry disabled read CLAUDE.md only. 2.1.281 fixed this.

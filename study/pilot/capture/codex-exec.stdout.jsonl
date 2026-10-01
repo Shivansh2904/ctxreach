@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"<uuid>"}
+{"type":"turn.started"}
+{"type":"error","message":"{\"error\":{\"type\":\"invalid_request_error\",\"message\":\"ctxreach capture: request recorded, no model here\"}}"}
+{"type":"turn.failed","error":{"message":"{\"error\":{\"type\":\"invalid_request_error\",\"message\":\"ctxreach capture: request recorded, no model here\"}}"}}

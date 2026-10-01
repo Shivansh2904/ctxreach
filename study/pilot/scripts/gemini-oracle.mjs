@@ -1,0 +1,10 @@
+import * as core from "@google/gemini-cli-core";
+const [launch, names] = [process.argv[2], process.argv[3]];
+if (names) core.setGeminiMdFilename(names.split(","));
+console.log("filenames:", core.getAllGeminiMdFilenames());
+const paths = await core.getEnvironmentMemoryPaths([launch]);
+console.log("startup paths (in order):"); for (const p of paths) console.log("  ", p);
+const contents = await core.readGeminiMdFiles(paths, "tree");
+const text = core.concatenateInstructions(contents);
+const toks = [...text.matchAll(/CTXR-[0-9a-z]{8}/g)].map((m) => m[0]);
+console.log("tokens in delivered text, in order:", toks.join(" "));

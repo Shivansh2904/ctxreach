@@ -1,0 +1,118 @@
+{
+ "schema": "ctxreach.map/v1",
+ "version": "0.0.0",
+ "launchDir": ".",
+ "repoRoot": "<scratch>/tools-scratch/cx/repo",
+ "codex": {
+  "projectRoot": ".",
+  "rootFound": true,
+  "trust": "unknown",
+  "settings": [
+   {
+    "key": "project_doc_max_bytes",
+    "value": 32768,
+    "from": "default"
+   },
+   {
+    "key": "project_doc_fallback_filenames",
+    "value": [],
+    "from": "default"
+   },
+   {
+    "key": "project_root_markers",
+    "value": [
+     ".git"
+    ],
+    "from": "default"
+   }
+  ],
+  "chain": [
+   {
+    "path": "AGENTS.md",
+    "bytes": 30000,
+    "keptBytes": 30000,
+    "status": "loaded",
+    "budgetBefore": 32768,
+    "shadowed": []
+   }
+  ],
+  "budget": {
+   "limit": 32768,
+   "used": 30000,
+   "left": 2768
+  },
+  "notPreloaded": [
+   "packages/api/AGENTS.md",
+   "packages/api/deep/AGENTS.md",
+   "tools/AGENTS.override.md"
+  ]
+ },
+ "matrix": [
+  {
+   "path": "AGENTS.md",
+   "codex": {
+    "delivery": "launch",
+    "why": "30000 bytes",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "packages/api/AGENTS.md",
+   "codex": {
+    "delivery": "maybe",
+    "why": "below launch dir: not preloaded",
+    "rule": "codex.nested"
+   }
+  },
+  {
+   "path": "packages/api/deep/AGENTS.md",
+   "codex": {
+    "delivery": "maybe",
+    "why": "below launch dir: not preloaded",
+    "rule": "codex.nested"
+   }
+  },
+  {
+   "path": "tools/AGENTS.md",
+   "codex": {
+    "delivery": "maybe",
+    "why": "below launch dir: not preloaded",
+    "rule": "codex.nested"
+   }
+  },
+  {
+   "path": "tools/AGENTS.override.md",
+   "codex": {
+    "delivery": "maybe",
+    "why": "below launch dir: not preloaded",
+    "rule": "codex.nested"
+   }
+  }
+ ],
+ "findings": [
+  {
+   "code": "codex.nested",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.nested",
+   "path": "packages/api/AGENTS.md",
+   "message": "packages/api/AGENTS.md is below the launch directory, so Codex does not preload it. It is read only if the model decides to open it."
+  },
+  {
+   "code": "codex.nested",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.nested",
+   "path": "packages/api/deep/AGENTS.md",
+   "message": "packages/api/deep/AGENTS.md is below the launch directory, so Codex does not preload it. It is read only if the model decides to open it."
+  },
+  {
+   "code": "codex.nested",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.nested",
+   "path": "tools/AGENTS.override.md",
+   "message": "tools/AGENTS.override.md is below the launch directory, so Codex does not preload it. It is read only if the model decides to open it."
+  }
+ ]
+}

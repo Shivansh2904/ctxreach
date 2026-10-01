@@ -1,0 +1,100 @@
+[
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "host_skills.instructions",
+    "sha256": "b5f2eedbfbf6e120eb7647cf554ecb037d3623c7ff9b26a5a2e0292bc720f1fa",
+    "bytes": 2065
+   },
+   {
+    "kind": "permissions.instructions",
+    "sha256": "2493dd1ae75230d95acdb8e77fb10d51138de63d95c10d2a647b76d59060d4d7",
+    "bytes": 3939
+   },
+   {
+    "kind": "collaboration_mode.instructions",
+    "sha256": "bec8e7b5358a20b4cd552dae768b3a65ebf4ea9fb2645220085b84d60ee3fe81",
+    "bytes": 920
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "host_skills.instructions",
+    "permissions.instructions",
+    "collaboration_mode.instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "multi_agent.role_instructions",
+    "sha256": "47091490938505958b0c22ff42db6fd79b272a2af6923166f4c2cc53c4fe0df4",
+    "bytes": 2429
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "multi_agent.role_instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "multi_agent.mode_instructions",
+    "sha256": "6ded806e3cdbb35599ecaf8742574bc5274908472b1729090010c404c2151e8e",
+    "bytes": 271
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "multi_agent.mode_instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "user",
+  "content": [
+   {
+    "kind": "agents_md.instructions",
+    "sha256": "c8ed7500ce75257ae275c7eace8aee076d32dbaaae2930786148f7aafefb5322",
+    "bytes": 6502
+   },
+   {
+    "kind": "environments.environment_context",
+    "sha256": "c189816cb56f3f7045e55e858c851056d720954ba16b7a4134468a5be7ba2764",
+    "bytes": 691,
+    "cwd": "<scratch>\\tools-scratch\\recon-passlock\\packages\\server"
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "agents_md.instructions",
+    "environments.environment_context"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "user",
+  "content": [
+   {
+    "type": "input_text",
+    "text": "x"
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "user.text"
+   ]
+  }
+ }
+]

@@ -1,0 +1,108 @@
+{
+ "schema": "ctxreach.map/v1",
+ "version": "0.0.0",
+ "launchDir": "tools",
+ "repoRoot": "<scratch>/tools-scratch/cx/repo",
+ "codex": {
+  "projectRoot": ".",
+  "rootFound": true,
+  "trust": "unknown",
+  "settings": [
+   {
+    "key": "project_doc_max_bytes",
+    "value": 32768,
+    "from": "default"
+   },
+   {
+    "key": "project_doc_fallback_filenames",
+    "value": [],
+    "from": "default"
+   },
+   {
+    "key": "project_root_markers",
+    "value": [
+     ".git"
+    ],
+    "from": "default"
+   }
+  ],
+  "chain": [
+   {
+    "path": "AGENTS.md",
+    "bytes": 30000,
+    "keptBytes": 30000,
+    "status": "loaded",
+    "budgetBefore": 32768,
+    "shadowed": []
+   },
+   {
+    "path": "tools/AGENTS.override.md",
+    "bytes": 5,
+    "keptBytes": 0,
+    "status": "empty",
+    "budgetBefore": 2768,
+    "shadowed": [
+     "tools/AGENTS.md"
+    ]
+   }
+  ],
+  "budget": {
+   "limit": 32768,
+   "used": 30000,
+   "left": 2768
+  },
+  "notPreloaded": []
+ },
+ "matrix": [
+  {
+   "path": "AGENTS.md",
+   "codex": {
+    "delivery": "launch",
+    "why": "30000 bytes",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "packages/api/AGENTS.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "not on the path from the project root to the launch dir",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "packages/api/deep/AGENTS.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "not on the path from the project root to the launch dir",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "tools/AGENTS.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "shadowed by AGENTS.override.md",
+    "rule": "codex.empty-skip"
+   }
+  },
+  {
+   "path": "tools/AGENTS.override.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "empty",
+    "rule": "codex.empty-skip"
+   }
+  }
+ ],
+ "findings": [
+  {
+   "code": "codex.empty-override",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.empty-skip",
+   "path": "tools/AGENTS.md",
+   "message": "tools/AGENTS.override.md is empty but still takes its directory's slot, so tools/AGENTS.md is not read and this directory gives Codex nothing."
+  }
+ ]
+}

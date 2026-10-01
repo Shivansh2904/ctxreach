@@ -1,0 +1,11 @@
+== A
+agentsMd: {'read': False, 'reason': 'switched off by <scratch>/tools-scratch/cfx/A/.claude/CLAUDE.md'} shadowers: ['<scratch>/tools-scratch/cfx/A/.claude/CLAUDE.md']
+   <scratch>/tools-scratch/cfx/A/.claude/CLAUDE.md launch | ancestor of launch dir
+   AGENTS.md not-loaded | switched off by <scratch>/tools-scratch/cfx/A/.claude/CLAUDE.md
+   .claude/rules/style.md launch | project rule
+   packages/api/AGENTS.md not-loaded | switched off by <scratch>/tools-scratch/cfx/A/.claude/CLAUDE.md
+== B
+agentsMd: {'read': True, 'reason': ''} shadowers: []
+   AGENTS.md launch | AGENTS.md read at launch
+   .claude/rules/style.md launch | project rule
+   packages/api/AGENTS.md on-read | on read of a file in packages/api/
