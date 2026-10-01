@@ -1,0 +1,16 @@
+{
+  "schema": "ctxreach.demo-cast/v1",
+  "cast": "demo.cast",
+  "label": "typing simulated, output verbatim from ctxreach 0.0.0 (47e60a0) on 2026-10-01",
+  "command": "ctxreach map --from demo/packages/api",
+  "ran": "node dist/cli.js map --from demo/packages/api (cwd: a scratch home holding demo/, a copy of examples/demo-monorepo with an empty .git; HOME and USERPROFILE set to it; FORCE_COLOR=1)",
+  "ctxreach": {
+    "version": "0.0.0",
+    "commit": "47e60a0"
+  },
+  "date": "2026-10-01",
+  "node": "v22.19.0",
+  "platform": "win32 10.0.26200 x64",
+  "outputSha256": "20cfab61e26a166642369d91010e6c387f7f844d496dbef66e564c06dbf5911b",
+  "outputLines": 31
+}
