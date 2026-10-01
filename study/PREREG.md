@@ -1,0 +1,502 @@
+# ctxreach study v1: pre-registration
+
+This file is the study's registration. It is committed and tagged
+`prereg-v1` before any sampled repository is fetched, and nothing above the
+**Deviations** heading changes after that tag. Deviations are appended at
+the end, dated, and never edited in place.
+
+The machine-checkable part is the `prereg-registry` block in section 12:
+`node study/prereg.mjs check` compares it with the code that runs the
+study, and a test (`test/study-census.test.ts`) fails when they differ.
+Values that exist only at tag time are written `{{stamp:<key>}}` until
+`node study/prereg.mjs stamp --write` fills them; `study/census/seed.mjs`
+refuses to give a seed from a tagged file that still holds one.
+
+## 0. The question and the headline sentence
+
+Coding agents read instruction files (`AGENTS.md`, `CLAUDE.md` and
+friends) by rules that differ between agents. The study asks how often, in
+public repositories that ship an `AGENTS.md`, Claude Code and Codex start a
+session with different instructions from the same repository, and why.
+
+The headline sentence is fixed now. A script fills its numbers from
+`results.json`; nobody types them:
+
+> Same repo, different instructions. In k/n (x%, [lo, hi]) of public
+> repositories with an AGENTS.md, Claude Code starts with under half of that
+> file's text; in j/m launch directories Codex cuts or drops a chain file, as
+> rendered by Codex's own `debug prompt-input`. And a personal
+> `~/.claude/CLAUDE.md` switched AGENTS.md off in a/10 vs b/10 runs depending
+> only on where the repository lives.
+
+- k/n is outcome O1-content in frame S-main (raw), with its Wilson 95%
+  interval.
+- j/m is outcome P1-pairs in S-main (raw).
+- a/10 and b/10 are the trials of cell B2 arms A1 and A2 in which the root
+  `AGENTS.md` did not reach the model endpoint.
+- If B2 is not **confirmed** by its rule (section 9), the third sentence
+  is printed with its fractions and verdict and without the words
+  "depending only on where the repository lives".
+
+## 1. Tool freeze, timestamp and seed
+
+1. **Tool freeze.** The tag `study-v1` marks the commit whose `map`
+   produces every census measurement: `{{stamp:study-v1.commit}}`, ctxreach
+   `{{stamp:ctxreach.version}}`, built with Node `{{stamp:node.version}}` from
+   the dependencies locked in that commit's `package-lock.json`.
+   The build's fingerprint (SHA-256 of every file in `dist/`, then SHA-256
+   of that listing; `node study/census/dist-digest.mjs`) is
+   `{{stamp:dist.digest}}`. `run-census.mjs --expect-dist <digest>` refuses
+   any other build. A `map` defect found after the freeze is fixed in a new
+   build; both builds are run over the same rows and both are reported.
+2. **Agent versions.** Claude Code **2.1.285** is modelled by `map`
+   (`--claude-version`) and pinned for the lab cells (a scratch install run
+   with `--claude-bin` and `DISABLE_AUTOUPDATER=1`). Codex **0.159.2** is the
+   renderer for check K4 and the Codex cells. Lab cells run on Windows 11;
+   Codex renders also run on Linux in CI. Nothing is pooled across
+   versions or operating systems.
+3. **Frames first.** The frames (section 3) are frozen with the study-v1
+   build and stamped here **before** this file is committed. The seed then
+   comes from a commit that already fixes the frames, so neither the frame
+   nor the seed can be chosen after seeing the other.
+4. **Timestamp.** This file is committed and the commit tagged
+   `prereg-v1`. Shiv pushes the tag and opens an issue titled
+   "Pre-registration v1" in the public repository, holding this file's
+   SHA-256. The server timestamps of the push and the issue are the proof
+   of time; local commit dates are not.
+5. **Seed.** The seed is the first 8 hex digits of the commit that
+   `prereg-v1` points to, printed by `node study/census/seed.mjs`. It is not
+   written here, because this file is part of that commit. The one
+   pre-registered redraw (section 4) uses seed + 1.
+
+## 2. Pilot declaration
+
+Everything observed before this registration is **pilot** data. The
+hypotheses below were set from it, so it is never evidence for them, never
+pooled with registered rows or trials, and always cited as "pilot, n = ...".
+It is kept, redacted, in `study/pilot/` (see its README):
+
+| Id | Pilot observation, 2026-09-30 | n |
+|---|---|---|
+| P-a | An ancestor `.claude/CLAUDE.md` above the git root switched `AGENTS.md` off (billed canary, Claude Code 2.1.280); `map` agreed on 6/6 cells | 1 trap + 1 control |
+| P-b | The same through the $0 capture endpoint on 2.1.285, 6/6 and 5/5 predicted cells | 1 + 1 |
+| P-c | `codex debug prompt-input` 0.159.2 renders the AGENTS.md block byte-exactly with no login; 22/22 fixture launches agreed with `map`; a planted 30,000-byte budget disagreed 1/1 | 22 launches |
+| P-d | The dotted `-c` trust key of openai/codex#41499 never addressed the project (its trusted control failed); the inline-table form applied, and untrusted then delivered nothing | 1 render per case |
+| P-e | `CODEX_HOME` at the project root delivered the root `AGENTS.md` twice (openai/codex#34193) | 1 render |
+| P-f | The `InstructionsLoaded` hook fired under `-p` and was silent for an `AGENTS.md` loaded through the setting; `--setting-sources project,local` changed the model | 2 billed runs |
+| P-g | OpenCode 1.18.33 stacked every `AGENTS.md` nearest first and read no `CLAUDE.md`; Gemini CLI core 0.62.0 ordered `Api/GEMINI.md` before the root file | 1 capture, 1 library run |
+| P-h | Code-search counts behind the hypotheses: 31.3% of root `AGENTS.md` repositories have a root `CLAUDE.md` without `@AGENTS.md` (case-insensitive); 729 of 3,197 importers have a nested instruction file; 1.95% of single files exceed 32 KiB | census counts |
+| P-i | Two 20-repository census dry runs from a **pilot seed** (`cf72741e`, not the study seed), through the study's own scripts, to test the pipeline and the rate budget; their rows are not kept | 20 + 20 |
+
+Side findings P-f and P-g appear only as labelled side findings and
+upstream drafts; OpenCode and Gemini are not measured by this study.
+
+## 3. Frames
+
+All frames come from Sourcegraph's streaming search API, unauthenticated,
+one query at a time, through the study's GET-only client
+(`study/census/frame.mjs`). The file matches give each repository and the
+commit Sourcegraph indexed; that commit is the unit's pinned commit. Rows
+are sorted by repository name and written as a TSV; its SHA-256 is the
+frame's record. Only `github.com` repositories are kept (others are
+counted).
+
+| Frame | Query (verbatim) | Frozen | Repositories | TSV SHA-256 |
+|---|---|---|---|---|
+| **S** (census) | `file:^AGENTS\.md$ case:yes count:all` | {{stamp:frame.S.date}} | {{stamp:frame.S.repos}} | `{{stamp:frame.S.sha256}}` |
+| **S-imp** (importers) | `file:^CLAUDE\.md$ case:yes patterntype:regexp ^@AGENTS\.md count:all` | {{stamp:frame.S-imp.date}} | {{stamp:frame.S-imp.repos}} | `{{stamp:frame.S-imp.sha256}}` |
+| **S-ci** (any case) | `file:^AGENTS\.md$ count:all` | {{stamp:frame.S-ci.date}} | {{stamp:frame.S-ci.repos}} | `{{stamp:frame.S-ci.sha256}}` |
+
+- **Validity.** Each query runs twice. A frame is valid only when both
+  answers end with their `done` event, carry no alert, skip nothing but
+  Sourcegraph's default fork and archive exclusions, report as many matches
+  as they delivered, and list the same repositories apart from index churn
+  (at most 5 repositories, or 0.1% of the list if larger). The first
+  answer's commits are recorded; commits that moved between the answers are
+  counted. A `select:repo` count is not used as a check: on the pilot day it
+  returned 25,742 and then 24,726 for frame S, each with `done` and no
+  alert, while the file-match list gave 26,022.
+- **Case variants.** S-ci minus S (a root `agents.md` or other case
+  variant, about 253 on the pilot day) is a reported stratum, as a count.
+  It is never pooled with S and not sampled in v1.
+- **K3's census counts** (section 8), frozen the same way on
+  {{stamp:K3.date}}: {{stamp:K3.claude}} repositories in S with a root
+  `CLAUDE.md` (`file:^CLAUDE\.md$ case:yes repo:has.file(path:^AGENTS\.md$)`),
+  of which {{stamp:K3.claudeImport}} contain `@AGENTS.md`.
+- Frame G (active GitHub repositories) is not part of v1.
+
+## 4. Samples, seed and exclusions
+
+- **S-main**: 1,100 repositories from S. **S-imp**: 385 from S-imp,
+  excluding repositories drawn for S-main. Expected Wilson 95% half-widths:
+  about ±2.7 points at p = 0.31 (n = 1,100) and ±4.2 points at p = 0.23
+  (n = 385).
+- **Draw** (`study/census/sample.mjs`, `lib/prng.mjs`). The frame's rows are
+  put in canonical order (repository name, by UTF-16 code unit), the
+  excluded sample's rows are removed, and the rows are shuffled by
+  Fisher-Yates (for i from n-1 down to 1, swap i with j drawn uniformly
+  from [0, i]). Random words come from SHA-256 in counter mode: word t is the
+  first 4 bytes, big-endian, of `SHA-256("ctxreach-study|<seed>|<stream>|<t>")`,
+  with rejection so no value is favoured. The stream is the sample's name
+  (`S-main`, `S-imp`). The first n rows of the shuffle, in draw order, are
+  the sample. `sample.mjs` refuses a study sample whose stream or n is not
+  registered here, whose seed does not come from the tag, or (S-imp) that
+  does not exclude S-main.
+- **Exclusions** (counted and reported per reason): fork, mirror or
+  archived at fetch time; repository gone (404) or blocked (403, 451);
+  commit gone (404, 422, or an empty repository); tree truncated by GitHub
+  or over 100,000 entries; a request that failed 3 times (network errors
+  or 5xx), or a rate-limit wait over 65 minutes; an instruction file whose
+  bytes fail the blob check or cannot be written on the machine
+  (reconstruction incomplete); a reconstruction over 50 MB. A template
+  repository is recorded, not excluded.
+- **Faults.** A measured row with an instrument fault (a `map` error, or an
+  output-side check below) is not used, and counts with the exclusions.
+- **Redraw.** If a sample loses more than 10% of its draws, it is redrawn
+  once with seed + 1 over the whole frame, and both draws are reported.
+
+## 5. Unit and reconstruction
+
+- **Unit**: a repository at Sourcegraph's indexed commit, as a **fresh
+  machine** would see it: empty `~/.codex` and `~/.claude`, default
+  settings, nothing ever approved, Claude Code 2.1.285 semantics.
+- **Reconstruction** (`study/census/recon.mjs`), through GitHub's REST API
+  and raw file host, GET only: the repository's metadata, its recursive
+  tree at the pinned commit, and only the files ctxreach reads: every
+  `AGENTS.md`, `AGENTS.override.md`, `AGENTS.local.md`, `CLAUDE.md`,
+  `CLAUDE.local.md`, `.claude/CLAUDE.md`, `.claude/AGENTS.md`,
+  `.claude/settings.json`, `.claude/settings.local.json`, `.claude/rules/**/*.md`
+  and `.codex/config.toml`, outside `node_modules`, `.git`, `.hg`, `.sl`
+  and `.svn`; plus every file they might import (any `@token`, up to 6
+  hops and 50 files). Every file is checked against its git blob id. An
+  empty `.git` directory marks the root.
+- **Symlinks** (tree mode `120000`) are written as a copy of their target
+  with the link recorded, so the result is the same on every operating
+  system. The measurement then applies the symlink rule: a link and its
+  target are one file (a symlinked `CLAUDE.md` pointing at `AGENTS.md`
+  delivers `AGENTS.md` once), and `map`'s warnings that exist only because
+  the link was copied are dropped (outcomes O5 and O6 keep `map`'s own codes
+  beside the corrected ones).
+- Nothing from a repository is executed. The census refuses to run under a
+  folder with an instruction file above it, checks that the empty homes stay
+  empty, and deletes each reconstruction after measuring it. What is
+  published: `owner/repo@commit`, measurements and blob ids; never
+  contents.
+
+## 6. Launch directories
+
+1. **Type 1**: the repository root. Primary.
+2. **Type 2**: every other directory holding an instruction file of its own
+   (`AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `CLAUDE.local.md`, or
+   `.claude/CLAUDE.md`, whose launch directory is the parent of `.claude`).
+   At most **20 per repository**. When a repository has more, 20 are drawn
+   by the seeded shuffle of section 4 from the directories in canonical
+   order, with the study seed itself (the `prereg-v1` seed, also for a
+   redrawn sample) and stream `t2|<owner/repo>`; `run-census.mjs` takes
+   that seed from the tag (`--seed-from-tag prereg-v1`) and refuses a
+   typed one for a study run. The count before the cap is kept in every
+   row (`t2Total`). Secondary. The cap leaves the root launch, and so O1
+   (content and file), untouched. O2 and P1 count a repository when at
+   least one of its type-2 directories shows the event, so in a capped
+   repository the cap can only miss an event in a directory not drawn,
+   never add one: there, O2 and P1-repos are lower bounds, and P1-pairs
+   counts drawn pairs only. The share of measured repositories whose
+   type-2 directories were capped is reported per frame beside them
+   (`type2Capped` in `results.json`).
+3. **Type 3**: directories 1 to 3 levels deep holding a `package.json`,
+   `pyproject.toml`, `Cargo.toml` or `go.mod`, not already type 1 or 2. At
+   most 20 per repository, by seeded draw (stream `t3|<repo>`). Sensitivity
+   only.
+
+`map --json` runs from every launch directory (`study/census/measure.mjs`),
+with `--codex-home` and `--claude-home` pointing at empty folders. It runs
+in the census's own process: the frozen build's `map` and `toJson`
+(`dist/index.js` re-exports them from the chunk `dist/cli.js` calls), used
+as the CLI's map command uses them (`study/census/lib/maprun.mjs`). On
+every 25th unit each launch directory is also run through the spawned CLI
+and the two answers compared; a difference is a fault on the row, and the
+run's manifest counts the checks. Each run
+must report the reconstruction as its repository root and the requested
+launch directory, and no file outside the repository may appear in either
+agent's view; a breach is a fault on the row.
+
+## 7. Outcomes and hypotheses
+
+Every outcome is a proportion k/n with a Wilson 95% interval, per frame, in
+three variants: **raw**; **deduplicated** by the root `AGENTS.md` blob (the
+first drawn row per blob); and **owner-capped** (at most 5 repositories per
+owner, the first drawn). Frames, versions and operating systems are never
+pooled. "Received by Claude" means `map` gives the file delivery `launch`
+or `import` at session start, with no approval needed and inside the
+repository (imports are expanded at launch).
+
+| Id | Metric (as `study/census/detectors.mjs` computes it) |
+|---|---|
+| **O1-content** (Claude headline) | Root launch. A = the root `AGENTS.md`'s lines after trimming and collapsing whitespace, at least 20 characters (code points), deduplicated; text inside code fences counts. R = the lines of A that appear, normalised the same way, in any file Claude receives at root launch. Event: R/\|A\| < 0.5. A repository with \|A\| = 0 is ineligible and counted. A byte-copy `CLAUDE.md` gives R = \|A\|. |
+| O1-content-shingle (sensitivity) | As O1-content, but a line of A counts as received when at least 0.8 of its 8-word shingles appear among the shingles of the received text (a line under 8 words: when it appears as a substring). |
+| **O1-file** | Root launch: the root `AGENTS.md` is not received by Claude (shadowed by a `CLAUDE.md`-family file that neither imports nor links it). |
+| **O2** (headless import) | At least one type-2 launch directory from which a headless session receives none of the root `AGENTS.md` (for example an import that resolves outside the launch directory, with no approval recorded). Also reported: over types 1-3, and among repositories with at least one type-2 directory. |
+| **P1** (Codex headline) | A (repository, launch directory) pair of types 1 and 2 where `map` reports `codex.cut`, `codex.no-budget` or `codex.empty-override` (Codex 0.159.2 rules, 32,768-byte budget). Reported per pair (P1-pairs) and per repository with at least one such pair (P1-repos); also with type 3. Pair intervals ignore clustering within a repository; the repository-level figure is the one with a valid interval. |
+| O4 | A nested `AGENTS.md` (not at the root, not `.claude/AGENTS.md`) that neither agent preloads at root launch. |
+| O5 | At least one `map` warning at root launch, by code, after the symlink rule; also as `map` printed them, and among repositories without links. |
+| O6 | At root launch, a `CLAUDE.md` names `AGENTS.md` in words without importing it (`claude.words-not-import`, after the symlink rule). |
+| O7 | Instruction files that are symlinks (tree mode `120000`), broken links, and a root `CLAUDE.md`-family link to `AGENTS.md` (the Windows link-as-text risk). |
+| O8 | The root `AGENTS.md`'s CJK share (Han, kana, Hangul among non-space characters); event at 0.1 or more; also the characters Codex's 32,768 bytes hold. |
+
+Codex's share of the root `AGENTS.md` is reported beside O1-content (100%
+whenever the chain is under 32 KiB).
+
+**Hypotheses**, set from the pilot (so these are confirmatory estimates
+with a different instrument, not blind tests, and are labelled that way):
+
+| Id | Frame, outcome | Pre-stated | Decision rule |
+|---|---|---|---|
+| **H1** (primary) | S-main, O1-content | at least 20% | **confirmed** if the Wilson lower bound is at least 20%; **refuted** if the upper bound is below 20%; else **inconclusive**. Reported verbatim either way. |
+| H1b | S-main, O1-file | 25% to 40% | **hit** if the whole interval is inside [25%, 40%]; **miss** if it is wholly outside; else **overlaps** |
+| **H2** (primary) | S-imp, O2 | at least 15% (the pilot's 22.8% is an upper bound) | as H1, bound 15% |
+| H3-pairs | S-main, P1-pairs | 1% to 5% | as H1b |
+| **H3-repos** (primary) | S-main, P1-repos | 1% to 8% | as H1b |
+
+O4 to O8, the type-3 variants and O2 over types 1-3 are secondary and have
+no decision rule.
+
+## 8. Instrument checks
+
+A failing check stops the study (or the cell), not the report: the failure
+is reported as found.
+
+| Check | What | Pass rule |
+|---|---|---|
+| K1 known answers | Every fixture (`test/fixtures/*` and `study/census/known-answer-fixtures/*`), with an answer derived by hand from `docs/rules.md` (`study/census/known-answers.json`), through the census pipeline with only the network replaced (`study/census/known-answer.mjs`) | n/n, every fixture answered, and no known `map` defect listed |
+| K2 planted faults | Each of the 16 outcome detectors and pipeline steps switched off in turn (`study/census/plant-census-faults.mjs`); the faster in-process runner must first reproduce the CLI's K1 row for row | every plant makes K1 lose a fixture it passed; none "not exercised" |
+| K3 census consistency | The regex version of O1-file (a root `CLAUDE.md` whose text lacks `@AGENTS.md`) in S-main, against the frame's own proportion (K3.claude - K3.claudeImport) / \|S\| (`study/census/consistency.mjs`) | the census proportion lies inside the sample's Wilson 95% interval |
+| K4 map vs Codex's renderer | For every sampled (repository, launch directory) pair of types 1 and 2, the `agents_md.instructions` block of `codex debug prompt-input` 0.159.2 against `map`'s predicted bytes, rendered twice each with a throwaway `CODEX_HOME`, no credentials, proxies at a closed port, and a fresh control token (`study/census/codex-check.mjs`) | k/n byte-exact reported, expected at least 98%; every mismatch listed and explained; renders that differ, lose the token, render for another directory or change shape are instrument faults, listed and counted against k |
+| K5 map vs Claude (live, $0) | 25 measured repositories by seeded draw within strata: 12 where the root `AGENTS.md` is shadowed at root launch, 8 importers from a type-2 directory where O2 fires, 5 without a root `CLAUDE.md`-family file (`study/census/k5-select.mjs`); 2 capture runs each | agreement k/n over decided cells, reported |
+| K6 blind second reader | A fresh reader derives delivery by hand for 30 (repository, launch directory) pairs from `docs/rules.md` alone: 30 measured repositories by seeded draw, then one type-1 or type-2 launch directory in each; sheets carry the files and never `map`'s answers, and the key taken from the census rows is hashed before the reader starts (`study/handcheck/PROTOCOL.md`) | x/30 reported, and per agent, with Wilson intervals; every disagreement adjudicated in the open (reader, map or rules) |
+| K7 GET only | Every network request goes through one client that refuses any other method before sending and counts the refusals (`study/census/lib/client.mjs`) | every script prints "non-GET attempts: 0" |
+| K8 planted pass | Before every conformance battery, a wrong budget (`--codex-max-bytes 30000`), a wrong mode or a reversed order run | must DISAGREE; a battery whose planted pass agrees is an instrument fault |
+| K9 positive control | A must-appear token in a `.claude/rules/` file at the launch directory of every Claude trial, and a decoy no rule loads | a missing control voids the trial; decoy 0/N |
+| K10 session asserts | `system/init.plugins` contains `agents-md@builtin`; `system/init.model` equals the pin; the rendered `cwd` equals the launch directory; `CODEX_HOME` inside the sandbox | a failed assert voids the trial |
+
+## 9. Behavioural cells
+
+Instruments:
+
+- **capture**: Claude Code 2.1.285 with `ANTHROPIC_BASE_URL` at a loopback
+  recorder that answers 400, a dummy key, session variables stripped, the
+  model pinned, and one discarded warm-up per fresh config folder. Wording:
+  "delivered to the model endpoint (custom base URL, gateway path)";
+  first-party equivalence is measured in M1.
+- **echo**: ctxreach's billed `probe` on Shiv's login. Wording: "echoed by
+  the model in a first-party session; an echo proves delivery, not
+  compliance".
+
+`study/behavioural/cells.json` in this commit is the registration of the
+cells (fixtures, arms, tokens, observables and rules), and
+`study/behavioural/run-cells.mjs` runs them. Every trial is one instrument
+run on a fresh copy with the harness's own tokens at the head and tail of
+each instruction file, a positive control and a decoy. A trial is **void**
+when the control is missing, the decoy is echoed, or a session assert fails;
+void trials are reported and never replaced. Thresholds are fractions of
+usable trials; an arm with fewer than 80% of its planned trials usable is
+**insufficient**. A cell without a refute rule whose confirm rule is not
+met is reported **not confirmed** (`not-confirmed` in `cells-results.json`),
+never **refuted**. Only B2 has a refute rule, so only B2 can be refuted; B1,
+B3, B4 and B6 are confirmed or not confirmed (or insufficient).
+
+| Cell | Arms x trials | Instrument | Rule (fractions of usable trials) |
+|---|---|---|---|
+| **B2** home folder (headline cell) | warm-up 1 (P0-a); A0 10 (no `~/.claude/CLAUDE.md`, copy under the scratch home); A1 10 (file present, copy under the scratch home); A2 10 (file present, copy outside it, via `TEMP`/`TMP`); A3 5 (A1 launched from `packages/api`); A4 5 (an ancestor above the git root inside the scratch home) | capture; `HOME`/`USERPROFILE` = `C:/ctxr-home`, made by `setup-b2-home.mjs`; the real home is never used | **confirmed** if A1 AGENTS.md <= 0.1 and A2 >= 0.9 and A0 >= 0.9; **refuted** if A1 >= 0.9; else inconclusive. Precondition P0-a: the warm-up shows the scratch home file's token on the wire; if not, B2 is not run as registered |
+| B1 ancestor above the git root | trap 10, control 10 | capture | confirmed if trap AGENTS.md <= 0.1 and trap ancestor token >= 0.9 and control AGENTS.md >= 0.9 |
+| B3 external import, headless | subdir 10, root 5 | capture | confirmed if subdir root AGENTS.md <= 0.1 and subdir package AGENTS.md >= 0.9 and root root AGENTS.md >= 0.8 |
+| B4 link as text | trap 5 | capture | confirmed if AGENTS.md <= 0.2 |
+| B6 ancestor rules | trap 5 | capture (+ hook, when recorded) | confirmed if the ancestor rule >= 0.8; the hook's events are reported beside it |
+| B7 words, not an import (task mode) | trap 10 | echo (billed) | reported as self-discovered k/10; no rule |
+
+Twins (`-twin` fixtures, B6's `paths` arm) have 0 trials unless a trap
+result needs a control; reserve runs may be spent on them, and are then
+reported as such.
+
+Later cells, run through the same harness once their instruments exist:
+
+- **M1** method equivalence: B1 trap and control, B3 subdir and root, B4
+  trap and the recorded `agents-only` source, 3 echo and 3 capture trials
+  each. Agreement per decided cell k/n. "Capture delivered, echo not seen"
+  is an echo miss (listed); "capture absent, echo seen" is an instrument
+  fault.
+- **E0** hook non-perturbation: the 8 recorded fixtures with the hook on
+  (16 billed runs); a changed decided cell means "the hook perturbs" and the
+  hook moves to separate paired runs.
+- **X-table** (canary x hook, on M1 and E0 only): hook-fired over
+  canary-seen for hookable files; canary-seen over hook-fired; partial
+  echoes; the AGENTS.md hook-blind rate.
+- **C1-C6** Codex, rendered twice each, byte-exact: C1 = K4; C2 untrusted
+  through `config.toml` against `-c` in the inline-table form, on Windows
+  and Linux; C3 an empty override taking its directory's slot; C4 a CJK
+  character split by the budget (U+FFFD); C5 a lowercase `agents.md` on
+  Windows; C6 `CODEX_HOME` at the project root. Wording: "as rendered by
+  `codex debug prompt-input` 0.159.2; the model was not run".
+- **V-col** (if hours remain): B1 trap and B2 A1 on the installed 2.1.280,
+  billed, 3 + 3; a version column, never pooled.
+
+Budget: about 130 capture runs ($0); 50 billed runs (M1 18, B7 10, E0 16,
+demo 6) with 100 in reserve for re-running **failed** trials only
+(contaminated trials are reported, never replaced). Usage is checked
+before every billed batch.
+
+## 10. Analysis and reporting rules
+
+- Proportions only, each with a Wilson 95% interval (z = 1.959963984540054);
+  printed as "k/n (x%, [lo, hi])". No significance tests between frames.
+- Raw, blob-deduplicated and owner-capped variants for every outcome; the
+  raw variant decides the hypotheses.
+- Never pooled across frames, agent versions or operating systems; every
+  figure carries its agent version, operating system and date.
+- Behavioural cells: per arm, both fractions, with Wilson bounds beside
+  them (0/10 means at most 27.8%; 10/10 at least 72.2%; 0/5 at most 43.4%).
+- Every number on the site and in the write-up is rendered from
+  `results.json` (`study/census/analyze.mjs`, `cells-results.json`); none is
+  typed by hand.
+- Wording: Codex claims read "as rendered by `codex debug prompt-input`
+  <version>; the model was not run". Capture claims read "delivered to the
+  model endpoint (custom base URL)". Census claims about Claude read
+  "predicted by ctxreach map for Claude Code <version>, a fresh machine;
+  checked live in K5 as k/n". openai/codex#41499 reads "not reproduced on
+  Windows 0.159.2 with a key form shown to apply".
+- Pilot data is cited as pilot. No repository is named for a defect.
+- **Opt-out.** Repository owners can opt out by opening an issue on
+  github.com/Shivansh2904/ctxreach; there is no email address to write to.
+  An opted-out repository's name and commit are removed from every
+  published file (rows, K4 mismatch lists, K5 and K6 lists); its
+  measurements stay in the aggregate fractions, which name no repository,
+  and the number of opt-outs is reported.
+
+## 11. Data handling
+
+- Network: GitHub REST GETs and `raw.githubusercontent.com` reads, and
+  unauthenticated Sourcegraph searches, all through the GET-only client:
+  three hosts only, one request at a time, a User-Agent naming the
+  project, conditional requests, and waits as long as `retry-after` or the
+  rate-limit reset asks. No GitHub search API. About 9,000 core GETs in all.
+- Credentials: GitHub REST GETs run through the GitHub CLI,
+  `gh api -X GET --include <endpoint>`, which authenticates itself from its
+  own login. ctxreach never reads, copies or stores a token (the client
+  refuses one, and a test fails if a study script reads one from the
+  environment). Raw file reads and Sourcegraph searches carry no
+  credentials. The run stops, rather than excluding units, when gh is
+  missing or not logged in.
+- Instruction-file contents exist only in a reconstruction folder while a
+  repository is measured and are deleted with it. Rows hold paths, sizes,
+  blob ids and measurements.
+- Nothing from a fetched repository is executed. Live runs on real
+  repositories (K5) use recall mode, with no tools, on a copy holding only
+  the instruction files.
+
+## 12. Registry
+
+The block below is the machine-checkable registration. `node
+study/prereg.mjs check` prints any difference from the code; the census
+scripts read the sample sizes from it.
+
+```json prereg-registry
+{
+  "schema": "ctxreach.study-prereg/v1",
+  "frames": {
+    "S": "file:^AGENTS\\.md$ case:yes count:all",
+    "S-imp": "file:^CLAUDE\\.md$ case:yes patterntype:regexp ^@AGENTS\\.md count:all",
+    "S-ci": "file:^AGENTS\\.md$ count:all",
+    "K3.claude": "file:^CLAUDE\\.md$ case:yes repo:has.file(path:^AGENTS\\.md$) count:all",
+    "K3.claudeImport": "file:^CLAUDE\\.md$ case:yes repo:has.file(path:^AGENTS\\.md$) patterntype:regexp @AGENTS\\.md count:all"
+  },
+  "frameChecks": {"answers": 2, "churnAllowance": 5, "churnTolerance": 0.001},
+  "limits": {
+    "maxTreeEntries": 100000,
+    "maxType2Dirs": 20,
+    "maxType3Dirs": 20,
+    "maxImportDepth": 6,
+    "maxImportFiles": 50,
+    "maxRepoBytes": 52428800,
+    "maxAttempts": 3
+  },
+  "redraw": {"lostShareOver": 0.1, "seedOffset": 1},
+  "normalise": {"minLineChars": 20, "shingleWords": 8, "shingleThreshold": 0.8, "o1EventShare": 0.5},
+  "p1Codes": ["codex.cut", "codex.no-budget", "codex.empty-override"],
+  "cjkEvent": 0.1,
+  "codexBudget": 32768,
+  "claudeVersion": "2.1.285",
+  "mapCheckEvery": 25,
+  "knownAnswerClaudeVersion": "2.1.285",
+  "k4": {"trials": 2, "expectedAtLeast": 0.98, "launchTypes": [1, 2]},
+  "k6": {"pairs": 30, "launchTypes": [1, 2]},
+  "analysis": {"z": 1.959963984540054, "ownerCap": 5},
+  "hypotheses": [
+    {"id": "H1", "frame": "S-main", "outcome": "O1-content", "rule": "bound", "bound": 0.2, "primary": true},
+    {"id": "H1b", "frame": "S-main", "outcome": "O1-file", "rule": "range", "lo": 0.25, "hi": 0.4},
+    {"id": "H2", "frame": "S-imp", "outcome": "O2", "rule": "bound", "bound": 0.15, "primary": true},
+    {"id": "H3-pairs", "frame": "S-main", "outcome": "P1-pairs", "rule": "range", "lo": 0.01, "hi": 0.05},
+    {"id": "H3-repos", "frame": "S-main", "outcome": "P1-repos", "rule": "range", "lo": 0.01, "hi": 0.08, "primary": true}
+  ],
+  "cells": {
+    "B1": {
+      "instrument": "capture",
+      "arms": {"trap": 10, "control": 10},
+      "confirm": [["trap", "agents", "<=", 0.1], ["trap", "ancestor", ">=", 0.9], ["control", "agents", ">=", 0.9]],
+      "refute": []
+    },
+    "B2": {
+      "instrument": "capture",
+      "arms": {"A0": 10, "A1": 10, "A2": 10, "A3": 5, "A4": 5},
+      "confirm": [["A1", "agents", "<=", 0.1], ["A2", "agents", ">=", 0.9], ["A0", "agents", ">=", 0.9]],
+      "refute": [["A1", "agents", ">=", 0.9]]
+    },
+    "B3": {
+      "instrument": "capture",
+      "arms": {"subdir": 10, "root": 5},
+      "confirm": [["subdir", "rootAgents", "<=", 0.1], ["subdir", "packageAgents", ">=", 0.9], ["root", "rootAgents", ">=", 0.8]],
+      "refute": []
+    },
+    "B4": {
+      "instrument": "capture",
+      "arms": {"trap": 5},
+      "confirm": [["trap", "agents", "<=", 0.2]],
+      "refute": []
+    },
+    "B6": {
+      "instrument": "capture",
+      "arms": {"trap": 5},
+      "confirm": [["trap", "ancestorRule", ">=", 0.8]],
+      "refute": []
+    },
+    "B7": {
+      "instrument": "echo",
+      "arms": {"trap": 10},
+      "confirm": [],
+      "refute": []
+    }
+  },
+  "samples": {
+    "S-main": {"frame": "S", "n": 1100},
+    "S-imp": {"frame": "S-imp", "n": 385, "exclude": ["S-main"]}
+  },
+  "seed": {"tag": "prereg-v1", "digits": 8},
+  "codexVersion": "0.159.2"
+}
+```
+
+## 13. Order of work after the tag
+
+1. `node study/census/seed.mjs` prints the seed.
+2. `sample.mjs --seed-from-tag prereg-v1` draws S-main, then S-imp with
+   `--exclude` S-main.
+3. K1 and K2 on the frozen build; K7 printed by every script.
+4. `run-census.mjs --expect-dist {{stamp:dist.digest}}` over S-main and
+   S-imp, with `--codex-bin` for K4; K3 from the rows and the frozen counts.
+5. Lab cells at $0 (B1, B2, B3, B4, B6, K5), then billed (M1, E0, B7).
+6. K6 by a fresh reader: `study/handcheck/handcheck.mjs draw` with the
+   seed, `sheets`, the reader's answers, then `score` and the adjudication
+   (`study/handcheck/PROTOCOL.md`).
+7. `analyze.mjs` writes `results.json`; deviations are appended below.
+
+## Deviations
+
+Appended below this line, dated, never edited in place.

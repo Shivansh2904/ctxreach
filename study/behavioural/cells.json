@@ -1,0 +1,282 @@
+{
+  "schema": "ctxreach.study-cells/v1",
+  "about": "Pre-registered lab cells (study/PREREG.md, section 'Behavioural cells'; plan section 1.4). Each cell names a fixture under study/behavioural/fixtures, its arms, the instrument, and the decision rule. Thresholds are fractions of usable trials; an arm with fewer usable trials than minUsable is 'insufficient', never re-run to fill it. Voided trials (control missing, decoy echoed, session assert failed) are reported and never replaced.",
+  "pinned": {
+    "claudeCodeVersion": "2.1.285",
+    "claudeBin": "tools-scratch/cc/node_modules/.bin/claude (the main session passes the absolute path with --claude-bin)",
+    "env": { "DISABLE_AUTOUPDATER": "1" }
+  },
+  "scratchHome": {
+    "live": "C:/ctxr-home",
+    "outside": "C:/ctxr-out",
+    "note": "Created only by study/behavioural/setup-b2-home.mjs, run by the main session. The real home directory and its .claude folder are never written or used."
+  },
+  "instruments": {
+    "capture": {
+      "billed": false,
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "args": [
+        "verify",
+        "--agent",
+        "claude",
+        "--from",
+        "{launch}",
+        "--repo",
+        "{repo}",
+        "--trials",
+        "1",
+        "--save",
+        "{save}",
+        "--model",
+        "{model}",
+        "--claude-bin",
+        "{claudeBin}",
+        "--json"
+      ],
+      "homeArgs": ["--home", "{home}"]
+    },
+    "echo": {
+      "billed": true,
+      "wording": "echoed by the model in a first-party session (an echo proves delivery, not compliance)",
+      "args": [
+        "probe",
+        "--agent",
+        "claude",
+        "--mode",
+        "{mode}",
+        "--from",
+        "{launch}",
+        "--repo",
+        "{repo}",
+        "--trials",
+        "1",
+        "--save",
+        "{save}",
+        "--claude-bin",
+        "{claudeBin}",
+        "--json"
+      ],
+      "taskArgs": ["--task", "{task}"]
+    }
+  },
+  "cells": [
+    {
+      "id": "B1",
+      "title": "A .claude/CLAUDE.md in a folder above the git root (not the home folder) switches AGENTS.md off",
+      "instrument": "capture",
+      "fixture": "b1-ancestor",
+      "observe": { "agents": ["AGENTS.md"], "ancestor": ["@ancestor"] },
+      "arms": [
+        {
+          "id": "trap",
+          "trials": 10,
+          "launch": ".",
+          "tmp": "anc/tmp",
+          "files": [
+            {
+              "path": "anc/.claude/CLAUDE.md",
+              "token": "ancestor",
+              "text": "# Ancestor instructions\n\nAncestor token {token}\n"
+            }
+          ]
+        },
+        { "id": "control", "trials": 10, "launch": ".", "tmp": "anc/tmp", "files": [] }
+      ],
+      "confirm": [
+        ["trap", "agents", "<=", 0.1],
+        ["trap", "ancestor", ">=", 0.9],
+        ["control", "agents", ">=", 0.9]
+      ],
+      "refute": []
+    },
+    {
+      "id": "B2",
+      "title": "~/.claude/CLAUDE.md switches AGENTS.md off for a repository under the home folder, not for one outside it",
+      "headline": true,
+      "instrument": "capture",
+      "fixture": "b2-home",
+      "homeArms": true,
+      "warmup": {
+        "arm": "A1",
+        "precondition": "P0-a",
+        "mustSee": "home",
+        "about": "one discarded warm-up per fresh config folder; P0-a: the home file's token reaches the endpoint, proving ~ follows USERPROFILE"
+      },
+      "observe": { "agents": ["AGENTS.md"], "home": ["@home"], "ancestor": ["@ancestor"] },
+      "arms": [
+        {
+          "id": "A0",
+          "trials": 10,
+          "launch": ".",
+          "tmp": "{home}/tmp",
+          "env": { "HOME": "{home}", "USERPROFILE": "{home}" },
+          "files": []
+        },
+        {
+          "id": "A1",
+          "trials": 10,
+          "launch": ".",
+          "tmp": "{home}/tmp",
+          "env": { "HOME": "{home}", "USERPROFILE": "{home}" },
+          "files": [
+            {
+              "path": "{home}/.claude/CLAUDE.md",
+              "token": "home",
+              "text": "# Personal instructions\n\nHome token {token}\n"
+            }
+          ]
+        },
+        {
+          "id": "A2",
+          "trials": 10,
+          "launch": ".",
+          "tmp": "{outside}/tmp",
+          "env": { "HOME": "{home}", "USERPROFILE": "{home}" },
+          "files": [
+            {
+              "path": "{home}/.claude/CLAUDE.md",
+              "token": "home",
+              "text": "# Personal instructions\n\nHome token {token}\n"
+            }
+          ]
+        },
+        {
+          "id": "A3",
+          "trials": 5,
+          "launch": "packages/api",
+          "tmp": "{home}/tmp",
+          "env": { "HOME": "{home}", "USERPROFILE": "{home}" },
+          "files": [
+            {
+              "path": "{home}/.claude/CLAUDE.md",
+              "token": "home",
+              "text": "# Personal instructions\n\nHome token {token}\n"
+            }
+          ]
+        },
+        {
+          "id": "A4",
+          "trials": 5,
+          "launch": ".",
+          "tmp": "{home}/anc/tmp",
+          "env": { "HOME": "{home}", "USERPROFILE": "{home}" },
+          "files": [
+            {
+              "path": "{home}/anc/.claude/CLAUDE.md",
+              "token": "ancestor",
+              "text": "# Ancestor instructions\n\nAncestor token {token}\n"
+            }
+          ]
+        }
+      ],
+      "confirm": [
+        ["A1", "agents", "<=", 0.1],
+        ["A2", "agents", ">=", 0.9],
+        ["A0", "agents", ">=", 0.9]
+      ],
+      "refute": [["A1", "agents", ">=", 0.9]]
+    },
+    {
+      "id": "B3",
+      "title": "An @AGENTS.md import in the root CLAUDE.md does not reach a headless session launched in a package",
+      "instrument": "capture",
+      "fixture": "b3-external-import",
+      "twin": "b3-external-import-twin",
+      "observe": { "rootAgents": ["AGENTS.md"], "packageAgents": ["packages/api/AGENTS.md"] },
+      "arms": [
+        { "id": "subdir", "trials": 10, "launch": "packages/api", "tmp": "t/tmp", "files": [] },
+        { "id": "root", "trials": 5, "launch": ".", "tmp": "t/tmp", "files": [] },
+        {
+          "id": "twin-subdir",
+          "trials": 0,
+          "fixture": "b3-external-import-twin",
+          "launch": "packages/api",
+          "tmp": "t/tmp",
+          "files": []
+        }
+      ],
+      "confirm": [
+        ["subdir", "rootAgents", "<=", 0.1],
+        ["subdir", "packageAgents", ">=", 0.9],
+        ["root", "rootAgents", ">=", 0.8]
+      ],
+      "refute": []
+    },
+    {
+      "id": "B4",
+      "title": "A CLAUDE.md whose whole content is the path AGENTS.md (a symlink checked out as text) switches AGENTS.md off",
+      "instrument": "capture",
+      "fixture": "b4-link-as-text",
+      "twin": "b4-link-as-text-twin",
+      "noTokens": ["CLAUDE.md"],
+      "observe": { "agents": ["AGENTS.md"] },
+      "arms": [
+        { "id": "trap", "trials": 5, "launch": ".", "tmp": "t/tmp", "files": [] },
+        { "id": "twin", "trials": 0, "fixture": "b4-link-as-text-twin", "launch": ".", "tmp": "t/tmp", "files": [] }
+      ],
+      "confirm": [["trap", "agents", "<=", 0.2]],
+      "refute": []
+    },
+    {
+      "id": "B6",
+      "title": "A .claude/rules file without paths, in a folder above the git root, loads at launch",
+      "instrument": "capture",
+      "hook": "report the InstructionsLoaded events when the instrument records them (lane L3)",
+      "fixture": "b6-ancestor-rules",
+      "observe": { "ancestorRule": ["@ancrule"], "agents": ["AGENTS.md"] },
+      "arms": [
+        {
+          "id": "trap",
+          "trials": 5,
+          "launch": ".",
+          "tmp": "anc/tmp",
+          "files": [
+            {
+              "path": "anc/.claude/rules/anc-rule.md",
+              "token": "ancrule",
+              "text": "# Ancestor rule\n\nAncestor rule token {token}\n"
+            }
+          ]
+        },
+        {
+          "id": "twin-paths",
+          "trials": 0,
+          "launch": ".",
+          "tmp": "anc/tmp",
+          "files": [
+            {
+              "path": "anc/.claude/rules/anc-rule.md",
+              "token": "ancrule",
+              "text": "---\npaths:\n  - \"**/*.py\"\n---\n\n# Ancestor rule\n\nAncestor rule token {token}\n"
+            }
+          ]
+        }
+      ],
+      "confirm": [["trap", "ancestorRule", ">=", 0.8]],
+      "refute": []
+    },
+    {
+      "id": "B7",
+      "title": "A CLAUDE.md that says 'read AGENTS.md' in words: does the model open it during a task?",
+      "instrument": "echo",
+      "mode": "task",
+      "task": "In two sentences, explain what packages/api/src/payments.ts does.",
+      "fixture": "b7-words-task",
+      "twin": "b7-words-task-twin",
+      "observe": { "agents": ["AGENTS.md"] },
+      "arms": [
+        { "id": "trap", "trials": 10, "launch": ".", "tmp": "t/tmp", "files": [] },
+        { "id": "twin", "trials": 0, "fixture": "b7-words-task-twin", "launch": ".", "tmp": "t/tmp", "files": [] }
+      ],
+      "confirm": [],
+      "refute": [],
+      "report": "self-discovered k/10 (no decision rule)"
+    }
+  ],
+  "later": {
+    "M1": "method equivalence: 6 fixtures (B1 trap and control, B3 subdir and root, B4 trap, test/recorded/sources/agents-only) x 3 echo vs 3 capture; per decided cell agreement k/n; capture delivered + echo not seen = echo miss (listed); capture absent + echo seen = instrument fault. Runs through this harness with --instrument echo and capture over the same arms once lanes L2 and L3 have merged.",
+    "E0": "hook non-perturbation over the 8 recorded fixtures (16 billed runs); needs lane L3's hook writer.",
+    "X-table": "canary x hook cross-table on M1 and E0 only; lane L3's src/probe/instruments.ts computes it.",
+    "V-col": "B1 trap and B2 A1 on the installed 2.1.280 (billed, 3+3), a version column never pooled."
+  }
+}

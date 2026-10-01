@@ -1,0 +1,96 @@
+def9cbf78d6e0210e57c2f2a94b68b2f5d4d9f5ca9fda8b6b9ff37e1798667e9  tools-scratch/runs/r1-ancestor/manifest.json  ->  probe-runs/r1-ancestor/manifest.json (--paths-only)
+8a088843f0ae5c52b3dc0e6fff1fd22790e0fba4fb82968cb42adbb31fe6d914  tools-scratch/runs/r1-ancestor/trial-1.jsonl  ->  probe-runs/r1-ancestor/trial-1.jsonl (--paths-only)
+258c1a378fde1920696ce769325ede135face37d3f0e48a741663583e159b9e8  tools-scratch/runs/r2-control/manifest.json  ->  probe-runs/r2-control/manifest.json (--paths-only)
+a04e5d00afa39e1814628be2b687913ac17b8edddc4b2577444170917707226f  tools-scratch/runs/r2-control/trial-1.jsonl  ->  probe-runs/r2-control/trial-1.jsonl (--paths-only)
+e0447eb4541bc4559141485f4accb3a932f86ae50e4223ff4a50b8768d5fc192  tools-scratch/anc/.claude/CLAUDE.md  ->  probe-runs/fixture-ancestor/.claude/CLAUDE.md
+6cc2a9038db39678591d9c01f29eb491f9cc98b64b0ba52798ddcdd6a9d76369  tools-scratch/cl/out/run1.jsonl  ->  hook-runs/run1.jsonl
+d5566f258257a94314a7f63794d7c7b01cdd24bc31fccb48609527073716b19d  tools-scratch/cl/out/run2.jsonl  ->  hook-runs/run2.jsonl
+305b4fbf1fdd43a17ecc3b4791770b7f9f9b0188b6c954058f5c18c89e236017  tools-scratch/cl/out/hook1.jsonl  ->  hook-runs/hook1.jsonl
+a41f3f89417d420ee58111af3a7768377039f34717f6cc94d6345d6f627a559f  tools-scratch/cl/out/hook2.jsonl  ->  hook-runs/hook2.jsonl
+462f50a9abf918bf1542caf71963e1051f59e9fb88a955966410d56fd2a8d426  tools-scratch/cl/out/map-before.txt  ->  hook-runs/map-before.txt
+273c4ed4863808e3a7128494353e515ee601eac5568f4a5648bd7dddb7b361a7  tools-scratch/cl/out/prediction-time.txt  ->  hook-runs/prediction-time.txt
+6be327fdfb63afe551f9de47f64dc46b14b405818f37a415a46b2aa651720b0c  tools-scratch/cl/out/anc-CLAUDE.md.moved  ->  hook-runs/anc-CLAUDE.md.moved
+62b845a3eee402ff807d48df39f61afad8893c9bb91ba8ace22985efc8b8fe7e  tools-scratch/cl/out/run1.jsonl.args.json  ->  hook-runs/run1.args.json
+70b360f993b129cf9372c0cb624365884405920a86b7005119d803504bf70f3a  tools-scratch/cl/out/run2.jsonl.args.json  ->  hook-runs/run2.args.json
+d9f40aeb2441f39ea5b1284ff4f5b9668c5dfd10ab170ec58acc8e1797a9d52a  tools-scratch/cl/anc/.claude/rules/anc-rule.md  ->  hook-runs/fixture/.claude/rules/anc-rule.md
+6f8b8c740851e74fc21d23c6980b63dfbd4f66b244112fe8640907202e790cb1  tools-scratch/cl/anc/repo/.claude/rules/style.md  ->  hook-runs/fixture/repo/.claude/rules/style.md
+5e90f543befd1e8217343bfc55c8ef8a4149fff22fb695cd7eb3681ba7184a13  tools-scratch/cl/anc/repo/AGENTS.md  ->  hook-runs/fixture/repo/AGENTS.md
+0f44aa620c014e0b7b8a2d218031ddcd8bfe916590df1fe52ccdfc1b9b458d3c  tools-scratch/cl/anc/repo/ctxreach-decoy.md  ->  hook-runs/fixture/repo/ctxreach-decoy.md
+531a4ff5daa784a3cd5fb3662659484d2140034008f06180511beea97c111c10  tools-scratch/cap-claude-A.jsonl  ->  capture/claude-A.jsonl (--claude)
+511630c92151a66f11d16a55b211a439cfc03f8b7899ab6ef0fac9692fc7017f  tools-scratch/cap-claude-B.jsonl  ->  capture/claude-B.jsonl (--claude)
+3f726f672d580838978bd73ff0667ddc5d2a788f94bdfeebd40cc90d07d19a30  tools-scratch/cap-codex.jsonl  ->  capture/codex-exec.jsonl (--codex)
+b2c66b6c3d8d71c6a0496aafef9be798aa2ec2cc254f134b4396ac9e107c519e  tools-scratch/cap-oc.jsonl  ->  capture/opencode.jsonl (--opencode)
+ae4a27c5066dbce140eea30161de815c2f54f2abb3d94666f46c47ffb8ae7f92  tools-scratch/codex-exec.jsonl  ->  capture/codex-exec.stdout.jsonl
+003638e127b1b2956f1da94052c4dc6a9f7657c86545059aeafd328aeb9e5f6d  tools-scratch/codex-exec.err  ->  capture/codex-exec.stderr.txt
+4b74f5174f77658bb3d4d478f49b5b56d2547433db9960b22aef487592453fb5  tools-scratch/claude-capture-predictions.txt  ->  capture/claude-capture-predictions.txt
+780ea1976ae97fc24a94ffd201fc035dd3948c251c1ce428037cc5212c149192  tools-scratch/oc-config.json  ->  capture/opencode-config.json
+33dc139c8bf87b7f74cb0975afec46afb31b2b4a0f070eb0d64aa5aa68382619  tools-scratch/cfx/A/.claude/CLAUDE.md  ->  capture/fixture/cfx/A/.claude/CLAUDE.md
+fed1301b117869fb790dd85af60e13e2662741c92e34fed58c46225b6bce4cdc  tools-scratch/cfx/A/repo/.claude/rules/style.md  ->  capture/fixture/cfx/A/repo/.claude/rules/style.md
+616a1935f612136d761d7776d8c45e5c21eae148bd644cfb065cb58a638bb4fb  tools-scratch/cfx/A/repo/AGENTS.md  ->  capture/fixture/cfx/A/repo/AGENTS.md
+c751d0b08881c6ba00f33c5c7c56904216badd74fc8415935ae06974de8f5e33  tools-scratch/cfx/A/repo/docs/decoy.md  ->  capture/fixture/cfx/A/repo/docs/decoy.md
+6c1802311311da0b75f9bb03432e409ec67801c621b43972887b5cb9a3a1ebb4  tools-scratch/cfx/A/repo/packages/api/AGENTS.md  ->  capture/fixture/cfx/A/repo/packages/api/AGENTS.md
+b40dedde60828bf61d1fadbfc3bb7ea2e0421e9511d22f1b5fb44ae5ba07dbb3  tools-scratch/cfx/A/repo/packages/api/src/index.ts  ->  capture/fixture/cfx/A/repo/packages/api/src/index.ts
+a15d8a6b2b56bf333bae9498bd270f0b9de6c596338f53c1ae817e332e57b1c5  tools-scratch/cfx/B/repo/.claude/rules/style.md  ->  capture/fixture/cfx/B/repo/.claude/rules/style.md
+26979a879dd52f8b21517573290a4a42c0f1c65a417b638789e22a3feccff46c  tools-scratch/cfx/B/repo/AGENTS.md  ->  capture/fixture/cfx/B/repo/AGENTS.md
+93dbf6cca96325c96eaf2381e65f0b5f69f4b7ca033f845af209e06f7c3c91c6  tools-scratch/cfx/B/repo/docs/decoy.md  ->  capture/fixture/cfx/B/repo/docs/decoy.md
+9115375a662cf863c0e1e602e909c0dd209064779d0e5f2b52148b8af078309f  tools-scratch/cfx/B/repo/packages/api/AGENTS.md  ->  capture/fixture/cfx/B/repo/packages/api/AGENTS.md
+b40dedde60828bf61d1fadbfc3bb7ea2e0421e9511d22f1b5fb44ae5ba07dbb3  tools-scratch/cfx/B/repo/packages/api/src/index.ts  ->  capture/fixture/cfx/B/repo/packages/api/src/index.ts
+8a510d9dd49e9a6e186253d8ce390c25bef47c13bf51e38e2d717f579042fe96  tools-scratch/ofx/repo/AGENTS.md  ->  capture/fixture/ofx/repo/AGENTS.md
+adf7a885c585b8f051f6718f3e2c00c47d9556a5ca10b735c71f0962edfcf465  tools-scratch/ofx/repo/CLAUDE.md  ->  capture/fixture/ofx/repo/CLAUDE.md
+5ed577bdc9fd352eecb943d52df3b57f8ef2a747ac0d2de2c3b9e987df00b272  tools-scratch/ofx/repo/packages/api/AGENTS.md  ->  capture/fixture/ofx/repo/packages/api/AGENTS.md
+b5780c8289a7cd4464e69e205e7c0023beb0e3d2e6a20be948069ec0f3993104  tools-scratch/ofx/repo/packages/api/CLAUDE.md  ->  capture/fixture/ofx/repo/packages/api/CLAUDE.md
+0df9c550337acd97a06bca85ce4ce1ee7a7ea66762c49373ce7aa1e5eb228001  tools-scratch/ofx/repo/packages/api/src/index.ts  ->  capture/fixture/ofx/repo/packages/api/src/index.ts
+66fbd97ff773166a9f79cd9d8a747bfd028f924c296976de8cd5c364ffeacce2  tools-scratch/pi-api.json  ->  codex-renders/codex-t1-packages-api.json (--codex)
+c43650a6fd5887b3b1cc616cd214156ccc28a313523f9a2e02810ddb348dac9c  tools-scratch/pi-api.err  ->  codex-renders/codex-t1-packages-api.stderr.txt
+d16890a8b357f031b6d43f47fd7be208484109d847693959676c8c2ff1c7a1a6  tools-scratch/pi-passlock.json  ->  codex-renders/passlock-packages-server.json (--codex --third-party)
+b5488f35a53dd0748e0f35753cd40cd41331f6588e51bde1e0dae05fd9513afa  tools-scratch/map-t1.json  ->  codex-renders/codex-t1-map.json
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/api.err  ->  codex-renders/cx/api.err
+e11a4c90bc16fe8bcd8905eafb950d92cafab494001754ba944d7d07e7cf0f52  tools-scratch/cx/api.json  ->  codex-renders/cx/api.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/f.err  ->  codex-renders/cx/f.err
+8c35d3f90a6904ce0dbfe5436e373bafbd109b3d3069cb793844512513540038  tools-scratch/cx/f.json  ->  codex-renders/cx/f.json (--codex)
+692cb856d9f6cc61221dbeb8a7d99795f8735acc44f2b2eace9a1cec163cdb22  tools-scratch/cx/home-is-root.json  ->  codex-renders/cx/home-is-root.json (--codex)
+07615bf91f33a39ca153596579bba5f389139f2b2bd4fb2ee586ced61c999cf9  tools-scratch/cx/inl-trusted.json  ->  codex-renders/cx/inl-trusted.json (--codex)
+0cd0ec9adb7e1696a3a646565a83433c633919fdf494a82e37e1fb2591afaa4d  tools-scratch/cx/inl-untrusted.json  ->  codex-renders/cx/inl-untrusted.json (--codex)
+103a280a82d3c29bbf0f5d9e36932b6bc1d7c80b91eb034f4b8fe1febef84b57  tools-scratch/cx/map-_.json  ->  codex-renders/cx/map-_.json
+c2f9ff3b16dda016bb0b53e73fe5ee5388b8b8c30da47fdbd06dfa2e5e15660d  tools-scratch/cx/map-packages_api.json  ->  codex-renders/cx/map-packages_api.json
+aef0b33ad59ab2c1f6be51882b783c63ace4badfb9edfab4a3f3ef6703a326c5  tools-scratch/cx/map-tools.json  ->  codex-renders/cx/map-tools.json
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/maxbytes-c.err  ->  codex-renders/cx/maxbytes-c.err
+f097f63126c5ab58ed2b6abd47cbe9b8ec22bbf34dc77bc484f9e70651414188  tools-scratch/cx/maxbytes-c.json  ->  codex-renders/cx/maxbytes-c.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/projcfg-trusted-c.err  ->  codex-renders/cx/projcfg-trusted-c.err
+181249ec4c9bb04d478ed23e90d578d86ac1e4da1356274b8da4034c266f2c06  tools-scratch/cx/projcfg-trusted-c.json  ->  codex-renders/cx/projcfg-trusted-c.json (--codex)
+0957605a9da340240658660eddaa764fd4678b6e6fcc3f3dc1968380a2c8408a  tools-scratch/cx/projcfg-trusted-toml.err  ->  codex-renders/cx/projcfg-trusted-toml.err
+8823ffc91e5656093661e7996211727eda2e64294ad1dde079b896e5d0e5bd85  tools-scratch/cx/projcfg-trusted-toml.json  ->  codex-renders/cx/projcfg-trusted-toml.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/projcfg-unknown.err  ->  codex-renders/cx/projcfg-unknown.err
+1e0e22405912bf25a9c290b03e7f0432130b62b4b19293ec71e66fb5a3249c33  tools-scratch/cx/projcfg-unknown.json  ->  codex-renders/cx/projcfg-unknown.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/root.err  ->  codex-renders/cx/root.err
+49cc8bc31ef5a337ac68de474c9889ee755d8ad2bcdf89d802f2612e722fd1f3  tools-scratch/cx/root.json  ->  codex-renders/cx/root.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/tools.err  ->  codex-renders/cx/tools.err
+49166093c5db0863506b64ee592fcc80ba43cd185d7323c69df2d633adc5f3bc  tools-scratch/cx/tools.json  ->  codex-renders/cx/tools.json (--codex)
+0957605a9da340240658660eddaa764fd4678b6e6fcc3f3dc1968380a2c8408a  tools-scratch/cx/trusted-toml.err  ->  codex-renders/cx/trusted-toml.err
+81c14fd6bcedb465daf6666e6cdc6c678beb55683f99a28ff83777f85a4e9a6a  tools-scratch/cx/trusted-toml.json  ->  codex-renders/cx/trusted-toml.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/untrusted-c-lower.err  ->  codex-renders/cx/untrusted-c-lower.err
+9dd472aad6f8c16604234c01c7c1d9b9c78bd6742a511ba63db52ab8b6ce7189  tools-scratch/cx/untrusted-c-lower.json  ->  codex-renders/cx/untrusted-c-lower.json (--codex)
+bcd2fa7363280dc9dc39550cd510e87e38cbd69b0c3d599c9a7b83d586225252  tools-scratch/cx/untrusted-c.err  ->  codex-renders/cx/untrusted-c.err
+4fff6d85ef18bf3632f588fbd9d8b4fe11bb89c4f0389541c823add3b75ec56c  tools-scratch/cx/untrusted-c.json  ->  codex-renders/cx/untrusted-c.json (--codex)
+1fac3f10dad248094df359192a88fa8c831c7812f4b6eaecf47330034a971de7  tools-scratch/cx/untrusted-toml.err  ->  codex-renders/cx/untrusted-toml.err
+90d786516fb77bed7e8fb3b38203011dfff99c5b8e84e57673596edcfac993a3  tools-scratch/cx/untrusted-toml.json  ->  codex-renders/cx/untrusted-toml.json (--codex)
+16accfde7cd5ffbd369a59dcd69eb10b8c70211957b8d056ab85f797aac90ed8  tools-scratch/err-configtoml.txt  ->  codex-renders/err-configtoml.txt
+cc635abfad3a082a77e570d062b6d62f623567925ffe3d8a262dda82fc0973e4  tools-scratch/err-dashc.txt  ->  codex-renders/err-dashc.txt
+d543b5dbab3be8e2366ee2d67c5471efc8036620b9aeae2aab9d6479ec8b3062  tools-scratch/gfx/GEMINI.md  ->  gemini/fixture/gfx/GEMINI.md
+1f6c3efd0f80973bed30c29d2cb39cc6601f3aafdd6733fe4784c0a5f39fb739  tools-scratch/gfx/repo/AGENTS.md  ->  gemini/fixture/gfx/repo/AGENTS.md
+fe0faf2f32537f784a1b03606f8b03d1ab129fc1ef0b0d7b478eb3d68dc6c528  tools-scratch/gfx/repo/Api/GEMINI.md  ->  gemini/fixture/gfx/repo/Api/GEMINI.md
+1bf393e3636c013e6a78e019904f4f4e2b49fcd8553d7569c132d83cfbcc8914  tools-scratch/gfx/repo/docs/incode.md  ->  gemini/fixture/gfx/repo/docs/incode.md
+9bb16afe52729772f4709cad6e91951a9f2ed67090b3a0b9f1686e49c5af6026  tools-scratch/gfx/repo/docs/style.md  ->  gemini/fixture/gfx/repo/docs/style.md
+9dc6008aeb3ad618e19a563425ebbf7ebf24c33f0d02178b6776160778348f26  tools-scratch/gfx/repo/GEMINI.md  ->  gemini/fixture/gfx/repo/GEMINI.md
+a4f7493e513b04de53cd86bfd2fd3771fdc832e886d939ae7edd2974af2dc448  tools-scratch/gfx/repo/packages/api/GEMINI.md  ->  gemini/fixture/gfx/repo/packages/api/GEMINI.md
+c930e1f0660159dbf065792de87b3560b6b55b07c2cfd2083ed93d5a95076c2b  tools-scratch/capture.mjs  ->  scripts/capture.mjs
+3649f9ec0f69c37cea12abcbd92f45efb0892574d6b8753f7c950afaf939b80e  tools-scratch/run-claude-capture.mjs  ->  scripts/run-claude-capture.mjs
+03068261ce10dadb83b6638ad1b9688176269ac4a9fec0719f87d5f655b1d189  tools-scratch/codex-conformance.mjs  ->  scripts/codex-conformance.mjs
+f25d85f67949e92c8055ad1843cee9782d5b0b9b9dad2b82ec8cbcffef4cd097  tools-scratch/recon.mjs  ->  scripts/recon.mjs
+edcd02b73ae5b067a58d016ac15285520c13a1029b2799dbbce2faccfa0595ce  tools-scratch/score_pi.py  ->  scripts/score_pi.py
+11a07de6e93c16291af0bddfc1824e2f8b0e0e30ee267621d8328702831eed20  tools-scratch/gemini-oracle.mjs  ->  scripts/gemini-oracle.mjs
+fd7844436cff6c8138a347b41d8e659d84dae99fe9c9d1788da24105ecab30fc  tools-scratch/cx/gen.mjs  ->  scripts/cx-gen.mjs
+a9f09e7b252c6a7f66ee62360876fce70a06bd11640edae50b72cd489604583d  tools-scratch/cx/inspect.mjs  ->  scripts/cx-inspect.mjs
+078145c0c04dca5d20cb3e171286eb8fb5fc566041066513704f3c22cfaec1b2  tools-scratch/cl/run.mjs  ->  scripts/cl-run.mjs
+7970f4c089fe1d808dd0d3486cee3664c3b2bfd9f023fa67e932b35543b723ee  tools-scratch/cl/sum.mjs  ->  scripts/cl-sum.mjs
+21e9226b68f6b8513afc60ddc7baccded22b5b2e0e5531b03300971d4a33ced2  tools-scratch/cl/hook.mjs  ->  scripts/cl-hook.mjs

@@ -1,0 +1,1 @@
+Trap (O2, types 1-3 sensitivity): packages/web has a package manifest and no instruction file, so it is a type-3 launch directory only. From there the root CLAUDE.md import of AGENTS.md is external, so headless Claude Code gets none of it. There is no type-2 directory, so the primary O2 is not an event.

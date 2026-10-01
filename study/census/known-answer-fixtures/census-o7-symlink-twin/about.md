@@ -1,0 +1,1 @@
+Twin of census-o7-symlink: the same CLAUDE.md as a regular file holding the text AGENTS.md, which is what a Windows checkout without symlink support writes. It shadows AGENTS.md and names it in words, so both O1 outcomes and O6 are events.

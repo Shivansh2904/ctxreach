@@ -1,0 +1,94 @@
+[
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "host_skills.instructions",
+    "sha256": "14a3cd7cc0708f9100eb824e509b136fd9cda5111045306c07a9a9cf1fa25f7f",
+    "bytes": 2075
+   },
+   {
+    "kind": "permissions.instructions",
+    "sha256": "ff4c5be4d0361722fed5f904a7db076677b92c6fd2d87a46b836c5bd67c776f1",
+    "bytes": 374
+   },
+   {
+    "kind": "collaboration_mode.instructions",
+    "sha256": "bec8e7b5358a20b4cd552dae768b3a65ebf4ea9fb2645220085b84d60ee3fe81",
+    "bytes": 920
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "host_skills.instructions",
+    "permissions.instructions",
+    "collaboration_mode.instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "multi_agent.role_instructions",
+    "sha256": "47091490938505958b0c22ff42db6fd79b272a2af6923166f4c2cc53c4fe0df4",
+    "bytes": 2429
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "multi_agent.role_instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "developer",
+  "content": [
+   {
+    "kind": "multi_agent.mode_instructions",
+    "sha256": "6ded806e3cdbb35599ecaf8742574bc5274908472b1729090010c404c2151e8e",
+    "bytes": 271
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "multi_agent.mode_instructions"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "user",
+  "content": [
+   {
+    "kind": "environments.environment_context",
+    "sha256": "c0949e1daf500387106c193e9c61a93d8ce7826c6882ee989f7996ec5950d2c0",
+    "bytes": 671,
+    "cwd": "<scratch>\\tools-scratch\\cx\\repo\\packages\\api"
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "environments.environment_context"
+   ]
+  }
+ },
+ {
+  "type": "message",
+  "role": "user",
+  "content": [
+   {
+    "type": "input_text",
+    "text": "x"
+   }
+  ],
+  "internal_chat_message_metadata_passthrough": {
+   "content_item_kinds": [
+    "user.text"
+   ]
+  }
+ }
+]

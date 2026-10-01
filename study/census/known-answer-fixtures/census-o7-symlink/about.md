@@ -1,0 +1,1 @@
+Trap (O7): CLAUDE.md is a symlink to AGENTS.md (tree mode 120000, declared in tree.json). On a checkout that honours symlinks the content arrives once, as CLAUDE.md (rule claude.symlink), so neither O1 outcome is an event. The reconstruction writes the link as a copy and the measurement applies the link from the tree mode.

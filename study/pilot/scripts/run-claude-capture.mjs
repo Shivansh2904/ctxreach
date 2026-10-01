@@ -1,0 +1,11 @@
+import { spawnSync, spawn } from "node:child_process"; import { existsSync, readFileSync } from "node:fs"; import path from "node:path";
+const [TS, variant, port] = [process.argv[2], process.argv[3], Number(process.argv[4])];
+const SESSION_VARS = /^(CLAUDECODE|CLAUDE_PID|CLAUDE_EFFORT|CLAUDE_AGENT_SDK_VERSION|CLAUDE_PREVIEW_.*|MCP_SERVER_CONNECTION_BATCH_SIZE|MCP_CONNECTION_NONBLOCKING|CLAUDE_CODE_.*|ANTHROPIC_.*)$/;
+const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !SESSION_VARS.test(k)));
+Object.assign(env, { CLAUDE_CONFIG_DIR: path.join(TS, `ccconfig-${variant}`), ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`, ANTHROPIC_API_KEY: "ctxr-dummy-not-a-key", DISABLE_TELEMETRY: "1", NO_PROXY: "127.0.0.1,localhost" });
+const bin = path.join(TS, "cc", "node_modules", "@anthropic-ai", "claude-code-win32-x64");
+const exe = [path.join(TS,"cc","node_modules",".bin","claude.cmd")].find(existsSync);
+const args = ["-p", "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--strict-mcp-config", "--permission-mode", "dontAsk", "--tools", ""];
+const r = spawnSync(exe, args.map(a => a === "" ? '""' : a), { cwd: path.join(TS, "cfx", variant, "repo"), env, input: "List every token that starts with CTXR- that appears in your instructions.", encoding: "utf8", timeout: 120000, shell: true });
+console.log("exit", r.status, "stderr:", (r.stderr||"").slice(0, 400));
+console.log("stdout head:", (r.stdout||"").split("\n").slice(0,3).map(l=>l.slice(0,300)).join("\n"));

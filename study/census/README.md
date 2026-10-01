@@ -1,0 +1,158 @@
+# Census scripts
+
+The census of `study/PREREG.md` (sections 3 to 8): freeze a frame, draw a
+sample, rebuild each sampled repository's instruction files at its pinned
+commit, run `ctxreach map --json` from every launch directory as a fresh
+machine would, and turn the rows into `results.json`. Every network request
+goes through one GET-only client (`lib/client.mjs`), and every script
+prints its count of non-GET attempts at the end (check K7).
+
+| Script | What it does |
+|---|---|
+| `frame.mjs` | Freezes a Sourcegraph frame (S, S-imp, S-ci) or K3's two census lists: the query twice, both answers checked, the TSV and its SHA-256 in a manifest |
+| `sample.mjs` | Draws a sample from a frozen frame with the seeded Fisher-Yates shuffle of `lib/prng.mjs`; a study sample must use the registered stream, size and exclusion and the seed from the `prereg-v1` tag |
+| `seed.mjs` | Prints the seed: the first 8 hex digits of the commit `prereg-v1` points to (refuses before the tag exists, or when the tagged PREREG.md still holds a `{{stamp:...}}` placeholder) |
+| `recon.mjs` | Rebuilds one repository's instruction files at a commit (tree, blob-checked files, links recorded, import targets, launch directories) |
+| `measure.mjs`, `detectors.mjs` | Runs `map --json` from each launch directory (in this process, `lib/maprun.mjs`) and computes every outcome; output-side checks turn a leak into a fault |
+| `codex-check.mjs` | Check K4: `codex debug prompt-input` against `map`'s predicted bytes, twice per pair, throwaway `CODEX_HOME` |
+| `pipeline.mjs` | One unit end to end, then deletes the reconstruction; K1 uses the same function |
+| `run-census.mjs` | Runs a sample, serial and resumable, with the seed from the `prereg-v1` tag; `map` in process from the built library, checked against the spawned CLI on every 25th unit (a difference is a fault on the row); api.github.com through `gh api`; refuses under an instruction file, on low disk, with another build than `--expect-dist`, or when `gh api rate_limit` does not answer |
+| `analyze.mjs` | Rows to `results.json`: Wilson intervals per frame, raw, blob-deduplicated and owner-capped, and the registered verdicts |
+| `known-answer.mjs` | Check K1: every fixture with a hand-derived answer (`known-answers.json`) through the pipeline, network replaced by local files, `map` in process as in the census (`--spawn` for the CLI) |
+| `plant-census-faults.mjs` | Check K2: each detector and pipeline step switched off in turn; K1 must fail each time |
+| `consistency.mjs` | Check K3: the regex version of O1-file in the sample against the frame's own proportion |
+| `k5-select.mjs` | Draws K5's 25 repositories from the measured rows |
+| `dist-digest.mjs` | The build's fingerprint for the `study-v1` freeze |
+| `time-map.mjs` | Times `map` per launch directory, spawned CLI against in process, over the pilot fixtures (`--k1`, `--synthetic N` for more) and compares every pair of answers |
+
+`study/prereg.mjs` checks PREREG.md's registry against these scripts and
+fills its tag-time values.
+
+**K1 today: 38/39, not a pass.** The one failure,
+`census-o2-external-import`, is a known `map` defect listed in
+`known-answers.json` and marked as awaiting the map-rules fix (lane L1).
+Its answer stays as derived from `docs/rules.md`; `known-answer.mjs` prints
+it as a known defect and still exits 1, and `prereg.mjs stamp` refuses to
+stamp while it is listed. The entry is removed when the fix merges and K1
+reads 39/39.
+
+## Order in the main session
+
+```
+npm run build
+node study/census/known-answer.mjs                          # K1: n/n
+node study/census/plant-census-faults.mjs                   # K2: all caught
+node study/census/frame.mjs --frame S --label study         # and S-imp, S-ci, K3
+node study/prereg.mjs stamp --frames study/census/data/frames --write
+# commit PREREG.md, tag prereg-v1; Shiv pushes the tag and opens the issue (G1)
+node study/census/seed.mjs
+node study/census/sample.mjs --frame <S.tsv> --n 1100 --stream S-main --seed-from-tag prereg-v1 --out S-main.tsv
+node study/census/sample.mjs --frame <S-imp.tsv> --n 385 --stream S-imp --seed-from-tag prereg-v1 --exclude S-main.tsv --out S-imp.tsv
+gh auth status          # api.github.com is read through gh api; ctxreach reads no token
+node study/census/run-census.mjs --sample S-main.tsv --frame-name S-main \
+  --seed-from-tag prereg-v1 --out rows-S-main.jsonl --work C:/ctxr-census --expect-dist <digest> --codex-bin <codex.js>
+node study/census/analyze.mjs --rows rows-S-main.jsonl --rows rows-S-imp.jsonl \
+  --k3 <K3.manifest.json> --frame-manifest <S.manifest.json> --out results.json
+# K6 after the census (study/handcheck/PROTOCOL.md):
+node study/handcheck/handcheck.mjs draw --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --seed <seed> --out C:/ctxr-k6/pairs.json
+node study/handcheck/handcheck.mjs sheets --rows rows-S-main.jsonl --rows rows-S-imp.jsonl --pairs C:/ctxr-k6/pairs.json --out C:/ctxr-k6
+# a fresh reader fills C:/ctxr-k6/reader/answers/, then:
+node study/handcheck/handcheck.mjs score --out C:/ctxr-k6
+```
+
+What is published per repository is `owner/repo@commit`, measurements and
+blob ids, never file contents, and no repository is named for a defect.
+Repository owners can opt out by opening an issue on
+github.com/Shivansh2904/ctxreach; there is no email address to write to.
+PREREG.md section 10 says what an opt-out removes.
+
+The work folder must have no instruction file in it or above it
+(`C:/ctxr-census` qualifies on this machine; a folder under a home that
+has `~/.claude/CLAUDE.md` would not).
+
+## Pilot dry runs (2026-09-30): pilot data, not results
+
+Two dry runs of 20 repositories each went through these scripts against
+the live services, from a **pilot seed** (`cf72741e`), never the study
+seed. Their rows are not kept and their outcome fractions are not
+reported anywhere; the hypotheses in PREREG.md come from the plan, were
+fixed before either run, and were not changed after them.
+
+| | Run 1 (17:02-17:09 UTC) | Run 2 (20:20-20:34 UTC, final code) |
+|---|---|---|
+| Frame S | 26,014 repositories (two identical answers) | 26,030 (two identical answers, churn 0) |
+| Other frames | K3: 11,320 with a root `CLAUDE.md`, 3,383 with `@AGENTS.md` | S-imp 3,181; K3: 11,328 and 3,386 |
+| Sourcegraph GETs | 2 (S) + 4 (K3) | 2 + 2 + 4 |
+| Units measured | 20/20, 0 excluded, 0 with faults | 20/20, 0 excluded, 0 with faults |
+| GitHub GETs | 44 API + 44 raw | 49 API + 199 raw |
+| Retries, waits | 0, 17 s pacing | 0, 8 s pacing |
+| Largest reconstruction | 56,624 bytes | 873,391 bytes |
+| Wall time | about 2 minutes | 11 minutes, 390 s of it one repository with 171 launch directories |
+| K3 (pilot) | not run | pass: frame 30.51% inside the sample's [25.82%, 65.79%] |
+| Non-GET attempts | 0 | 0 |
+
+What the dry runs say about the budget (for the main session):
+
+- **GitHub API.** About 2.45 core API GETs per repository (the metadata,
+  the tree, and a blob for each symlink); raw file reads do not count
+  against the core limit. 1,485 repositories need about 3,600 core GETs, so
+  the census reads api.github.com through the GitHub CLI's own login
+  (`gh api -X GET --include`; ctxreach never sees a token): the
+  unauthenticated limit of 60 an hour would take about 60 hours.
+  `run-census.mjs` no longer reads a token variable (the dry runs' code
+  did); it asks `gh api rate_limit` before the first unit and refuses to
+  start without an answer.
+- **Time** (as the dry runs ran, before the changes below). Each launch
+  directory cost one spawned `map` process, about 2.3 s on the pilot day. Most repositories have 1 to 7 launch directories, but the
+  type-2 cap is 200 and one pilot repository had 171 (6.5 minutes on its
+  own). Over the two runs the mean was about 20 s per repository, which
+  projects to about 8 hours for 1,485 repositories before K4, against the
+  plan's 2.5 hours. K4 renders twice per type-1 and type-2 pair (about
+  1.6 s each).
+- **Pairs.** The same repository contributed 151 of the 179 type-1 and
+  type-2 pairs in run 2, which is why P1-pairs is secondary to P1-repos and
+  its interval is marked as ignoring clustering.
+- **Disk.** Reconstructions are deleted per repository; the largest was
+  under 1 MB.
+
+## Time projection (2026-10-01)
+
+Three changes since the dry runs: `map` runs in the census's own process,
+type-2 launch directories are capped at 20 per repository (was 200), and
+api.github.com is read through `gh api`.
+
+**map per launch directory**, `node study/census/time-map.mjs --k1
+--synthetic 150 --rounds 3` on this machine (Node 22.19.0, Windows 11), the
+spawned CLI once per directory against the same build in process (median
+of 3); every pair of answers identical (81/81):
+
+| Repositories | Launch directories | Spawned CLI, mean (median) | In process, mean (median) |
+|---|---|---|---|
+| Pilot fixtures (`study/pilot/**/repo`, 5) | 8 | 264 ms (244) | 28 ms (28) |
+| K1 fixtures (39) | 52 | 244 ms (240) | 25 ms (25) |
+| Made-up repository with 150 packages (the pilot's largest had 171 launch directories) | 21 | 419 ms (392) | 172 ms (163) |
+
+An earlier run a few minutes before gave 278 and 249 ms spawned, 32 and 26 ms
+in process, for the first two rows. The one-off cost in process is about
+0.3 s per run (the import and one `cli.js --version`). The spawned cost
+measured today is well below the 2.3 s of the pilot day, so the saving
+per directory is 0.2 to 0.25 s here, not 2 s; in process, map's own work
+on many instruction files (the last row) is what remains.
+
+**Projection for 1,485 repositories**, from these inputs: after the cap,
+pilot run 2 had 49 type-1 and type-2 launch directories over 20
+repositories (2.45 each; 179 before the cap), type-3 directories were not
+counted then and are at most 20 per repository; K4 renders twice per
+type-1 and type-2 pair at about 1.6 s a render; about 2.45 core API GETs
+per repository, each now starting `gh` (about 0.13 s, `gh --version`
+timed here) on top of the request, with 250 ms between requests.
+
+| Part | Estimate |
+|---|---|
+| `map` | 2.45 type-1/2 directories plus the type-3 ones at about 0.03 s each: about 4 minutes in all with 3 type-3 directories a repository, about 17 with 20 (and at most 41 directories, about 7 s, for a repository that fills both caps at the 150-package cost) |
+| K4 | 2.45 pairs x 2 renders x 1.6 s, about 8 s a repository: about 3.2 hours (about 11.8 hours at the uncapped pilot mean of 8.95 pairs) |
+| GitHub and raw reads | about 4 requests a repository at 0.25 to 0.5 s: about 25 to 50 minutes |
+| Total | about 4 hours serial with K4, under 1 hour without it |
+
+These are projections from a 20-repository pilot with one outlier, not
+measurements; the first study run's manifest records the real figures.

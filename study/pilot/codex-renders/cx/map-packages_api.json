@@ -1,0 +1,140 @@
+{
+ "schema": "ctxreach.map/v1",
+ "version": "0.0.0",
+ "launchDir": "packages/api",
+ "repoRoot": "<scratch>/tools-scratch/cx/repo",
+ "codex": {
+  "projectRoot": ".",
+  "rootFound": true,
+  "trust": "unknown",
+  "settings": [
+   {
+    "key": "project_doc_max_bytes",
+    "value": 32768,
+    "from": "default"
+   },
+   {
+    "key": "project_doc_fallback_filenames",
+    "value": [],
+    "from": "default"
+   },
+   {
+    "key": "project_root_markers",
+    "value": [
+     ".git"
+    ],
+    "from": "default"
+   }
+  ],
+  "chain": [
+   {
+    "path": "AGENTS.md",
+    "bytes": 30000,
+    "keptBytes": 30000,
+    "status": "loaded",
+    "budgetBefore": 32768,
+    "shadowed": []
+   },
+   {
+    "path": "packages/api/AGENTS.md",
+    "bytes": 4019,
+    "keptBytes": 2768,
+    "status": "cut",
+    "budgetBefore": 2768,
+    "cut": {
+     "at": 2768,
+     "line": 5,
+     "column": 1249,
+     "midCodepoint": true,
+     "cutSection": "API",
+     "lostSections": []
+    },
+    "shadowed": []
+   }
+  ],
+  "budget": {
+   "limit": 32768,
+   "used": 32768,
+   "left": 0
+  },
+  "notPreloaded": [
+   "packages/api/deep/AGENTS.md"
+  ]
+ },
+ "matrix": [
+  {
+   "path": "AGENTS.md",
+   "codex": {
+    "delivery": "launch",
+    "why": "30000 bytes",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "packages/api/AGENTS.md",
+   "codex": {
+    "delivery": "launch-cut",
+    "why": "cut at byte 2768 of 4019",
+    "rule": "codex.budget",
+    "cut": {
+     "at": 2768,
+     "line": 5,
+     "column": 1249,
+     "midCodepoint": true,
+     "cutSection": "API",
+     "lostSections": []
+    }
+   }
+  },
+  {
+   "path": "packages/api/deep/AGENTS.md",
+   "codex": {
+    "delivery": "maybe",
+    "why": "below launch dir: not preloaded",
+    "rule": "codex.nested"
+   }
+  },
+  {
+   "path": "tools/AGENTS.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "not on the path from the project root to the launch dir",
+    "rule": "codex.walk"
+   }
+  },
+  {
+   "path": "tools/AGENTS.override.md",
+   "codex": {
+    "delivery": "not-loaded",
+    "why": "not on the path from the project root to the launch dir",
+    "rule": "codex.walk"
+   }
+  }
+ ],
+ "findings": [
+  {
+   "code": "codex.cut",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.budget",
+   "path": "packages/api/AGENTS.md",
+   "message": "packages/api/AGENTS.md is cut at byte 2768 of 4019 (line 5). Only 2768 of the 32768-byte budget was left after the files above it. The cut falls inside \"API\"."
+  },
+  {
+   "code": "codex.mid-codepoint",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.cut",
+   "path": "packages/api/AGENTS.md",
+   "message": "The cut in packages/api/AGENTS.md at byte 2768 splits a multi-byte character, so Codex sees U+FFFD (the replacement character) where it was."
+  },
+  {
+   "code": "codex.nested",
+   "severity": "warn",
+   "agent": "codex",
+   "rule": "codex.nested",
+   "path": "packages/api/deep/AGENTS.md",
+   "message": "packages/api/deep/AGENTS.md is below the launch directory, so Codex does not preload it. It is read only if the model decides to open it."
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+import { spawn } from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path';
+const [,, cwd, outFile, settingsFile, ...extra] = process.argv;
+const SESSION_VARS = /^(CLAUDECODE|CLAUDE_PID|CLAUDE_EFFORT|CLAUDE_AGENT_SDK_VERSION|CLAUDE_PREVIEW_.*|MCP_SERVER_CONNECTION_BATCH_SIZE|MCP_CONNECTION_NONBLOCKING|CLAUDE_CODE_(ENTRYPOINT|SESSION_ID|CHILD_SESSION|MESSAGING_.*|HOST_SESSION_ID|SSE_PORT|SDK_.*|SESSION_ATTENDED|EXECPATH|DESKTOP_APP_VERSION|TERMINAL_MCP_TOOLS|REPORT_FINDINGS|EMIT_TOOL_USE_SUMMARIES|ENABLE_SDK_FILE_CHECKPOINTING|EAGER_FLUSH|ENABLE_ASK_USER_QUESTION_TOOL|DISABLE_CRON|DISABLE_TERMINAL_TITLE|OAUTH_SCOPES))$/;
+const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !SESSION_VARS.test(k)));
+const exe = path.join(process.env.APPDATA, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+const prompt = "Do not use any tools. List every token that starts with CTXR- followed by eight hexadecimal characters and that appears anywhere in your instructions or context (system prompt, project instructions, memory files, rules). Print each token exactly as written, one per line, and nothing else. If there are none, print NONE.";
+const args = ['-p','--output-format','stream-json','--verbose','--no-session-persistence','--strict-mcp-config','--permission-mode','dontAsk','--tools','', '--settings', settingsFile, '--include-hook-events', ...extra];
+fs.writeFileSync(outFile + '.args.json', JSON.stringify(args));
+const child = spawn(exe, args, { cwd, env, stdio: ['pipe','pipe','pipe'], windowsHide: true });
+let out='', err=''; child.stdout.on('data', d => out += d); child.stderr.on('data', d => err += d);
+const t = setTimeout(() => child.kill(), 240000);
+child.on('close', code => { clearTimeout(t); fs.writeFileSync(outFile, out); fs.writeFileSync(outFile + '.err', err); console.log('exit', code, 'bytes', out.length); });
+child.stdin.end(prompt);

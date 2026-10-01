@@ -1,0 +1,15 @@
+[
+ "-p",
+ "--output-format",
+ "stream-json",
+ "--verbose",
+ "--no-session-persistence",
+ "--strict-mcp-config",
+ "--permission-mode",
+ "dontAsk",
+ "--tools",
+ "",
+ "--settings",
+ "<scratch>/tools-scratch/cl/settings-1.json",
+ "--include-hook-events"
+]

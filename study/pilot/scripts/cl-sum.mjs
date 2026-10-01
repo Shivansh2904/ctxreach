@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+const [,, f, hookf] = process.argv;
+const lines = fs.readFileSync(f,'utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l));
+const types = {}; for (const e of lines) { const k = e.type + (e.subtype?'/'+e.subtype:''); types[k]=(types[k]||0)+1; } console.log('events', JSON.stringify(types));
+const init = lines.find(e=>e.type==='system'&&e.subtype==='init');
+console.log('version', init?.claude_code_version, 'model', init?.model, 'tools', JSON.stringify(init?.tools), 'perm', init?.permissionMode);
+console.log('plugins', JSON.stringify((init?.plugins||[]).map(p=>p.source||p.name)));
+console.log('skills', (init?.skills||[]).length, 'agents', (init?.agents||[]).length, 'slash', (init?.slash_commands||[]).length, 'mcp', JSON.stringify(init?.mcp_servers), 'memory_paths', JSON.stringify(init?.memory_paths));
+for (const e of lines.filter(e=>e.type==='system'&&/hook/.test(e.subtype||''))) console.log('HOOKEV', e.subtype, e.hook_event||e.hook_name, JSON.stringify(e).slice(0,160));
+const res = lines.find(e=>e.type==='result'); console.log('result', res?.subtype, 'cost', res?.total_cost_usd, 'text:', JSON.stringify(res?.result));
+if (hookf && fs.existsSync(hookf)) for (const l of fs.readFileSync(hookf,'utf8').split('\n').filter(Boolean)) { const h=JSON.parse(l); console.log('HOOKFILE', h.hook_event_name, h.memory_type, h.load_reason, (h.file_path||'').split(/[\/]/).slice(-3).join('/')); } else console.log('no hook file');

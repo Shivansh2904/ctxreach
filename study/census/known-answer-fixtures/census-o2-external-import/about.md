@@ -1,0 +1,1 @@
+Trap (O2): the root CLAUDE.md and the package CLAUDE.md each import their AGENTS.md. Launched headless in packages/api, the root import resolves outside the launch directory, so without a recorded approval the root AGENTS.md never arrives (rule claude.imports). At the root it arrives through the import.

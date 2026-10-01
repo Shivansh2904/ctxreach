@@ -1,0 +1,1 @@
+Trap for the O1 pair: CLAUDE.md is a byte copy of AGENTS.md (a regular file, not a link). AGENTS.md is shadowed, so O1-file is an event, but every line of it arrives through the copy, so O1-content is not.
