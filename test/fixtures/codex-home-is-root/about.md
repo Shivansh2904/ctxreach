@@ -1,0 +1,1 @@
+Trap: CODEX_HOME points at the repository itself (a project-local Codex setup). Codex reads the global instructions file from CODEX_HOME and the project files from the project root down, so the root AGENTS.md is read twice, once as each, and the model gets its text twice (rule codex.home-is-root, openai/codex#34193). The tests set Codex home to repo/.

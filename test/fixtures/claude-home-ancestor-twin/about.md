@@ -1,0 +1,1 @@
+Clean twin of claude-home-ancestor: the same personal preferences live in ~/.claude/rules/personal.md instead of ~/.claude/CLAUDE.md. A rules file never counts for the AGENTS.md check, so with the repository cloned under the home directory Claude Code still reads AGENTS.md. ctxreach must report nothing.
