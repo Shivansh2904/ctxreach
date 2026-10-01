@@ -1,0 +1,284 @@
+{
+  "schema": "ctxreach.probe/v1",
+  "ctxreach": "0.0.0",
+  "agent": "claude",
+  "cliVersion": "2.1.280",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64"
+  },
+  "startedAt": "2026-09-28T19:34:46.563Z",
+  "mode": "recall",
+  "launchDir": "packages/api",
+  "models": [
+    "claude-fable-5-1"
+  ],
+  "trials": [
+    {
+      "trial": 1,
+      "status": "usable",
+      "reasons": [],
+      "toolCalls": 0,
+      "toolNames": [],
+      "inventedTokens": []
+    },
+    {
+      "trial": 2,
+      "status": "usable",
+      "reasons": [],
+      "toolCalls": 0,
+      "toolNames": [],
+      "inventedTokens": []
+    }
+  ],
+  "cells": [
+    {
+      "file": "CLAUDE.md",
+      "position": "head",
+      "token": "CTXR-559f82c1",
+      "decoy": false,
+      "predicted": {
+        "delivery": "launch",
+        "why": "ancestor of launch dir",
+        "rule": "claude.ancestors"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 2,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 0
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "2/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "0/2"
+      },
+      "verdict": "confirmed"
+    },
+    {
+      "file": "CLAUDE.md",
+      "position": "tail",
+      "token": "CTXR-3994d441",
+      "decoy": false,
+      "predicted": {
+        "delivery": "launch",
+        "why": "ancestor of launch dir",
+        "rule": "claude.ancestors"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 2,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 0
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "2/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "0/2"
+      },
+      "verdict": "confirmed"
+    },
+    {
+      "file": "docs/outside.md",
+      "position": "head",
+      "token": "CTXR-00cb56b1",
+      "decoy": false,
+      "predicted": {
+        "delivery": "import",
+        "why": "imported by CLAUDE.md (external: needs approval)",
+        "rule": "claude.imports"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 0,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 2
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "0/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "2/2"
+      },
+      "verdict": "missed"
+    },
+    {
+      "file": "docs/outside.md",
+      "position": "tail",
+      "token": "CTXR-3ce738f3",
+      "decoy": false,
+      "predicted": {
+        "delivery": "import",
+        "why": "imported by CLAUDE.md (external: needs approval)",
+        "rule": "claude.imports"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 0,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 2
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "0/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "2/2"
+      },
+      "verdict": "missed"
+    },
+    {
+      "file": "packages/api/inside.md",
+      "position": "head",
+      "token": "CTXR-538e72c6",
+      "decoy": false,
+      "predicted": {
+        "delivery": "import",
+        "why": "imported by CLAUDE.md",
+        "rule": "claude.imports"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 2,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 0
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "2/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "0/2"
+      },
+      "verdict": "confirmed"
+    },
+    {
+      "file": "packages/api/inside.md",
+      "position": "tail",
+      "token": "CTXR-2db2d663",
+      "decoy": false,
+      "predicted": {
+        "delivery": "import",
+        "why": "imported by CLAUDE.md",
+        "rule": "claude.imports"
+      },
+      "expected": "launch",
+      "seen": {
+        "preloaded": 2,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 0
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "2/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "0/2"
+      },
+      "verdict": "confirmed"
+    },
+    {
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "head",
+      "token": "CTXR-55daf4a6",
+      "decoy": true,
+      "predicted": {
+        "delivery": "decoy",
+        "why": "decoy: no rule loads it",
+        "rule": "decoy"
+      },
+      "expected": "never",
+      "seen": {
+        "preloaded": 0,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 2
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "0/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "2/2"
+      },
+      "verdict": "confirmed"
+    },
+    {
+      "file": "packages/api/ctxreach-decoy.md",
+      "position": "tail",
+      "token": "CTXR-790363d0",
+      "decoy": true,
+      "predicted": {
+        "delivery": "decoy",
+        "why": "decoy: no rule loads it",
+        "rule": "decoy"
+      },
+      "expected": "never",
+      "seen": {
+        "preloaded": 0,
+        "on-read": 0,
+        "self-discovered": 0,
+        "not-seen": 2
+      },
+      "usable": 2,
+      "dirRead": 0,
+      "fractions": {
+        "preloaded": "0/2",
+        "on-read": "0/2",
+        "self-discovered": "0/2",
+        "not-seen": "2/2"
+      },
+      "verdict": "confirmed"
+    }
+  ],
+  "instrument": {
+    "fault": false,
+    "reasons": [],
+    "decoy": {
+      "echoed": 0,
+      "usable": 2
+    }
+  },
+  "agreement": {
+    "agree": 4,
+    "decided": 6,
+    "cells": 6,
+    "byVerdict": {
+      "confirmed": 4,
+      "missed": 2,
+      "extra": 0,
+      "discovered": 0,
+      "untested": 0,
+      "not-modelled": 0,
+      "no-data": 0
+    }
+  },
+  "warnings": [],
+  "notes": [
+    "Removed from the agent's environment (set by the Claude Code session that ran ctxreach): 26 variables."
+  ],
+  "scope": [
+    "An echo proves the text was delivered to the model. It does not prove the model follows it.",
+    "These results hold only for Claude Code 2.1.280 on win32 10.0.26200, on 2026-09-28, with this repository and prompt.",
+    "Each fraction counts usable trials only; contaminated, failed and faulty trials are listed separately."
+  ]
+}

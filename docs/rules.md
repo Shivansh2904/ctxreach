@@ -179,31 +179,43 @@ The prompt goes to stdin. Every run gets these flags:
 | `--permission-mode dontAsk` | Anything that would ask for permission is denied. File reads inside the working directory need no approval, so they still work. | headless, "Auto-approve tools"; permissions, "Permission system". |
 | `--tools ""` (recall mode) | No tools exist in the session. | `claude --help`: `""` disables all tools. |
 | `--tools Read,Glob,Grep` (task mode) | Only the read tools exist. | `claude --help`. |
+| `--model <pin>` | The model is pinned, and every session's `system/init` model must match it. The pin is `--model` given to ctxreach, else `ANTHROPIC_MODEL`, else `model` in the user's `settings.json` (Claude Code's own order below `--model`). With none of them, no `--model` is passed and the report says the model was not pinned. | `claude --help`; observed 2026-09-30: dropping the user's settings changed the model from `fable` to `opus`. |
+| `--settings <sandbox>/settings.json` | Adds a settings layer holding only the InstructionsLoaded hook (below), so no file of the user's is touched. Not passed with the hook off. | `claude --help`; hooks, "InstructionsLoaded". |
 
 And never these:
 
 | Flag | Why not | Source |
 |---|---|---|
-| `--bare` | Skips CLAUDE.md, so it would measure nothing (rule `claude.bare`). | headless. |
+| `--bare`, `--safe-mode`, `--restricted` | `--bare` and `--safe-mode` skip CLAUDE.md, and `--restricted` loads only managed settings and `--settings`, so a run would measure nothing (rule `claude.bare`). ctxreach refuses to start the agent with any of them, and a recording made with one is an instrument fault. | headless; cli-reference; `--restricted` dropping a project CLAUDE.md was reported by a third party on 2.1.283 (plx/quiet-choir#60). |
 | `--allowedTools` | A bare `Read` rule would also allow reads outside the copy. Without it, `dontAsk` denies them. | permissions, "Working directories". |
-| `--setting-sources`, `--settings`, `--safe-mode`, `--restricted` | Each changes which settings, and so possibly which instruction files, apply; excluding `project` from `--setting-sources` skips project rules. | `claude --help`; memory, "Organize rules with .claude/rules/". |
+| `--setting-sources` | Excluding `project` skips project rules, and excluding `user` drops the user's settings, model and CLAUDE.md. Passed only by the experimental clean isolation (below). | `claude --help`; memory, "Organize rules with .claude/rules/". |
 
 Every trial is checked against its own `system/init` event: the working
 directory must be the launch directory in the copy, the version must match
-`claude --version`, and the tools must be none (recall) or only the read tools
-(task). A trial that fails a check is excluded and the whole run is marked as
-an instrument fault. A trial with no `system/init` event that also failed (a
-non-zero exit, a timeout or no result event), such as a run that is not
-logged in, stopped before its session started: it is counted as failed, not
-as a fault.
+`claude --version`, the tools must be none (recall) or only the read tools
+(task), the model must be the pin (a full id exactly, or a one-word alias such
+as `fable` by its family, `claude-fable-...`; a `[1m]` suffix is ignored), the
+arguments must be the ones recorded for the run, and, from 2.1.277 (the first
+version that reads AGENTS.md), `plugins` must list the built-in `agents-md`
+plugin (`agents-md@builtin` on 2.1.280, `cc-plugin-agents-md@builtin` on
+2.1.285): without it AGENTS.md is never read, and every AGENTS.md cell would
+look switched off. A trial that fails a check is excluded and the whole run is
+marked as an instrument fault. A trial with no `system/init` event that also
+failed (a non-zero exit, a timeout or no result event), such as a run that is
+not logged in, stopped before its session started: it is counted as failed,
+not as a fault.
 
 When ctxreach itself runs inside a Claude Code session, the variables that
 session sets for its children (`CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`,
 `CLAUDE_CODE_ENTRYPOINT` and others, listed in
 `src/agents/claude/adapter.ts`) are removed from the agent's environment, so
 the agent starts as a top-level session. Variables a person sets, such as
-`CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CONFIG_DIR`, are kept. `CLAUDE_CODE_SIMPLE`
-(bare mode) and `CLAUDE_CODE_SAFE_MODE` are reported as warnings.
+`CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CONFIG_DIR`, are kept. Four variables turn
+instruction files off, and ctxreach refuses to probe while any is set, before
+it copies anything: `CLAUDE_CODE_SIMPLE` (bare mode), `CLAUDE_CODE_SAFE_MODE`,
+`CLAUDE_CODE_DISABLE_CLAUDE_MDS` and `CLAUDE_CODE_DISABLE_ATTACHMENTS`
+(instruction files reach the model as attachments). A recording made with one
+set is an instrument fault.
 
 The `claude` executable is found in a fully qualified `PATH` directory
 (absolute, and on Windows with its drive), or given with `--claude-bin`,
@@ -217,6 +229,127 @@ deletes the copy.
 Observed on 2.1.280: even with `--no-session-persistence`, Claude Code creates
 an empty folder `~/.claude/projects/<the copy's path>/memory`. The probe
 removes it after each trial if it holds no file, and reports it otherwise.
+
+### The positive control
+
+Besides the decoy (a file no rule loads, which must never be repeated), every
+run since recording format v2 (2026-10-01) has a positive control (called F5
+in the v1 plan): ctxreach writes `.claude/rules/ctxreach-control.md`, a rule
+without `paths`, at the launch directory of the copy, and plants a head and a
+tail token in it. Claude Code loads such a rule at launch (memory, "Organize
+rules with .claude/rules/"; observed 2/2 and 3/3 in `nested-*`), and rules do
+not count towards switching AGENTS.md off, so it changes no other file's
+delivery. A trial that does not repeat both of its tokens is an instrument
+fault (exit status 3): a session that did not list the control cannot be
+trusted to have listed anything else. A trial in which the model opened the
+control itself before repeating it (task mode) is no evidence either way: it
+is reported, not counted as a fault. Where `map` says the control does not
+load (Project instructions `managed-only`), the run has no positive control,
+and the report says so. A repository that already has a file at that path is
+refused. The control is an instrument check: its cells are shown, but never
+counted in the agreement with `map`.
+
+The eight recordings in `test/recorded/` were made before the control; a
+replay marks it "absent (recorded before F5)", and is otherwise the same,
+line for line, as before it existed, with one more line, the partial-echo
+count (test: `test/probe-recorded.test.ts`, against the outputs saved in
+`test/recorded/before-f5/`).
+
+### The InstructionsLoaded hook
+
+A second instrument, beside the canary. Claude Code runs an
+`InstructionsLoaded` hook "when a CLAUDE.md or `.claude/rules/*.md` file is
+loaded into context", with the file's absolute path, its memory type and why
+it loaded (`session_start`, `nested_traversal`, `path_glob_match`, `include`,
+`compact`) (hooks, "InstructionsLoaded"). It does not run for an AGENTS.md
+read through the Project instructions setting (rule `claude.hook-blind`), but
+does for one a CLAUDE.md imports.
+
+ctxreach writes `ctxr-hook.mjs` and `settings.json` into the sandbox's own
+directory (outside the copy, deleted with it) and passes the settings with
+`--settings`. The hook is a command in exec form (`command` and `args`, Claude
+Code 2.1.139 and later), with the absolute path of the Node running ctxreach,
+so no shell parses the paths and `PATH` plays no part. ctxreach never sets
+`disableAllHooks`, which would turn this hook off too; it refuses settings
+that do, and a recording whose settings do is an instrument fault. The hook
+appends each event to a log; after a trial ctxreach waits until the log has
+stopped growing (the hook runs asynchronously, so its last events can land
+after the agent exits), keeps only the documented fields, checked with zod,
+with paths redacted like the transcript's, and saves them as
+`trial-N.hooks.jsonl` next to the transcript. Session ids are compared with
+the transcript's and then dropped: an event from another session is counted
+and not used. A trial of a run with the hook whose log is missing is a fault.
+`--no-hook` (wired by the integrator) turns it off.
+
+Each planted file is crossed with the hook in each usable trial:
+
+| Canary | Hook | Row | Meaning |
+|---|---|---|---|
+| seen | fired | both | delivered; both instruments agree |
+| seen | silent, an AGENTS.md read through the setting | hook-blind | the documented blind spot |
+| seen | silent, any other file | hook missed | the hook lost the event or did not run; listed |
+| not seen | fired | echo missed | delivered but not repeated: a canary false negative; listed |
+| not seen | silent | neither | not delivered; both agree |
+
+"Seen" means repeated with no earlier tool call naming the file; a file the
+model opened itself is left out ("read by the model"). Two rates bound each
+instrument's error with the other: of the hookable files the canary saw, how
+many the hook reported; and of the files the hook reported, how many the
+canary saw. The positive control is a rule, so the hook must report it: a
+trial in which the canary saw it and the hook did not says the hook did not
+run, and the report warns. The hook reporting the decoy is an instrument
+fault. Files outside the copy that the hook saw load (for example
+`~/.claude/CLAUDE.md`) are listed as a condition of the run. Pilot (n = 3 and
+2 events, 2.1.280, 2026-09-30, `study/pilot/hook-runs/`): the hook fired
+under `-p` through `--settings`, in shell form with `node` from `PATH`, and
+was silent for an AGENTS.md whose tokens were echoed. The exec form with an
+absolute Node has not yet been run against a real Claude Code.
+
+**Partial echoes.** Every file has a head and a tail token, and Claude Code
+does not cut files, so a trial that repeats exactly one of them is a recall
+failure. The report counts them, as file-trials, out of those with at least
+one token repeated; files whose tail `map` puts past a cut are left out. It is
+the one check that also covers AGENTS.md, where the hook is blind.
+
+### Where the copy is
+
+Claude Code reads instruction files from every directory above the launch
+directory, and for a directory inside the home directory that includes
+`~/.claude/CLAUDE.md` as an ancestor's `.claude/CLAUDE.md`
+(anthropics/claude-code#80580); on Windows the system temp directory, where
+the copy is made, is inside the home directory. So every report states, as a
+condition of the run: whether the copy was inside the home directory, whether
+`~/.claude/CLAUDE.md` exists, and the instruction files found in the
+directories above the copy (`CLAUDE.md`, `CLAUDE.local.md`,
+`.claude/CLAUDE.md`, `AGENTS.md`, `.claude/AGENTS.md`, and rules under
+`.claude/rules/`). With the copy inside the home directory and that file
+present, the report warns. To run the copy elsewhere, point `TEMP`/`TMP`
+(`TMPDIR` elsewhere than Windows) outside the home directory.
+
+### Isolation
+
+`machine` (the default) is what the person running ctxreach gets: their
+settings, plugins, skills and `~/.claude/CLAUDE.md` apply, as in their own
+sessions.
+
+`--isolation clean` is **EXPERIMENTAL**, and every report of a clean run says
+so. It is meant to show what the repository alone delivers. It adds
+`--setting-sources project,local` (which drops the user's settings, user
+CLAUDE.md, user rules and user skills; observed once on 2.1.280 to keep
+`agents-md@builtin`), `--disable-slash-commands`,
+`CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, and in `--settings` the Project
+instructions value `map` used (`pluginConfigs["agents-md@builtin"]`, which
+user settings no longer carry) and `claudeMdExcludes` with the exact path of
+each instruction file every directory above the copy could hold (an ancestor
+is a project source, so `--setting-sources` alone does not drop
+`~/.claude/CLAUDE.md` for a copy inside the home directory). It refuses to run
+without a model pin. A session with a plugin that is not built in, or in which
+the hook saw a file outside the copy load, is an instrument fault. Four parts
+are unverified, and stay so until runs check them: whether
+`--disable-slash-commands` is accepted, whether `claudeMdExcludes` matches
+Windows absolute paths written with forward slashes (a third party reported
+it working on 2.1.284), whether the auto-memory variable stops the empty
+`memory` folder, and whether user plugins load without the `user` source.
 
 ### What the temporary copy loses
 
@@ -265,8 +398,9 @@ temp directory is `C:\Users\RUNNER~1\...` on GitHub's Windows runners, and a
 junction keeps the spelling it was made with, so a path compared as spelled
 can put a link target inside the repository outside it).
 
-The user's own configuration is not touched: the hooks, plugins and skills in
-`~/.claude` and in managed settings run in every trial.
+The user's own configuration is not touched: under the default `machine`
+isolation, the hooks, plugins and skills in `~/.claude` and in managed
+settings run in every trial (see "Isolation" above).
 
 ### Stream events
 

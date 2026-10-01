@@ -33,6 +33,12 @@ export interface Canary {
   /** True for the control file that no documented rule loads. */
   decoy?: boolean;
   /**
+   * True for the positive control: a rule file without `paths` that ctxreach
+   * writes at the launch directory (`.claude/rules/ctxreach-control.md`) and
+   * that every session must repeat. Absent in recordings made before it.
+   */
+  control?: boolean;
+  /**
    * True for a Claude Code rule file (under `.claude/rules/`) whose front
    * matter declares `paths`: it loads when a matching file is read, so a read
    * anywhere in the tree it covers can deliver it. Read from the file when it
@@ -111,6 +117,13 @@ export interface Transcript {
   toolsOffered?: string[];
   /** Working directory the agent reports. */
   cwd?: string;
+  /**
+   * Plugins the session reports, each as its `source` (e.g. `agents-md@builtin`),
+   * or `name@path` when it has none. Undefined when `system/init` has no list.
+   */
+  plugins?: string[];
+  /** How many non-built-in plugins the saved transcript says were removed from that list (see the redaction). */
+  otherPlugins?: number;
   /** A final result event arrived. */
   finished: boolean;
   isError: boolean;
@@ -139,6 +152,20 @@ export interface RunOutcome {
   durationMs: number;
   /** Things the run left outside the sandbox that ctxreach could not remove. */
   leftovers: string[];
+  /** The arguments the agent was started with, redacted (checked against the run's recorded arguments). */
+  args?: string[];
+  /** The hook log saved for this trial, when the session had the hook. */
+  hooks?: HookLogRecord;
+}
+
+/** What a trial's InstructionsLoaded hook log held, as saved in the recording. */
+export interface HookLogRecord {
+  /** File name of the saved log, next to the transcript. */
+  log: string;
+  /** Events saved. */
+  events: number;
+  /** Lines in the raw log that did not match the event schema (counted, not saved). */
+  invalid: number;
 }
 
 export interface RunRequest {
@@ -158,14 +185,55 @@ export interface RunRequest {
   sandboxNonce: string;
   /** Aborted when ctxreach is stopped: the adapter must stop the agent, and anything it started, at once. */
   signal?: AbortSignal;
+  /** Where to save this trial's InstructionsLoaded hook log, redacted, when the session has the hook. */
+  hookLogPath?: string;
+  /** The Project instructions value map used for its prediction (clean isolation passes it to the agent). */
+  claudeMode?: string;
 }
 
 /** Settings in the environment that change what the agent loads, as far as ctxreach can tell. */
 export interface AgentEnvironment {
   /** A setting that skips instruction files entirely (Claude Code's bare mode) is in effect. */
   bare: boolean;
+  /**
+   * Variables that turn instruction files off and are set, by name. A live
+   * probe refuses to run with any; a recording made with one is an
+   * instrument fault. Absent in recordings made before it was recorded.
+   */
+  killSwitches?: string[];
   /** Variables removed from the agent's environment, by name (values are never recorded). */
   removedEnv: string[];
+  notes: string[];
+}
+
+/** `machine`: the user's own settings apply, as in their sessions. `clean` (experimental): only the repository's. */
+export type Isolation = "machine" | "clean";
+
+/** What a probe tells the adapter about its sessions, once the copy is planted and before any trial. */
+export interface SessionContext {
+  mode: ProbeMode;
+  /** The sandbox's base directory: outside the copy, and deleted with it. The adapter may write its own files there. */
+  sandboxBase: string;
+  /** The copy of the repository. */
+  repo: string;
+  /** The Project instructions value map used for its prediction. */
+  claudeMode?: string;
+  redactions: Redaction[];
+}
+
+/** How the agent's sessions are set up, as recorded with the run. */
+export interface SessionSetup {
+  /** Every argument after the executable, redacted. */
+  args: string[];
+  /** The model passed with `--model`, and where it came from; null when none could be pinned. */
+  model: { pin: string; from: string } | null;
+  /** The InstructionsLoaded hook is installed, so each trial saves a hook log. */
+  hook: boolean;
+  isolation: Isolation;
+  /** The settings layer passed with `--settings`, redacted; absent when none is passed. */
+  settings?: Record<string, unknown>;
+  /** Variables ctxreach sets for the agent, by name (values are not recorded). */
+  setEnv: string[];
   notes: string[];
 }
 
@@ -180,6 +248,12 @@ export interface AgentAdapter {
   /** Arguments passed to the CLI for a mode. The prompt goes to stdin, not here. */
   args(mode: ProbeMode): string[];
   environment(): AgentEnvironment;
+  /**
+   * How the sessions of one probe are set up (model pin, hook, isolation),
+   * once the copy is ready. Writes only inside `sandboxBase`. An adapter
+   * without it is recorded as running `args(mode)`, with no pin and no hook.
+   */
+  session?(context: SessionContext): SessionSetup;
   /** Run one session and save its transcript. */
   run(request: RunRequest): Promise<RunOutcome>;
   /** Read a saved transcript. Throws `TranscriptError` when it does not match the expected format. */

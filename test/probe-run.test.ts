@@ -126,8 +126,11 @@ describe("probe on the demo monorepo with a fake agent", () => {
       ["packages/web/AGENTS.md", "tail", "confirmed", "not-seen 3/3"],
       ["packages/api/ctxreach-decoy.md", "head", "confirmed", "not-seen 3/3"],
       ["packages/api/ctxreach-decoy.md", "tail", "confirmed", "not-seen 3/3"],
+      // The positive control, repeated in every trial.
+      ["packages/api/.claude/rules/ctxreach-control.md", "head", "confirmed", "preloaded 3/3"],
+      ["packages/api/.claude/rules/ctxreach-control.md", "tail", "confirmed", "preloaded 3/3"],
     ]);
-    expect(p.result.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 3 } });
+    expect(p.result.instrument).toMatchObject({ fault: false, reasons: [], decoy: { echoed: 0, usable: 3 } });
     expect(p.result.agreement).toMatchObject({ agree: 8, decided: 8, cells: 8 });
     expect(p.result.trials.map((t) => t.status)).toEqual(["usable", "usable", "usable"]);
     expect(p.after).toBe(p.before);
@@ -206,7 +209,7 @@ describe("probe on the demo monorepo with a fake agent", () => {
     });
     const decoy = p.result.cells.filter((c) => c.decoy);
     expect(decoy.map((c) => c.seen["self-discovered"])).toEqual([2, 2]);
-    expect(p.result.instrument).toEqual({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
+    expect(p.result.instrument).toMatchObject({ fault: false, reasons: [], decoy: { echoed: 0, usable: 2 } });
   });
 
   it("flags an instrument fault when a recall session had tools, and excludes that trial", async () => {

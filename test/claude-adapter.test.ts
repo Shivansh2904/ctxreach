@@ -152,7 +152,10 @@ describe("running the agent (with a fake claude executable)", () => {
       expect(report.prompt).toBe("list the tokens");
       expect(report.parentSession).toBe("unset");
       expect(report.userVar).toBe("1");
-      expect(report.args).toEqual(claudeArgs("recall"));
+      // The probe's flags, then the session's own (the hook's --settings; test/claude-hook.test.ts has the rest).
+      expect((report.args as string[]).slice(0, claudeArgs("recall").length)).toEqual(claudeArgs("recall"));
+      expect(report.args).toContain("--settings");
+      expect(out.args?.slice(0, claudeArgs("recall").length)).toEqual(claudeArgs("recall"));
       expect(t.cwd?.replace(/\//g, "\\")).toBe("C:\\ctxreach-probe\\repo");
       expect(t.toolsOffered).toEqual([]);
       expect(text).not.toContain("private-command");
@@ -219,29 +222,39 @@ describe("running the agent (with a fake claude executable)", () => {
   });
 
   describe("which claude executable runs", () => {
-    // Relative to the directory the tests run in; from inside a sandbox's copy it names nothing.
-    const nodeFromHere = path.relative(process.cwd(), process.execPath);
-
-    it.skipIf(path.isAbsolute(nodeFromHere))(
-      "takes a relative --claude-bin from the directory ctxreach runs in, not from the copy",
-      async () => {
-        const fx = materialise("claude-local-shadows-agents");
-        const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+    it("takes a relative --claude-bin from the directory ctxreach runs in, not from the copy", async () => {
+      const fx = materialise("claude-local-shadows-agents");
+      const box = createSandbox(fx.repo, { tmpRoot: tempDir("sandboxes") });
+      // Made from node's own directory, so the spelling does not depend on
+      // where this checkout sits. (One made from the checkout with
+      // path.relative climbs past the drive's root from a copy that is no
+      // deeper than the checkout, and so names node from the copy as well.)
+      const from = path.dirname(process.execPath);
+      const bin = `.${path.sep}${path.basename(process.execPath)}`;
+      const cwd = process.cwd();
+      try {
+        // The test's premise: from the copy, the same spelling names nothing.
+        expect(path.resolve(from, bin)).toBe(process.execPath);
+        expect(existsSync(path.resolve(box.repo, bin))).toBe(false);
+        const claudeHome = tempDir("claude-home");
+        process.chdir(from);
+        let agent: ReturnType<typeof claudeAdapter>;
         try {
-          const claudeHome = tempDir("claude-home");
-          const agent = claudeAdapter({
-            bin: nodeFromHere,
+          agent = claudeAdapter({
+            bin,
             prefixArgs: [FAKE],
             claudeHome,
             env: { ...process.env, FAKE_CLAUDE_HOME: claudeHome },
           });
-          const out = await agent.run(request(box.repo, { sandboxNonce: box.nonce }));
-          expect(out).toMatchObject({ exitCode: 0, timedOut: false });
         } finally {
-          removeSandbox(box);
+          process.chdir(cwd);
         }
-      },
-    );
+        const out = await agent.run(request(box.repo, { sandboxNonce: box.nonce }));
+        expect(out).toMatchObject({ exitCode: 0, timedOut: false });
+      } finally {
+        removeSandbox(box);
+      }
+    });
 
     it("refuses a claude executable inside the copy, reached directly or through a link", async () => {
       const fx = materialise("claude-local-shadows-agents");

@@ -64,3 +64,16 @@ path-less `style.md` "on read" instead of "preloaded". Canaries now record
 whether their rule file declares `paths` (the `scoped` field), and that
 recording has no such field, so replayed today it would misreport the scoped
 rule as preloaded. It was re-recorded rather than edited, and is not kept.
+
+## Recorded before the positive control (`before-f5/`)
+
+All eight recordings above are format v1: they were made before ctxreach
+planted a positive control, ran the InstructionsLoaded hook, pinned the model
+or recorded where the copy was. `before-f5/` holds what
+`node dist/cli.js probe --replay test/recorded/<name> --no-color` (`.txt`) and
+`... --json` (`.json`) printed for each of them at commit `47e60a0`, before
+any of that existed. `test/probe-recorded.test.ts` replays every recording
+today and checks that the report is the same, line for line, apart from two
+added lines (the control marked "absent (recorded before F5)", and the count
+of partial echoes), and that the JSON is the same apart from the schema name
+and the fields v2 adds.

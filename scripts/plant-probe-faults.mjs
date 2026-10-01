@@ -349,6 +349,355 @@ export const PLANTS = [
     find: "const scoped = isScopedRule(rel, original) ? { scoped: true } : {};",
     replace: "const scoped = {};",
   },
+
+  // The positive control (F5).
+  {
+    name: "control-not-planted",
+    file: "src/probe/probe.ts",
+    find: "canaries.push(...plantControl(box.repo, launchRel, tokens));",
+    replace: "",
+  },
+  {
+    name: "control-ignored",
+    file: "src/probe/score.ts",
+    find: 'if (status === "usable" && controlApplies) {',
+    replace: "if (false) {",
+  },
+  {
+    name: "control-partial-echo-accepted",
+    file: "src/probe/score.ts",
+    find: 'if (seen.some((s) => s === "not-seen")) return "missed";',
+    replace: 'if (seen.every((s) => s === "not-seen")) return "missed";',
+  },
+  {
+    name: "control-counted-in-agreement",
+    file: "src/probe/score.ts",
+    find: "const real = cells.filter((c) => !c.decoy && !c.control);",
+    replace: "const real = cells.filter((c) => !c.decoy);",
+  },
+  {
+    name: "control-line-not-printed",
+    file: "src/report/probe.ts",
+    find: "lines.push(`  ${controlText(result)}`);",
+    replace: "",
+  },
+  {
+    name: "v2-recording-without-control-accepted",
+    file: "src/probe/recording.ts",
+    find: "if (m.schema !== RECORDING_SCHEMA) return;",
+    replace: "return;",
+  },
+
+  // The copy's location.
+  {
+    name: "home-never-contains-the-copy",
+    file: "src/probe/instruments.ts",
+    find: "underHome: isInsideReal(options.repo, options.home),",
+    replace: "underHome: false,",
+  },
+  {
+    name: "ancestor-rules-not-listed",
+    file: "src/probe/instruments.ts",
+    find: 'rulesUnder(path.join(dir, ".claude", "rules"), rules);',
+    replace: "",
+  },
+
+  // The InstructionsLoaded hook.
+  {
+    name: "hook-log-dropped",
+    file: "src/agents/claude/adapter.ts",
+    find: "writeFileSync(request.hookLogPath, reduced.text);",
+    replace: "",
+  },
+  {
+    name: "missing-hook-log-accepted",
+    file: "src/probe/score.ts",
+    find: "if (session?.hook && !checks.hookLog)",
+    replace: "if (false)",
+  },
+  {
+    name: "disable-all-hooks-set",
+    file: "src/agents/claude/adapter.ts",
+    find: "...(hook ? hookSettings(hook, options.node) : {}),",
+    replace: "...(hook ? { ...hookSettings(hook, options.node), disableAllHooks: true } : {}),",
+  },
+  {
+    name: "disable-all-hooks-not-refused",
+    file: "src/agents/claude/isolation.ts",
+    find: 'if (options.settings !== undefined && "disableAllHooks" in options.settings)',
+    replace: "if (false)",
+  },
+  {
+    name: "hook-log-not-settled",
+    file: "src/agents/claude/adapter.ts",
+    find: "await settleLog(p.hook.log, settle.quietMs, settle.maxMs);",
+    replace: "",
+  },
+  {
+    name: "hook-log-not-redacted",
+    file: "src/agents/claude/hook.ts",
+    find: "file_path: r(e.file_path),",
+    replace: "file_path: e.file_path,",
+  },
+  {
+    name: "hook-event-outside-copy-not-flagged",
+    file: "src/probe/instruments.ts",
+    find: "if (!p.inside(e.file_path, options.repo)) outside.add(`${e.file_path} (${e.memory_type})`);",
+    replace: "if (false) outside.add(`${e.file_path} (${e.memory_type})`);",
+  },
+  {
+    name: "hook-other-session-counted",
+    file: "src/probe/instruments.ts",
+    find: 'const own = t.hooks.filter((e) => e.session !== "other");',
+    replace: "const own = t.hooks;",
+  },
+  {
+    name: "hook-agents-md-not-blind",
+    file: "src/probe/instruments.ts",
+    find: 'return path.posix.basename(file).toLowerCase() === "agents.md" && predicted.delivery !== "import";',
+    replace: "return false;",
+  },
+  {
+    name: "hook-self-read-decides",
+    file: "src/probe/instruments.ts",
+    find: 'if (canary === "read-itself") row = "undecided";',
+    replace: 'if (false) row = "undecided";',
+  },
+  {
+    name: "hook-decoy-not-a-fault",
+    file: "src/probe/score.ts",
+    find: "if (hook.decoyFired > 0)",
+    replace: "if (false)",
+  },
+  {
+    name: "partial-echoes-not-counted",
+    file: "src/probe/instruments.ts",
+    find: "if (head !== tail) {",
+    replace: "if (false) {",
+  },
+
+  // The model pin and AGENTS.md support.
+  {
+    name: "model-pin-missing",
+    file: "src/agents/claude/adapter.ts",
+    find: '...(model ? ["--model", model.pin] : []),',
+    replace: "",
+  },
+  {
+    name: "model-pin-not-checked",
+    file: "src/probe/score.ts",
+    find: "!modelMatches(pin.pin, transcript.model)",
+    replace: "false",
+  },
+  {
+    name: "model-alias-matches-anything",
+    file: "src/agents/claude/isolation.ts",
+    find: 'return /^[a-z]+$/.test(p) && p !== "default" && r.startsWith(`claude-${p}-`);',
+    replace: "return true;",
+  },
+  {
+    name: "agents-md-plugin-assert-removed",
+    file: "src/probe/score.ts",
+    find: "else if (!hasAgentsMdPlugin(transcript.plugins))",
+    replace: "else if (false)",
+  },
+  {
+    name: "plugins-not-parsed",
+    file: "src/agents/claude/events.ts",
+    find: 'out.plugins = init.plugins.map((p) => p.source ?? `${p.name ?? "?"}@${p.path ?? "?"}`);',
+    replace: "",
+  },
+  {
+    name: "trial-arguments-not-checked",
+    file: "src/probe/score.ts",
+    find: "JSON.stringify(outcome.args) !== JSON.stringify(session.args)",
+    replace: "false",
+  },
+
+  // Settings that turn instruction files off.
+  {
+    name: "kill-switch-not-refused-before-copying",
+    file: "src/probe/probe.ts",
+    find: "if (environment.killSwitches?.length)",
+    replace: "if (false)",
+  },
+  {
+    name: "adapter-refuses-nothing",
+    file: "src/agents/claude/adapter.ts",
+    find: "assertRunnable({ env: baseEnv, args: [...prefix, ...p.args], settings: p.settings?.value });",
+    replace: "undefined;",
+  },
+  {
+    name: "kill-flags-not-refused",
+    file: "src/agents/claude/isolation.ts",
+    find: "if (flags.length)",
+    replace: "if (false)",
+  },
+  {
+    name: "recorded-kill-switch-accepted",
+    file: "src/probe/score.ts",
+    find: "if (killSwitches.length)",
+    replace: "if (false)",
+  },
+  {
+    name: "recorded-kill-flag-accepted",
+    file: "src/probe/score.ts",
+    find: "if (killFlags.length)",
+    replace: "if (false)",
+  },
+
+  // --isolation clean (experimental).
+  {
+    name: "clean-without-a-pin",
+    file: "src/agents/claude/adapter.ts",
+    find: 'if (isolation === "clean" && !model)',
+    replace: "if (false)",
+  },
+  {
+    name: "clean-flags-dropped",
+    file: "src/agents/claude/adapter.ts",
+    find: '...(isolation === "clean" ? CLEAN_ARGS : []),',
+    replace: "",
+  },
+  {
+    name: "clean-plugins-not-checked",
+    file: "src/probe/score.ts",
+    find: "if (others > 0)",
+    replace: "if (false)",
+  },
+  {
+    name: "clean-outside-not-a-fault",
+    file: "src/probe/score.ts",
+    find: 'if (session?.isolation === "clean" && hook.outside.length)',
+    replace: "if (false)",
+  },
+  // More of the controls' checks, one plant each.
+  {
+    name: "control-applies-everywhere",
+    file: "src/probe/score.ts",
+    find: 'const controlApplies = controls.length > 0 && manifest.control?.delivery === "launch";',
+    replace: "const controlApplies = controls.length > 0;",
+  },
+  {
+    name: "control-overwrites-a-file",
+    file: "src/probe/canary.ts",
+    find: '    writeFileSync(file, body, { flag: "wx" });',
+    replace: "    writeFileSync(file, body);",
+  },
+  {
+    name: "control-read-itself-counted-as-echoed",
+    file: "src/probe/score.ts",
+    find: 'return seen.every((s) => s === "preloaded" || s === "on-read") ? "echoed" : "read-itself";',
+    replace: 'return "echoed";',
+  },
+  {
+    name: "user-claude-md-never-found",
+    file: "src/probe/instruments.ts",
+    find: 'userClaudeMd: existsSync(path.join(options.home, ".claude", "CLAUDE.md")),',
+    replace: "userClaudeMd: false,",
+  },
+  {
+    name: "home-trap-not-warned",
+    file: "src/probe/score.ts",
+    find: "if (location?.underHome && location.userClaudeMd)",
+    replace: "if (false)",
+  },
+  {
+    name: "hook-silent-on-control-not-counted",
+    file: "src/probe/instruments.ts",
+    find: 'if (f.control && canary === "seen" && hook === "silent") controlSilent++;',
+    replace: "",
+  },
+  {
+    name: "recorded-disable-all-hooks-accepted",
+    file: "src/probe/score.ts",
+    find: 'if (session?.settings && "disableAllHooks" in session.settings)',
+    replace: "if (false)",
+  },
+  {
+    name: "hook-log-keeps-any-shape",
+    file: "src/agents/claude/hook.ts",
+    find: "const parsed = RawHookEvent.safeParse(value);",
+    replace: "const parsed = { success: true, data: value };",
+  },
+  {
+    name: "hook-log-reader-accepts-extra-fields",
+    file: "src/agents/claude/hook.ts",
+    find: ".strict();",
+    replace: ";",
+  },
+  {
+    name: "session-id-not-read",
+    file: "src/agents/claude/hook.ts",
+    find: 'if (e.type === "system" && e.subtype === "init" && typeof e.session_id === "string") return e.session_id;',
+    replace: "",
+  },
+  {
+    name: "anthropic-model-ignored",
+    file: "src/agents/claude/isolation.ts",
+    find: 'if (options.env.ANTHROPIC_MODEL) return { pin: options.env.ANTHROPIC_MODEL, from: "ANTHROPIC_MODEL" };',
+    replace: "",
+  },
+  {
+    name: "unpinned-model-not-warned",
+    file: "src/probe/score.ts",
+    find: "if (session && session.model === null)",
+    replace: "if (false)",
+  },
+  {
+    name: "plugin-required-before-2-1-277",
+    file: "src/probe/score.ts",
+    find: "compareVersions(manifest.cliVersion, AGENTS_MD_PLUGIN_SINCE) >= 0",
+    replace: "true",
+  },
+  {
+    name: "missing-plugin-list-accepted",
+    file: "src/probe/score.ts",
+    find: 'faults.push("the transcript does not list the session\'s plugins, so AGENTS.md support cannot be checked");',
+    replace: "undefined;",
+  },
+  {
+    name: "recorded-bare-mode-accepted",
+    file: "src/probe/score.ts",
+    find: "else if (manifest.environment.bare)",
+    replace: "else if (false)",
+  },
+  {
+    name: "clean-excludes-nothing",
+    file: "src/agents/claude/isolation.ts",
+    find: "claudeMdExcludes: ancestorExcludes(options.copyRoot),",
+    replace: "claudeMdExcludes: [],",
+  },
+  {
+    name: "clean-auto-memory-left-on",
+    file: "src/agents/claude/adapter.ts",
+    find: 'env: isolation === "clean" ? { ...env, ...CLEAN_ENV } : env,',
+    replace: "env,",
+  },
+  {
+    name: "clean-mode-not-passed",
+    file: "src/agents/claude/isolation.ts",
+    find: "...(options.claudeMode !== undefined",
+    replace: "...(false",
+  },
+  {
+    name: "clean-not-marked-experimental",
+    file: "src/probe/score.ts",
+    find: '"--isolation clean is EXPERIMENTAL',
+    replace: '"--isolation clean is',
+  },
+  {
+    name: "json-drops-the-hook",
+    file: "src/report/probe.ts",
+    find: "instrument: instrumentJson(result),",
+    replace: "instrument: { ...instrumentJson(result), hook: null },",
+  },
+  {
+    name: "report-hides-the-session",
+    file: "src/report/probe.ts",
+    find: "...sessionRows(result),",
+    replace: "",
+  },
 ];
 
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join("/");
