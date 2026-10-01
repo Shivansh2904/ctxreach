@@ -1,0 +1,428 @@
+{
+  "schema": "ctxreach.study-cell-results/v1",
+  "dryRun": true,
+  "generatedAt": "2026-10-01T00:54:09.457Z",
+  "realAgentRuns": 0,
+  "billedRuns": 0,
+  "results": [
+    {
+      "cell": "B1",
+      "title": "A .claude/CLAUDE.md in a folder above the git root (not the home folder) switches AGENTS.md off",
+      "instrument": "capture",
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "arms": {
+        "trap": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            }
+          }
+        },
+        "control": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": null,
+      "verdict": "confirmed"
+    },
+    {
+      "cell": "B2",
+      "title": "~/.claude/CLAUDE.md switches AGENTS.md off for a repository under the home folder, not for one outside it",
+      "instrument": "capture",
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "arms": {
+        "A0": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            },
+            "home": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            }
+          }
+        },
+        "A1": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            },
+            "home": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            }
+          }
+        },
+        "A2": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            },
+            "home": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            }
+          }
+        },
+        "A3": {
+          "planned": 5,
+          "ran": 5,
+          "usable": 5,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            },
+            "home": {
+              "k": 5,
+              "n": 5,
+              "lo": 0.5655175352168251,
+              "hi": 1,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            }
+          }
+        },
+        "A4": {
+          "planned": 5,
+          "ran": 5,
+          "usable": 5,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            },
+            "home": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            },
+            "ancestor": {
+              "k": 5,
+              "n": 5,
+              "lo": 0.5655175352168251,
+              "hi": 1,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": true,
+      "verdict": "confirmed"
+    },
+    {
+      "cell": "B3",
+      "title": "An @AGENTS.md import in the root CLAUDE.md does not reach a headless session launched in a package",
+      "instrument": "capture",
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "arms": {
+        "subdir": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "rootAgents": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            },
+            "packageAgents": {
+              "k": 10,
+              "n": 10,
+              "lo": 0.7224672001371107,
+              "hi": 0.9999999999999999,
+              "partial": 0
+            }
+          }
+        },
+        "root": {
+          "planned": 5,
+          "ran": 5,
+          "usable": 5,
+          "void": 0,
+          "observe": {
+            "rootAgents": {
+              "k": 5,
+              "n": 5,
+              "lo": 0.5655175352168251,
+              "hi": 1,
+              "partial": 0
+            },
+            "packageAgents": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            }
+          }
+        },
+        "twin-subdir": {
+          "planned": 0,
+          "ran": 0,
+          "usable": 0,
+          "void": 0,
+          "observe": {
+            "rootAgents": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            },
+            "packageAgents": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": null,
+      "verdict": "confirmed"
+    },
+    {
+      "cell": "B4",
+      "title": "A CLAUDE.md whose whole content is the path AGENTS.md (a symlink checked out as text) switches AGENTS.md off",
+      "instrument": "capture",
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "arms": {
+        "trap": {
+          "planned": 5,
+          "ran": 5,
+          "usable": 5,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 5,
+              "lo": 0,
+              "hi": 0.43448246478317476,
+              "partial": 0
+            }
+          }
+        },
+        "twin": {
+          "planned": 0,
+          "ran": 0,
+          "usable": 0,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": null,
+      "verdict": "confirmed"
+    },
+    {
+      "cell": "B6",
+      "title": "A .claude/rules file without paths, in a folder above the git root, loads at launch",
+      "instrument": "capture",
+      "wording": "delivered to the model endpoint (custom base URL, gateway path); first-party equivalence measured in M1",
+      "arms": {
+        "trap": {
+          "planned": 5,
+          "ran": 5,
+          "usable": 5,
+          "void": 0,
+          "observe": {
+            "ancestorRule": {
+              "k": 5,
+              "n": 5,
+              "lo": 0.5655175352168251,
+              "hi": 1,
+              "partial": 0
+            },
+            "agents": {
+              "k": 5,
+              "n": 5,
+              "lo": 0.5655175352168251,
+              "hi": 1,
+              "partial": 0
+            }
+          }
+        },
+        "twin-paths": {
+          "planned": 0,
+          "ran": 0,
+          "usable": 0,
+          "void": 0,
+          "observe": {
+            "ancestorRule": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            },
+            "agents": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": null,
+      "verdict": "confirmed"
+    },
+    {
+      "cell": "B7",
+      "title": "A CLAUDE.md that says 'read AGENTS.md' in words: does the model open it during a task?",
+      "instrument": "echo",
+      "wording": "echoed by the model in a first-party session (an echo proves delivery, not compliance)",
+      "arms": {
+        "trap": {
+          "planned": 10,
+          "ran": 10,
+          "usable": 10,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 10,
+              "lo": 0,
+              "hi": 0.2775327998628892,
+              "partial": 0
+            }
+          }
+        },
+        "twin": {
+          "planned": 0,
+          "ran": 0,
+          "usable": 0,
+          "void": 0,
+          "observe": {
+            "agents": {
+              "k": 0,
+              "n": 0,
+              "lo": null,
+              "hi": null,
+              "partial": 0
+            }
+          }
+        }
+      },
+      "precondition": null,
+      "verdict": "reported"
+    }
+  ]
+}

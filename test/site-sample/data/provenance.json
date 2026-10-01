@@ -1,0 +1,167 @@
+{
+  "schema": "ctxreach.site-provenance/v1",
+  "label": "sample",
+  "assembledAt": "2026-10-01T00:54:09.491Z",
+  "repo": "Shivansh2904/ctxreach",
+  "sources": [
+    {
+      "arg": "--run",
+      "file": "SAMPLE-rows-S-main.jsonl.run-sample.json",
+      "sha256": "448cb4935a9bb814c14d195fc05ce149ecaf20f56c890969906852bd1359e005"
+    },
+    {
+      "arg": "--run",
+      "file": "SAMPLE-rows-S-imp.jsonl.run-sample.json",
+      "sha256": "17ec51aa48cb71a9d59947545130865e7b8d86e55eeef1cc1b3c26fca885faf3"
+    },
+    {
+      "arg": "--k1",
+      "file": "k1.json",
+      "sha256": "2e25ebde6bbb79f09895a162a4ea6c24e0607be8b74f53b6b24620732cf26a1d"
+    },
+    {
+      "arg": "--k2",
+      "file": "k2.txt",
+      "sha256": "ddd45b43d342e58a175a9b02b0e1079386cc98db30c995d71232fd64b5e61da2"
+    },
+    {
+      "arg": "--k5",
+      "file": "k5.json",
+      "sha256": "231186126edf6b51f07437f2653340dcde08e03ba263edfd51de041bae61d823"
+    },
+    {
+      "arg": "--k6",
+      "file": "k6.json",
+      "sha256": "db90ee7b4cab540033e43483e45deabe1aaae82bbc049e7fa90575c7cae68b49"
+    },
+    {
+      "arg": "--trials",
+      "file": "trials.jsonl",
+      "sha256": "ad4b2349610926d159ef7095dd18b070d7ac1c8359eaa0564b659c210d6953b5"
+    },
+    {
+      "arg": "--cast",
+      "file": "demo.cast.json",
+      "sha256": "7e12028cddebc12b0b6e0644fd635a6e7d6c4593ce5c1454d5e30e046f798866"
+    }
+  ],
+  "prereg": {
+    "tag": "prereg-sample",
+    "commit": "sample00000000000000000000000000000000000",
+    "seed": "sample00",
+    "preregSha256": "sample0000000000000000000000000000000000000000000000000000000000",
+    "issueUrl": "https://example.invalid/sample-issue",
+    "issueCreatedAt": "2026-01-01T08:00:00Z",
+    "issueTitle": "Sample issue (made up)"
+  },
+  "freeze": {
+    "tag": "study-sample",
+    "commit": "sample11111111111111111111111111111111111",
+    "distDigest": "sample-dist-digest"
+  },
+  "runs": [
+    {
+      "frame": "S-main",
+      "label": "sample",
+      "seed": "5a3b1e00",
+      "seedFrom": "typed (pilot)",
+      "sample": "SAMPLE-S-main.tsv",
+      "sampleSha256": "d10df7035f6e2b56cd9c3466f0328469bbc37abdf4d5a9624fbba33c52623620",
+      "startedAt": "2026-01-01T09:00:00.000Z",
+      "endedAt": "2026-01-01T13:30:00.000Z",
+      "units": 240,
+      "exclusions": {},
+      "unitsWithFaults": 0,
+      "dist": "sample-dist-digest",
+      "claudeVersion": "0.0.0-sample",
+      "codex": "codex-cli 0.0.0-sample",
+      "node": "v0.0.0-sample",
+      "platform": "sample x64",
+      "requests": 960,
+      "retries": 0,
+      "nonGetAttempts": 0
+    },
+    {
+      "frame": "S-imp",
+      "label": "sample",
+      "seed": "5a3b1e00",
+      "seedFrom": "typed (pilot)",
+      "sample": "SAMPLE-S-imp.tsv",
+      "sampleSha256": "e43d21306367fe8f06b999131d2936d63f89bbcacf6d68c749484895d270e072",
+      "startedAt": "2026-01-02T09:00:00.000Z",
+      "endedAt": "2026-01-02T13:30:00.000Z",
+      "units": 90,
+      "exclusions": {},
+      "unitsWithFaults": 0,
+      "dist": "sample-dist-digest",
+      "claudeVersion": "0.0.0-sample",
+      "codex": "codex-cli 0.0.0-sample",
+      "node": "v0.0.0-sample",
+      "platform": "sample x64",
+      "requests": 360,
+      "retries": 0,
+      "nonGetAttempts": 0
+    }
+  ],
+  "checks": {
+    "K1": {
+      "k": 39,
+      "n": 40,
+      "knownDefects": ["sample-fixture"],
+      "orphans": 0
+    },
+    "K2": {
+      "k": 15,
+      "n": 16
+    },
+    "K5": {
+      "k": 94,
+      "n": 96
+    },
+    "K6": {
+      "pairs": {
+        "k": 28,
+        "n": 30
+      },
+      "claude": {
+        "k": 29,
+        "n": 30
+      },
+      "codex": {
+        "k": 29,
+        "n": 30
+      },
+      "disagreements": 2
+    }
+  },
+  "cells": {
+    "trials": 95,
+    "usable": 95,
+    "void": 0,
+    "voidReasons": {},
+    "agentVersions": ["0.0.0-fake"],
+    "models": ["fake-model"],
+    "os": ["win32 10.0.26200"],
+    "firstTrial": "2026-10-01T00:53:51.106Z",
+    "lastTrial": "2026-10-01T00:54:09.449Z",
+    "dryRun": true
+  },
+  "recordings": [
+    {
+      "name": "B2-A1",
+      "path": "runs/B2-A1/"
+    },
+    {
+      "name": "B7-trap",
+      "path": "runs/B7-trap/"
+    }
+  ],
+  "demo": {
+    "label": "typing simulated, output verbatim from ctxreach 0.0.0 (47e60a0) on 2026-10-01",
+    "command": "ctxreach map --from demo/packages/api",
+    "version": "0.0.0",
+    "commit": "47e60a0",
+    "date": "2026-10-01",
+    "platform": "win32 10.0.26200 x64"
+  }
+}
