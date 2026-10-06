@@ -48,7 +48,9 @@ export function seedFromTag(tag = "prereg-v1", cwd = ROOT) {
     throw new Error(`${tag} (${commit}) does not contain study/PREREG.md`);
   }
   // A registration whose tag-time values were never filled in is not a registration.
-  const left = [...new Set([...prereg.matchAll(/\{\{stamp:([^}]+)\}\}/g)].map((m) => m[1]))];
+  // The same key pattern as prereg.mjs's placeholders(), so the sentence in PREREG.md that
+  // shows the form ({{stamp:<key>}}) is not taken for a value left unfilled.
+  const left = [...new Set([...prereg.matchAll(/\{\{stamp:([A-Za-z0-9.-]+)\}\}/g)].map((m) => m[1]))];
   if (left.length)
     throw new Error(
       `${tag} (${commit}): study/PREREG.md still holds ${left.length} placeholder(s) (${left.slice(0, 3).join(", ")}); run study/prereg.mjs stamp before tagging`,

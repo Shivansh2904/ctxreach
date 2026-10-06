@@ -1259,7 +1259,11 @@ describe("drawing the sample", () => {
     git("commit", "-q", "-m", "unstamped");
     git("tag", "unstamped");
     expect(() => seed.seedFromTag("unstamped", repo)).toThrow(/1 placeholder\(s\) \(dist.digest\)/);
-    writeFileSync(path.join(repo, "study", "PREREG.md"), "# prereg\n");
+    // PREREG.md explains its own placeholder form in words; that sentence is not a placeholder,
+    // and seed.mjs must agree with prereg.mjs about what is one.
+    const stamped = "# prereg\n\nValues are written `{{stamp:<key>}}` until stamped.\n";
+    expect(prereg.placeholders(stamped)).toEqual([]);
+    writeFileSync(path.join(repo, "study", "PREREG.md"), stamped);
     git("add", ".");
     git("commit", "-q", "-m", "prereg");
     git("tag", "prereg-v1");
@@ -1268,9 +1272,9 @@ describe("drawing the sample", () => {
       tag: "prereg-v1",
       commit: head,
       seed: head.slice(0, 8),
-      prereg: "# prereg\n",
+      prereg: stamped,
     });
-    expect(prereg.taggedPrereg("prereg-v1", repo)).toBe("# prereg\n");
+    expect(prereg.taggedPrereg("prereg-v1", repo)).toBe(stamped);
     expect(prereg.taggedPrereg("no-such-tag", repo)).toBeUndefined();
     // A GIT_DIR pointing elsewhere (as under git rebase --exec) must not redirect either git.
     const saved = process.env.GIT_DIR;
