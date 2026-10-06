@@ -76,6 +76,16 @@ import * as k6cli from "../study/handcheck/handcheck.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FAKE_CODEX = path.join(ROOT, "study", "census", "testing", "fake-codex.mjs");
+/** The registration, as stamped at 4f44d00 (with any deviations appended since). */
+const PREREG_TEXT = readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8");
+/**
+ * study/PREREG.md as it stood when `node study/prereg.mjs stamp --write` filled it (the stamp
+ * commit's parent, 8b0d7cc), byte for byte: a {{stamp:<key>}} placeholder where each tag-time
+ * value now stands. What happens before the stamp is tested on it; the pre-registration tests
+ * check that stamping it with the stamps block's values gives PREREG.md.
+ */
+const UNSTAMPED_PREREG = readFileSync(path.join(ROOT, "study", "census", "testing", "prereg-v1-unstamped.md"), "utf8");
+const FRAMES_DIR = path.join(ROOT, "study", "census", "data", "frames");
 const made: string[] = [];
 function tmp(label: string): string {
   const dir = mkdtempSync(path.join(os.tmpdir(), `ctxr-study-${label}-`));
@@ -112,6 +122,54 @@ function localClient(repos: unknown[], extra: Record<string, unknown> = {}) {
     sleep: noSleep,
   });
   return { client, seen };
+}
+
+/**
+ * The tag-time values the frozen frames give, read here from their files without prereg.mjs:
+ * each frame's day from its file names (its fetch time must fall on it), its repositories as
+ * the TSV's rows (one per repository), its SHA-256 over the TSV's bytes, and K3's counts from
+ * its manifest. Each manifest must still describe its TSV. Returns the values and the TSVs.
+ */
+function frozenFrames(dir = FRAMES_DIR) {
+  const values: Record<string, string> = {};
+  const tsv: Record<string, Buffer> = {};
+  for (const frame of ["S", "S-imp", "S-ci", "K3"]) {
+    const re = new RegExp(`^${frame}-(\\d{4}-\\d{2}-\\d{2})\\.manifest\\.json$`);
+    const found = readdirSync(dir).filter((n) => re.test(n));
+    expect(found, `${frame}: one manifest`).toHaveLength(1);
+    const name = found[0]!;
+    const day = re.exec(name)![1]!;
+    const m = JSON.parse(readFileSync(path.join(dir, name), "utf8"));
+    expect(m, frame).toMatchObject({ label: "study", frame, valid: true, problems: [] });
+    expect(m.client, frame).toMatch(/; non-GET attempts: 0$/);
+    expect(m.fetchedAt.slice(0, 10), frame).toBe(day);
+    if (frame === "K3") {
+      values["K3.date"] = day;
+      values["K3.claude"] = String(m.counts.claude);
+      values["K3.claudeImport"] = String(m.counts.claudeImport);
+      continue;
+    }
+    expect(m.file, frame).toBe(`${frame}-${day}.tsv`);
+    const bytes = readFileSync(path.join(dir, m.file));
+    const rows = bytes
+      .toString("utf8")
+      .split("\n")
+      .filter((l) => l !== "");
+    const repos = new Set(rows.map((l) => l.split("\t")[0])).size;
+    expect(repos, `${frame}: one row per repository`).toBe(rows.length);
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    expect({ repos: m.repos, sha256: m.sha256 }, `${frame}: the manifest describes its TSV`).toEqual({ repos, sha256 });
+    values[`frame.${frame}.date`] = day;
+    values[`frame.${frame}.repos`] = String(repos);
+    values[`frame.${frame}.sha256`] = sha256;
+    tsv[frame] = bytes;
+  }
+  return { values, tsv };
+}
+
+/** The keys of `expected` whose value `got` does not hold. */
+function mismatches(got: Record<string, string>, expected: Record<string, string>) {
+  return Object.keys(expected).filter((k) => got[k] !== expected[k]);
 }
 
 function fixtureRepo(name: string, files: Record<string, string>, extra: Record<string, unknown> = {}) {
@@ -1259,6 +1317,20 @@ describe("drawing the sample", () => {
     git("commit", "-q", "-m", "unstamped");
     git("tag", "unstamped");
     expect(() => seed.seedFromTag("unstamped", repo)).toThrow(/1 placeholder\(s\) \(dist.digest\)/);
+    // The registration itself: refused as it stood before the stamp, for every placeholder it held,
+    // and read as it stands stamped, which is the text prereg-v1 tags.
+    writeFileSync(path.join(repo, "study", "PREREG.md"), UNSTAMPED_PREREG);
+    git("add", ".");
+    git("commit", "-q", "-m", "registration before the stamp");
+    git("tag", "before-stamp");
+    expect(() => seed.seedFromTag("before-stamp", repo)).toThrow(
+      new RegExp(`still holds ${prereg.STAMP_KEYS.length} placeholder\\(s\\) \\(study-v1\\.commit, ctxreach\\.version`),
+    );
+    writeFileSync(path.join(repo, "study", "PREREG.md"), PREREG_TEXT);
+    git("add", ".");
+    git("commit", "-q", "-m", "registration, stamped");
+    git("tag", "registration");
+    expect(seed.seedFromTag("registration", repo).prereg).toBe(PREREG_TEXT);
     // PREREG.md explains its own placeholder form in words; that sentence is not a placeholder,
     // and seed.mjs must agree with prereg.mjs about what is one.
     const stamped = "# prereg\n\nValues are written `{{stamp:<key>}}` until stamped.\n";
@@ -1362,8 +1434,31 @@ describe("the one redraw (study/PREREG.md section 4)", () => {
 });
 
 describe("the pre-registration (study/PREREG.md)", () => {
-  const text = readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8");
+  const text = PREREG_TEXT;
   const registry = prereg.readRegistry(text);
+  /**
+   * The tool freeze as this clone holds it: the study-v1 tag's commit and its package.json's
+   * version, and whether dist/ is a build of the tag's sources (they are unchanged since the tag,
+   * and dist/cli.js --version prints that version), as `prereg.mjs stamp` requires. Undefined
+   * when the clone has no study-v1 tag (CI's shallow checkout fetches no tags).
+   */
+  const FREEZE = ((): { commit: string; version: string; isBuild: boolean } | undefined => {
+    const git = (...a: string[]) => spawnSync("git", a, { cwd: ROOT, encoding: "utf8", env: seed.gitEnv() });
+    const tag = git("rev-parse", "--verify", "-q", "study-v1^{commit}");
+    if (tag.status !== 0) return undefined;
+    const commit = tag.stdout.trim();
+    // Unreadable, it fails the version's test below instead of every test in this file.
+    let version = "(study-v1's package.json unreadable)";
+    try {
+      version = JSON.parse(git("show", `${commit}:package.json`).stdout).version;
+    } catch {}
+    const unchanged = git("diff", "--quiet", commit, "--", ...prereg.FROZEN_SOURCES).status === 0;
+    const cli = path.join(ROOT, "dist", "cli.js");
+    const printed = existsSync(cli)
+      ? spawnSync(process.execPath, [cli, "--version"], { encoding: "utf8", windowsHide: true }).stdout.trim()
+      : undefined;
+    return { commit, version, isBuild: unchanged && printed === version };
+  })();
 
   it("registers exactly what the code runs", () => {
     expect(prereg.checkAgainstCode(registry)).toEqual([]);
@@ -1522,9 +1617,36 @@ describe("the pre-registration (study/PREREG.md)", () => {
 
   it("holds every tag-time value once in the stamps block, which the scripts read", () => {
     expect(prereg.stampsBlockProblems(text)).toEqual([]);
-    expect(registryLib.readStamps(text)).toEqual({});
+    // Every key once as written (JSON.parse would keep the last of two silently), and no other.
+    const writtenKeys = (t: string) =>
+      [...(/```json prereg-stamps\n([\s\S]*?)\n```/.exec(t)?.[1] ?? "").matchAll(/^\s*"([^"]+)":/gm)]
+        .map((m) => m[1])
+        .sort();
+    const sortedKeys = [...prereg.STAMP_KEYS].sort();
+    expect(writtenKeys(text)).toEqual(sortedKeys);
+    expect(writtenKeys(text.replace(/\n {2}"K3\.claude": [^\n]*\n/, (l) => l + l.slice(1)))).not.toEqual(sortedKeys);
+    // Each holds its value, which the scripts read: readStamps leaves none out as a placeholder.
     const block = registryLib.readStampsBlock(text);
-    expect(Object.keys(block).sort()).toEqual([...prereg.STAMP_KEYS].sort());
+    const stamps = registryLib.readStamps(text);
+    expect(stamps).toEqual(block);
+    expect(Object.keys(stamps).sort()).toEqual(sortedKeys);
+    // The values are what their sources give. The frozen frames', from their manifests and TSVs:
+    const frames = frozenFrames().values;
+    expect(Object.keys(frames)).toHaveLength(prereg.STAMP_KEYS.length - 4);
+    expect(mismatches(stamps, frames)).toEqual([]);
+    // (the comparison can fail: S's and S-imp's hashes swapped)
+    const swapped = {
+      ...stamps,
+      "frame.S.sha256": stamps["frame.S-imp.sha256"],
+      "frame.S-imp.sha256": stamps["frame.S.sha256"],
+    };
+    expect(mismatches(swapped, frames)).toEqual(["frame.S.sha256", "frame.S-imp.sha256"]);
+    // The tool freeze's values are checked against the study-v1 tag and its build in the two tests below,
+    // wherever the clone holds the tag; here, their form. The Node that built dist/ is recorded nowhere else.
+    expect(stamps["study-v1.commit"]).toMatch(/^[0-9a-f]{40}$/);
+    expect(stamps["ctxreach.version"]).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(stamps["dist.digest"]).toMatch(/^[0-9a-f]{64}$/);
+    expect(stamps["node.version"]).toMatch(/^v\d+\.\d+\.\d+$/);
     // Planted: a key left out, a key nobody stamps, another key's placeholder.
     const plant = (f: (b: Record<string, string>) => void) => {
       const b = { ...block };
@@ -1539,11 +1661,25 @@ describe("the pre-registration (study/PREREG.md)", () => {
     expect(plant((b) => delete b["dist.digest"]).join("\n")).toMatch(/no dist\.digest/);
     expect(plant((b) => (b["frame.G.sha256"] = "x")).join("\n")).toMatch(/frame\.G\.sha256 is not a tag-time value/);
     expect(plant((b) => (b["dist.digest"] = "{{stamp:node.version}}")).join("\n")).toMatch(/dist\.digest holds/);
-    // Stamped, the block holds the values, and readStamps returns them.
+    // Before the stamp, each key held its own placeholder, which readStamps leaves out; stamped, it holds
+    // the value, and readStamps returns them.
+    expect(prereg.stampsBlockProblems(UNSTAMPED_PREREG)).toEqual([]);
+    expect(writtenKeys(UNSTAMPED_PREREG)).toEqual(sortedKeys);
+    expect(registryLib.readStamps(UNSTAMPED_PREREG)).toEqual({});
     const values = Object.fromEntries((prereg.STAMP_KEYS as string[]).map((k) => [k, `v-${k}`]));
-    const filled = prereg.applyStamps(text, values).text;
+    const filled = prereg.applyStamps(UNSTAMPED_PREREG, values).text;
     expect(prereg.stampsBlockProblems(filled)).toEqual([]);
     expect(registryLib.readStamps(filled)).toEqual(values);
+  });
+
+  it.skipIf(FREEZE === undefined)("stamps the tool freeze the study-v1 tag holds: its commit and its version", () => {
+    const stamps = registryLib.readStamps(text);
+    expect(stamps["study-v1.commit"]).toBe(FREEZE?.commit);
+    expect(stamps["ctxreach.version"]).toBe(FREEZE?.version);
+  });
+
+  it.skipIf(!FREEZE?.isBuild)("stamps the digest of dist/, while dist/ is a build of study-v1's sources", () => {
+    expect(registryLib.readStamps(text)["dist.digest"]).toBe(digest.distDigest(path.join(ROOT, "dist")).digest);
   });
 
   it("refuses, once tagged, any change above the Deviations heading and any edit below it; appending is fine", () => {
@@ -1565,10 +1701,25 @@ describe("the pre-registration (study/PREREG.md)", () => {
   });
 
   it("draws a study sample only from the frame TSV the tag stamps, under an unchanged registration", () => {
+    const sha256 = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
+    // The registration, as prereg-v1 tags it, takes the frozen frames: S-main is drawn from S's TSV, S-imp
+    // from S-imp's, and neither from another frame's.
+    const frozen = frozenFrames().tsv;
+    const registered = (stream: string, frame: string, working = text) => {
+      const tsv = frozen[frame];
+      expect(tsv, frame).toBeDefined();
+      return sample.studyFrameProblems({ tagged: text, working, stream, frameSha256: sha256(tsv!) }).join("\n");
+    };
+    expect(registered("S-main", "S")).toBe("");
+    expect(registered("S-imp", "S-imp")).toBe("");
+    expect(registered("S-main", "S-ci")).toMatch(/is not frame S's, as prereg-v1 stamps it/);
+    expect(registered("S-imp", "S")).toMatch(/is not frame S-imp's, as prereg-v1 stamps it/);
+    expect(registered("S-main", "S", UNSTAMPED_PREREG)).toMatch(/differs from prereg-v1: nothing above/);
+    // A registration stamped with other values (stamped here from the text before the stamp).
     const tsv = `o/r\t${"a".repeat(40)}\tAGENTS.md\t1\n`;
-    const sha = createHash("sha256").update(tsv).digest("hex");
+    const sha = sha256(tsv);
     const values = Object.fromEntries((prereg.STAMP_KEYS as string[]).map((k) => [k, `v-${k}`]));
-    const tagged = prereg.applyStamps(text, {
+    const tagged = prereg.applyStamps(UNSTAMPED_PREREG, {
       ...values,
       "frame.S.sha256": sha,
       "frame.S-imp.sha256": "f".repeat(64),
@@ -1580,7 +1731,10 @@ describe("the pre-registration (study/PREREG.md)", () => {
     expect(problems({ frameSha256: "0".repeat(64) })).toMatch(/is not frame S's, as prereg-v1 stamps it/);
     expect(problems({ stream: "S-imp" })).toMatch(/is not frame S-imp's/);
     expect(problems({ working: text })).toMatch(/differs from prereg-v1: nothing above the Deviations heading/);
-    expect(problems({ tagged: text, working: text })).toMatch(/prereg-v1 stamps no SHA-256 for frame S/);
+    // A tag made before the stamp stamps no frame at all.
+    expect(problems({ tagged: UNSTAMPED_PREREG, working: UNSTAMPED_PREREG })).toMatch(
+      /prereg-v1 stamps no SHA-256 for frame S/,
+    );
   });
 
   it("states O8's CJK characters as the code tests them, code point for code point", () => {
@@ -1708,8 +1862,25 @@ describe("the pre-registration (study/PREREG.md)", () => {
     );
   });
 
-  it("holds a placeholder for every tag-time value and no other", () => {
-    expect([...prereg.placeholders(text)].sort()).toEqual([...prereg.STAMP_KEYS].sort());
+  it("held a placeholder for every tag-time value and no other, and holds each one's stamped value in its place", () => {
+    // Stamped: no placeholder is left (the sentence that shows the form, {{stamp:<key>}}, is not one).
+    expect(prereg.placeholders(text)).toEqual([]);
+    expect(text).toContain("{{stamp:<key>}}");
+    // Before the stamp, it held a placeholder for every tag-time value and no other...
+    expect([...prereg.placeholders(UNSTAMPED_PREREG)].sort()).toEqual([...prereg.STAMP_KEYS].sort());
+    // ...and stamping that text with the stamps block's values gives this one, byte for byte above the
+    // Deviations heading (deviations are appended below it): the prose holds the values the scripts read,
+    // each where its placeholder stood, and nothing else changed.
+    const stamps = registryLib.readStamps(text);
+    const stamped = prereg.applyStamps(UNSTAMPED_PREREG, stamps);
+    expect(stamped.missing).toEqual([]);
+    expect(registryLib.appendOnlyProblems(stamped.text, text)).toEqual([]);
+    // Planted: the prose and the block disagreeing on one value, and one placeholder left unfilled.
+    const other = prereg.applyStamps(UNSTAMPED_PREREG, { ...stamps, "K3.claude": "1" }).text;
+    expect(registryLib.appendOnlyProblems(other, text).join("\n")).toMatch(/differs from prereg-v1/);
+    const left = text.replace(stamps["dist.digest"], "{{stamp:dist.digest}}");
+    expect(prereg.placeholders(left)).toEqual(["dist.digest"]);
+    expect(registryLib.appendOnlyProblems(stamped.text, left).join("\n")).toMatch(/differs from prereg-v1/);
   });
 
   it("lists every registered arm and its trials in the cells table", () => {
@@ -1780,7 +1951,9 @@ describe("the pre-registration (study/PREREG.md)", () => {
     expect(ok.values["study-v1.commit"]).toBe(git("rev-parse", "HEAD"));
     expect(ok.values["ctxreach.version"]).toBe("1.0.0");
     expect(ok.values["K3.claudeImport"]).toBe("2");
-    const filled = prereg.applyStamps(text, ok.values);
+    // A value for every tag-time key, filling every placeholder of the text before the stamp.
+    expect(Object.keys(ok.values).sort()).toEqual([...prereg.STAMP_KEYS].sort());
+    const filled = prereg.applyStamps(UNSTAMPED_PREREG, ok.values);
     expect(filled.missing).toEqual([]);
     expect(prereg.placeholders(filled.text)).toEqual([]);
     expect(prereg.checkAgainstCode(prereg.readRegistry(filled.text))).toEqual([]);
@@ -2167,13 +2340,14 @@ describe("the census run, analysis and K3", () => {
     });
   });
 
-  /** PREREG.md as the tag would hold it once stamped, with the injected runner as the frozen build. */
-  const taggedText = prereg.applyStamps(
-    readFileSync(path.join(ROOT, "study", "PREREG.md"), "utf8"),
-    Object.fromEntries(
-      (prereg.STAMP_KEYS as string[]).map((k) => [k, k === "dist.digest" ? "injected runner (tests)" : `v-${k}`]),
-    ),
-  ).text;
+  /**
+   * PREREG.md as a stand-in tag holds it: the text before the stamp, stamped with the registration's
+   * values but the injected runner as the frozen build (the real stamp names the real dist/).
+   */
+  const taggedText = prereg.applyStamps(UNSTAMPED_PREREG, {
+    ...registryLib.readStamps(PREREG_TEXT),
+    "dist.digest": "injected runner (tests)",
+  }).text;
   /** A study run's options: the seed and registration from a stand-in tag, the stamped build, Codex for K4 at the registered version. */
   const studyRun = (args: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
     ...args,
@@ -2274,6 +2448,16 @@ describe("the census run, analysis and K3", () => {
     );
     const noText = (tag: string) => ({ tag, commit: "0".repeat(40), seed: "0badc0de" });
     expect(await refused(studyHeader(), { seedResolver: noText })).toMatch(/no study\/PREREG\.md to read/);
+    // The registration itself stamps the real build, so under it the injected runner is not the frozen build.
+    const registered = (tag: string) => ({
+      tag,
+      commit: `0badc0de${"0".repeat(32)}`,
+      seed: "0badc0de",
+      prereg: PREREG_TEXT,
+    });
+    expect(await refused(studyHeader(), { seedResolver: registered, workingPrereg: PREREG_TEXT })).toMatch(
+      /--expect-dist injected runner \(tests\) is not the build prereg-v1 stamps \([0-9a-f]{64}\)/,
+    );
   }, 60_000);
 
   it("runs the redraw as draw 2 with the tag's seed + 1, and records the Codex version on every row", async () => {
