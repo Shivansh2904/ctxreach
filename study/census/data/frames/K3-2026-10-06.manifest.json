@@ -1,0 +1,26 @@
+{
+  "schema": "ctxreach.study-frame/v1",
+  "label": "study",
+  "frame": "K3",
+  "queries": {
+    "claude": "file:^CLAUDE\\.md$ case:yes repo:has.file(path:^AGENTS\\.md$) count:all",
+    "claudeImport": "file:^CLAUDE\\.md$ case:yes repo:has.file(path:^AGENTS\\.md$) patterntype:regexp @AGENTS\\.md count:all"
+  },
+  "counts": {
+    "claude": 11515,
+    "claudeChurn": {
+      "onlyFirst": 0,
+      "onlySecond": 0
+    },
+    "claudeImport": 3502,
+    "claudeImportChurn": {
+      "onlyFirst": 0,
+      "onlySecond": 0
+    }
+  },
+  "problems": [],
+  "fetchedAt": "2026-10-06T12:03:05.378Z",
+  "durationMs": 6674,
+  "valid": true,
+  "client": "requests: 4 (sourcegraph.com 4); 304: 0; retries: 0; waited: 2 s; refused hosts: 0; non-GET attempts: 0"
+}

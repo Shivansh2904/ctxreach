@@ -54,12 +54,12 @@ written after the tag (section 13, step 9) and only reads those two files:
 ## 1. Tool freeze, timestamp and seed
 
 1. **Tool freeze.** The tag `study-v1` marks the commit whose `map`
-   produces every census measurement: `{{stamp:study-v1.commit}}`, ctxreach
-   `{{stamp:ctxreach.version}}`, built with Node `{{stamp:node.version}}` from
+   produces every census measurement: `8b0d7ccfde5d50cf7a347ec688f1a55a6502ce84`, ctxreach
+   `0.1.0`, built with Node `v22.19.0` from
    the dependencies locked in that commit's `package-lock.json`.
    The build's fingerprint (SHA-256 of every file in `dist/`, then SHA-256
    of that listing; `node study/census/dist-digest.mjs`) is
-   `{{stamp:dist.digest}}`. `node study/prereg.mjs stamp` refuses to stamp
+   `df78ba9d2d58f88492df5c4a384e23b5e8c23cac79c39fe0b33d11cc2ded419a`. `node study/prereg.mjs stamp` refuses to stamp
    unless the working tree's `src/`, `package.json`, `package-lock.json`,
    `tsup.config.ts` and `tsconfig.json` equal the tag's and
    `dist/cli.js --version` prints the version of the tag's `package.json`;
@@ -135,9 +135,9 @@ repositories are kept (others are counted).
 
 | Frame | Query (verbatim) | Frozen | Repositories | TSV SHA-256 |
 |---|---|---|---|---|
-| **S** (census) | `file:^AGENTS\.md$ case:yes count:all` | {{stamp:frame.S.date}} | {{stamp:frame.S.repos}} | `{{stamp:frame.S.sha256}}` |
-| **S-imp** (importers) | `file:^CLAUDE\.md$ case:yes patterntype:regexp ^@AGENTS\.md count:all` | {{stamp:frame.S-imp.date}} | {{stamp:frame.S-imp.repos}} | `{{stamp:frame.S-imp.sha256}}` |
-| **S-ci** (any case) | `file:^AGENTS\.md$ count:all` | {{stamp:frame.S-ci.date}} | {{stamp:frame.S-ci.repos}} | `{{stamp:frame.S-ci.sha256}}` |
+| **S** (census) | `file:^AGENTS\.md$ case:yes count:all` | 2026-10-06 | 26813 | `e63f4042f7583404435a035076bd00cd25917dc4a291e66789023fdee5afb3c3` |
+| **S-imp** (importers) | `file:^CLAUDE\.md$ case:yes patterntype:regexp ^@AGENTS\.md count:all` | 2026-10-06 | 3297 | `672723829d6bdcc3fad8fd305f91540cf5fa22913b826e1c3684b4e69808865f` |
+| **S-ci** (any case) | `file:^AGENTS\.md$ count:all` | 2026-10-06 | 27067 | `dc38738ef049f5c1e5ad72b0788d4286fe22ee65532c72b77f84d5a606a35906` |
 
 - **Validity.** Each query runs twice. A frame is valid only when both
   answers end with their `done` event, carry no alert, skip nothing but
@@ -152,9 +152,9 @@ repositories are kept (others are counted).
   variant, about 253 on the pilot day) is a reported stratum, as a count.
   It is never pooled with S and not sampled in v1.
 - **K3's census counts** (section 8), frozen the same way on
-  {{stamp:K3.date}}: {{stamp:K3.claude}} repositories in S with a root
+  2026-10-06: 11515 repositories in S with a root
   `CLAUDE.md` (`file:^CLAUDE\.md$ case:yes repo:has.file(path:^AGENTS\.md$)`),
-  of which {{stamp:K3.claudeImport}} contain `@AGENTS.md`.
+  of which 3502 contain `@AGENTS.md`.
 - Frame G (active GitHub repositories) is not part of v1.
 
 ## 4. Samples, seed and exclusions
@@ -676,22 +676,22 @@ check` fails when this block does not hold every tag-time value once.
 
 ```json prereg-stamps
 {
-  "study-v1.commit": "{{stamp:study-v1.commit}}",
-  "ctxreach.version": "{{stamp:ctxreach.version}}",
-  "dist.digest": "{{stamp:dist.digest}}",
-  "node.version": "{{stamp:node.version}}",
-  "frame.S.date": "{{stamp:frame.S.date}}",
-  "frame.S.repos": "{{stamp:frame.S.repos}}",
-  "frame.S.sha256": "{{stamp:frame.S.sha256}}",
-  "frame.S-imp.date": "{{stamp:frame.S-imp.date}}",
-  "frame.S-imp.repos": "{{stamp:frame.S-imp.repos}}",
-  "frame.S-imp.sha256": "{{stamp:frame.S-imp.sha256}}",
-  "frame.S-ci.date": "{{stamp:frame.S-ci.date}}",
-  "frame.S-ci.repos": "{{stamp:frame.S-ci.repos}}",
-  "frame.S-ci.sha256": "{{stamp:frame.S-ci.sha256}}",
-  "K3.date": "{{stamp:K3.date}}",
-  "K3.claude": "{{stamp:K3.claude}}",
-  "K3.claudeImport": "{{stamp:K3.claudeImport}}"
+  "study-v1.commit": "8b0d7ccfde5d50cf7a347ec688f1a55a6502ce84",
+  "ctxreach.version": "0.1.0",
+  "dist.digest": "df78ba9d2d58f88492df5c4a384e23b5e8c23cac79c39fe0b33d11cc2ded419a",
+  "node.version": "v22.19.0",
+  "frame.S.date": "2026-10-06",
+  "frame.S.repos": "26813",
+  "frame.S.sha256": "e63f4042f7583404435a035076bd00cd25917dc4a291e66789023fdee5afb3c3",
+  "frame.S-imp.date": "2026-10-06",
+  "frame.S-imp.repos": "3297",
+  "frame.S-imp.sha256": "672723829d6bdcc3fad8fd305f91540cf5fa22913b826e1c3684b4e69808865f",
+  "frame.S-ci.date": "2026-10-06",
+  "frame.S-ci.repos": "27067",
+  "frame.S-ci.sha256": "dc38738ef049f5c1e5ad72b0788d4286fe22ee65532c72b77f84d5a606a35906",
+  "K3.date": "2026-10-06",
+  "K3.claude": "11515",
+  "K3.claudeImport": "3502"
 }
 ```
 
@@ -701,7 +701,7 @@ check` fails when this block does not hold every tag-time value once.
 2. `sample.mjs --seed-from-tag prereg-v1` draws S-main, then S-imp with
    `--exclude` S-main (its first draw).
 3. K1 and K2 on the frozen build; K7 printed by every script.
-4. `run-census.mjs --expect-dist {{stamp:dist.digest}}` over S-main and
+4. `run-census.mjs --expect-dist df78ba9d2d58f88492df5c4a384e23b5e8c23cac79c39fe0b33d11cc2ded419a` over S-main and
    S-imp, with `--codex-bin` (Codex 0.159.2) for K4, each sample into its
    own rows file, each run resumed until every unit of its sample has a row.
 5. `analyze.mjs` over the rows. A sample it marks `redrawRequired` is

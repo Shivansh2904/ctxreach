@@ -1,0 +1,30 @@
+{
+  "schema": "ctxreach.study-frame/v1",
+  "label": "study",
+  "frame": "S",
+  "about": "every non-fork, non-archived repository with a root AGENTS.md, exact case",
+  "query": "file:^AGENTS\\.md$ case:yes count:all",
+  "matches": [
+    26821,
+    26821
+  ],
+  "repos": 26813,
+  "nonGithub": 8,
+  "file": "S-2026-10-06.tsv",
+  "sha256": "e63f4042f7583404435a035076bd00cd25917dc4a291e66789023fdee5afb3c3",
+  "skipped": [
+    "repository-fork",
+    "excluded-archive"
+  ],
+  "alerts": [],
+  "commitMovedBetweenAnswers": 7,
+  "churnBetweenAnswers": {
+    "onlyFirst": 0,
+    "onlySecond": 0
+  },
+  "problems": [],
+  "fetchedAt": "2026-10-06T12:02:11.147Z",
+  "durationMs": 59960,
+  "valid": true,
+  "client": "requests: 2 (sourcegraph.com 2); 304: 0; retries: 0; waited: 0 s; refused hosts: 0; non-GET attempts: 0"
+}

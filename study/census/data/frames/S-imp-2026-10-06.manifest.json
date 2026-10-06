@@ -1,0 +1,30 @@
+{
+  "schema": "ctxreach.study-frame/v1",
+  "label": "study",
+  "frame": "S-imp",
+  "about": "repositories whose root CLAUDE.md has a line starting @AGENTS.md",
+  "query": "file:^CLAUDE\\.md$ case:yes patterntype:regexp ^@AGENTS\\.md count:all",
+  "matches": [
+    3299,
+    3299
+  ],
+  "repos": 3297,
+  "nonGithub": 2,
+  "file": "S-imp-2026-10-06.tsv",
+  "sha256": "672723829d6bdcc3fad8fd305f91540cf5fa22913b826e1c3684b4e69808865f",
+  "skipped": [
+    "repository-fork",
+    "excluded-archive"
+  ],
+  "alerts": [],
+  "commitMovedBetweenAnswers": 4,
+  "churnBetweenAnswers": {
+    "onlyFirst": 0,
+    "onlySecond": 0
+  },
+  "problems": [],
+  "fetchedAt": "2026-10-06T12:02:33.508Z",
+  "durationMs": 22007,
+  "valid": true,
+  "client": "requests: 2 (sourcegraph.com 2); 304: 0; retries: 0; waited: 0 s; refused hosts: 0; non-GET attempts: 0"
+}

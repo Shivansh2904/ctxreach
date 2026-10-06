@@ -1,0 +1,30 @@
+{
+  "schema": "ctxreach.study-frame/v1",
+  "label": "study",
+  "frame": "S-ci",
+  "about": "root AGENTS.md in any case (Sourcegraph matches file names without case by default); minus frame S, the case-variant stratum (counted and reported, never pooled)",
+  "query": "file:^AGENTS\\.md$ count:all",
+  "matches": [
+    27077,
+    27077
+  ],
+  "repos": 27067,
+  "nonGithub": 8,
+  "file": "S-ci-2026-10-06.tsv",
+  "sha256": "dc38738ef049f5c1e5ad72b0788d4286fe22ee65532c72b77f84d5a606a35906",
+  "skipped": [
+    "repository-fork",
+    "excluded-archive"
+  ],
+  "alerts": [],
+  "commitMovedBetweenAnswers": 16,
+  "churnBetweenAnswers": {
+    "onlyFirst": 0,
+    "onlySecond": 0
+  },
+  "problems": [],
+  "fetchedAt": "2026-10-06T12:02:58.369Z",
+  "durationMs": 24556,
+  "valid": true,
+  "client": "requests: 2 (sourcegraph.com 2); 304: 0; retries: 0; waited: 0 s; refused hosts: 0; non-GET attempts: 0"
+}
