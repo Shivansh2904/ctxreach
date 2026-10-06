@@ -123,4 +123,18 @@ describe("redaction before a transcript is saved", () => {
     expect(out).toContain("agents-md@builtin");
     expect(memoryDirOf(out)).toBeUndefined();
   });
+
+  it("keeps text that is itself JSON parseable when a placeholder brings in a backslash", () => {
+    const report = JSON.stringify({
+      cwd: "/tmp/ctxreach-probe-ab/repo",
+      files: ["/tmp/ctxreach-probe-ab/repo/AGENTS.md"],
+    });
+    const raw = line({ type: "assistant", message: { content: [{ type: "text", text: report }] } });
+    const out = redactClaudeTranscript(raw, [{ from: "/tmp/ctxreach-probe-ab", to: "C:\\ctxreach-probe" }]);
+    const text = (parseClaudeTranscript(out).items[0] as { text: string }).text;
+    expect(JSON.parse(text)).toEqual({
+      cwd: "C:\\ctxreach-probe/repo",
+      files: ["C:\\ctxreach-probe/repo/AGENTS.md"],
+    });
+  });
 });

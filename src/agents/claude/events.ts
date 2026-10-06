@@ -231,8 +231,25 @@ export function redactString(s: string, redactions: readonly Redaction[]): strin
   return out;
 }
 
+/**
+ * A string that is itself JSON (a tool result, say) is redacted as data and
+ * written back: replacing text inside it could put a raw backslash (from a
+ * Windows placeholder) where JSON needs an escaped one.
+ */
+function redactNestedJson(s: string, redactions: readonly Redaction[]): string | undefined {
+  const t = s.trim();
+  if (!((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]")))) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(t);
+  } catch {
+    return undefined;
+  }
+  return JSON.stringify(redactValue(parsed, redactions));
+}
+
 function redactValue(v: unknown, redactions: readonly Redaction[]): unknown {
-  if (typeof v === "string") return redactString(v, redactions);
+  if (typeof v === "string") return redactNestedJson(v, redactions) ?? redactString(v, redactions);
   if (Array.isArray(v)) return v.map((x) => redactValue(x, redactions));
   if (v && typeof v === "object")
     return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactValue(x, redactions)]));
