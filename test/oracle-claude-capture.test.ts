@@ -48,7 +48,7 @@ describe("reading a captured Claude Code request (2.1.285, recorded 2026-09-30)"
 
   it("keeps a file's text byte for byte, including its own blank lines", () => {
     const body = parseCaptureBody(pilotBody("capture-pilot-B"));
-    expect(body.files.map((f) => path.basename(f.path))).toEqual(["style.md", "AGENTS.md"]);
+    expect(body.files.map((f) => path.win32.basename(f.path))).toEqual(["style.md", "AGENTS.md"]);
     expect(body.files[1]?.text).toBe(
       "# Root agents\nCTXR-B0000a01 root AGENTS head\nUse pnpm.\nCTXR-B0000a02 root AGENTS tail",
     );

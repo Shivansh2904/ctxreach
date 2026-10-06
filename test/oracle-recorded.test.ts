@@ -176,7 +176,7 @@ describe("replaying the recorded Claude Code captures (2.1.285, Windows, 2026-09
       "ctxreach-decoy.md head: 0/1 control",
       "ctxreach-decoy.md tail: 0/1 control",
     ]);
-    expect(r.delivered.map((d) => [path.basename(d.path), d.label])).toEqual([
+    expect(r.delivered.map((d) => [path.win32.basename(d.path), d.label])).toEqual([
       ["CLAUDE.local.md", "user's private project instructions, not checked in"],
     ]);
     expect(r.score.agreement).toMatchObject({ agree: 4, decided: 4, cells: 4 });
@@ -190,7 +190,7 @@ describe("replaying the recorded Claude Code captures (2.1.285, Windows, 2026-09
       "ctxreach-decoy.md head: 0/1 control",
       "ctxreach-decoy.md tail: 0/1 control",
     ]);
-    expect(r.delivered.map((d) => [path.basename(d.path), d.label])).toEqual([
+    expect(r.delivered.map((d) => [path.win32.basename(d.path), d.label])).toEqual([
       ["AGENTS.md", "project instructions, checked into the codebase"],
     ]);
   });
@@ -205,6 +205,6 @@ describe("replaying the recorded Claude Code captures (2.1.285, Windows, 2026-09
       "packages/api/ctxreach-decoy.md head: 0/1 control",
       "packages/api/ctxreach-decoy.md tail: 0/1 control",
     ]);
-    expect(r.delivered.map((d) => path.basename(d.path))).toEqual(["CLAUDE.md"]);
+    expect(r.delivered.map((d) => path.win32.basename(d.path))).toEqual(["CLAUDE.md"]);
   });
 });
